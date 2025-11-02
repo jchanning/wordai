@@ -56,10 +56,14 @@ public class Dictionary {
         return masterSetOfWords.size();
     }
 
-    /** Returns the number of distinct letters in the dictionary*/
+    /** Returns the total count of possible letters across all positions (sum of column lengths)
+     * This metric decreases as guesses eliminate possibilities, showing the filtering impact.*/
     public int getLetterCount(){
-        Set<Character> allLetters = getUniqueCharacters();
-        return allLetters.size();
+        int totalCount = 0;
+        for(Column c : columns){
+            totalCount += c.length();
+        }
+        return totalCount;
     }
 
     /** Returns the unique set of characters contained in the words in the dictionary */
