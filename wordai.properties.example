@@ -1,0 +1,17 @@
+# WordAI User Configuration Example
+# Copy this file to wordai.properties in your project root to override defaults
+
+# Dictionary file paths - adjust for your system
+dictionary.base.path=C:/Users/johnm/Documents/WordAI
+dictionary.file.name=5_Letter_Words_Official.txt
+
+# Output file location - where CSV results are saved
+output.base.path=${dictionary.base.path}/results
+
+# Game configuration
+game.word.length=5
+game.max.attempts=6
+game.simulation.iterations=10
+
+# Logging
+logging.level=INFO
