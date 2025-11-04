@@ -128,7 +128,8 @@ public class Filter {
         for(int i=0; i<status.size(); ++i){
             ResponseEntry re = status.get(i);
             if(re.status == 'G' || re.status == 'A'){
-                responseLetterCounts.put(re.letter, responseLetterCounts.getOrDefault(re.letter, 0) + 1);
+                responseLetterCounts.put(re.letter, 
+                responseLetterCounts.getOrDefault(re.letter, 0) + 1);
             }
         }
         
@@ -139,7 +140,7 @@ public class Filter {
             mustContain.put(letter, Math.max(mustContain.getOrDefault(letter, 0), count));
         }
         
-        // First pass: process all Green letters to lock positions
+        // First pass: process all Green letters
         for(int i=0; i<status.size(); ++i){
             ResponseEntry re = status.get(i);
             if(re.status == 'G'){
@@ -148,7 +149,8 @@ public class Filter {
         }
         
         // Second pass: process Amber, Red, and eXcess letters
-        // Build map of letters that have Green or Amber status (exist in target)
+        // Build map of letters that have Green or Amber status (exist in target) 
+        // or eXcess (exists, but not in this position)
         Map<Character, Boolean> hasNonRedStatus = new HashMap<>();
         for(int i=0; i<status.size(); ++i){
             ResponseEntry re = status.get(i);
@@ -173,6 +175,8 @@ public class Filter {
             // Don't remove the letter from all positions, just ignore this instance
             // No action needed - the letter will be handled by its G/A instances
                 case 'X':
+                    // Remove from this position only
+                    filterArray.get(i).remove(re.letter);
                     break;
                 default:
                     break;
