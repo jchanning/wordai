@@ -609,6 +609,12 @@
             box-shadow: 0 4px 15px rgba(76, 175, 80, 0.4);
         }
         
+        .btn-danger {
+            background: linear-gradient(135deg, var(--error-red), #e53935);
+            color: white;
+            box-shadow: 0 4px 15px rgba(244, 67, 54, 0.3);
+        }
+        
         .btn:hover {
             transform: translateY(-2px);
             box-shadow: 0 6px 20px rgba(0,0,0,0.3);
@@ -645,13 +651,14 @@
             </select>
             <button class="btn btn-success" onclick="newGame()">New Game</button>
             <button class="btn btn-secondary" onclick="checkHealth()">Server Status</button>
+            <button class="btn btn-danger" onclick="newSession()">New Session</button>
         </div>
     </div>
     
     <div class="main-layout">
         <!-- Game History Panel -->
         <div class="history-panel">
-            <h3>📊 Session Stats</h3>
+            <h3 style="margin: 0 0 10px 0;">📊 Session Stats</h3>
             <div class="win-rate-stat">
                 <div class="win-rate-label">Win Rate</div>
                 <div class="win-rate-value" id="stat-winrate">0%</div>
@@ -740,9 +747,14 @@
                 <div class="hint-value" id="suggestedWord" style="font-size: 1.3em; font-weight: 800; color: var(--accent-blue); text-transform: uppercase; letter-spacing: 2px; font-family: var(--font-mono);">
                     Click "Get Suggestion"
                 </div>
-                <button onclick="getSuggestion()" style="width: 100%; margin-top: 8px; padding: 10px; background: linear-gradient(135deg, var(--success-green), #43a047); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 700; font-family: var(--font-main); text-transform: uppercase; letter-spacing: 0.5px; font-size: 0.85em; transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(76, 175, 80, 0.4);" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 20px rgba(76, 175, 80, 0.6)';" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 15px rgba(76, 175, 80, 0.4)';">
-                    Get Suggestion
-                </button>
+                <div style="display: flex; align-items: center; gap: 10px; margin-top: 8px;">
+                    <button id="getSuggestionBtn" onclick="getSuggestion()" style="flex: 1; padding: 10px; background: linear-gradient(135deg, var(--success-green), #43a047); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 700; font-family: var(--font-main); text-transform: uppercase; letter-spacing: 0.5px; font-size: 0.85em; transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(76, 175, 80, 0.4);" onmouseover="if(!this.disabled) { this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 20px rgba(76, 175, 80, 0.6)'; }" onmouseout="if(!this.disabled) { this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 15px rgba(76, 175, 80, 0.4)'; }">
+                        Get Suggestion
+                    </button>
+                    <div id="helpCounter" style="padding: 10px 15px; background: var(--gray-100); border-radius: 8px; font-weight: 700; color: var(--primary-slate); font-size: 0.9em; white-space: nowrap;">
+                        3/3
+                    </div>
+                </div>
             </div>
             
             <div class="hint-section">
@@ -810,12 +822,15 @@
         let gameEnded = false;
         let currentWordLength = 5; // Track the current game's word length
         let currentDictionarySize = 2315; // Track the current dictionary's total word count
+        let helpUsedCount = 0; // Track how many times help has been used in this game
+        const MAX_HELP_COUNT = 3; // Maximum number of help requests allowed per game
 
         // Initialize page
         window.addEventListener('DOMContentLoaded', function() {
             newGame();
             updateHistoryDisplay();
             updateStats();
+            updateHelpCounter();
         });
 
         function setupLetterInputs() {
@@ -902,6 +917,24 @@
             document.getElementById('status').style.display = 'none';
         }
 
+        function updateHelpCounter() {
+            const counterElement = document.getElementById('helpCounter');
+            const button = document.getElementById('getSuggestionBtn');
+            const remainingHelp = MAX_HELP_COUNT - helpUsedCount;
+            
+            counterElement.textContent = `${remainingHelp}/${MAX_HELP_COUNT}`;
+            
+            if (helpUsedCount >= MAX_HELP_COUNT) {
+                button.disabled = true;
+                button.style.backgroundColor = '#cccccc';
+                button.style.cursor = 'not-allowed';
+            } else {
+                button.disabled = false;
+                button.style.backgroundColor = '';
+                button.style.cursor = 'pointer';
+            }
+        }
+
         async function newGame() {
             try {
                 hideStatus();
@@ -958,6 +991,10 @@
                 // Update assistant panel
                 updateAssistant('new');
                 
+                // Reset help counter for new game
+                helpUsedCount = 0;
+                updateHelpCounter();
+                
                 // Set the strategy for the new game based on dropdown selection
                 await changeStrategy();
                 
@@ -965,6 +1002,25 @@
             } catch (error) {
                 showStatus('Failed to create new game: ' + error.message, 'error');
             }
+        }
+
+        async function newSession() {
+            // Clear session storage
+            sessionStorage.removeItem('gameHistory');
+            sessionStorage.removeItem('gameStats');
+            
+            // Update displays
+            updateHistoryDisplay();
+            updateStats();
+            
+            // Reset help counter
+            helpUsedCount = 0;
+            updateHelpCounter();
+            
+            // Start a new game
+            await newGame();
+            
+            showStatus('New session started! Stats have been reset.', 'success');
         }
 
         async function makeGuess() {
@@ -1398,11 +1454,21 @@
                 return;
             }
 
+            // Check if help limit reached
+            if (helpUsedCount >= MAX_HELP_COUNT) {
+                showStatus('Maximum help requests reached (3/3)', 'error');
+                return;
+            }
+
             try {
                 const response = await fetch(`${API_BASE}/games/${currentGameId}/suggestion`);
                 const data = await response.json();
 
                 if (response.ok && data.suggestion) {
+                    // Increment help counter and update display
+                    helpUsedCount++;
+                    updateHelpCounter();
+                    
                     document.getElementById('suggestedWord').textContent = data.suggestion.toUpperCase();
                     showStatus(`Suggestion: ${data.suggestion.toUpperCase()} (${data.strategy})`, 'success');
                 } else if (response.ok && !data.suggestion) {
