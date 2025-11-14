@@ -652,10 +652,20 @@
             <button class="btn btn-success" onclick="newGame()">New Game</button>
             <button class="btn btn-secondary" onclick="checkHealth()">Server Status</button>
             <button class="btn btn-danger" onclick="newSession()">New Session</button>
+            <button class="btn btn-secondary" onclick="showSessionViewer()">View Session</button>
         </div>
     </div>
     
-    <div class="main-layout">
+    <!-- Session Viewer (hidden by default) -->
+    <div id="sessionViewer" style="display: none; background: var(--panel-bg); border-radius: 12px; padding: 20px; margin-bottom: 20px; box-shadow: var(--panel-shadow);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <h2 style="color: var(--primary-slate); margin: 0;">📊 Session Analytics</h2>
+            <button class="btn btn-secondary" onclick="hideSessionViewer()">← Back to Game</button>
+        </div>
+        <div id="sessionContent"></div>
+    </div>
+    
+    <div class="main-layout" id="gameView">
         <!-- Game History Panel -->
         <div class="history-panel">
             <h3 style="margin: 0 0 10px 0;">📊 Session Stats</h3>
@@ -738,6 +748,7 @@
                     <select id="strategySelector" onchange="changeStrategy()" style="width: 100%; padding: 8px; border-radius: 6px; border: 2px solid var(--accent-blue-lighter); font-family: var(--font-main); font-weight: 600; background: white; color: var(--primary-slate); cursor: pointer; font-size: 0.9em;">
                         <option value="RANDOM">Random Selection</option>
                         <option value="ENTROPY">Maximum Entropy</option>
+                        <option value="MOST_COMMON_LETTERS">Most Common Letters</option>
                     </select>
                 </div>
             </div>
@@ -824,6 +835,7 @@
         let currentDictionarySize = 2315; // Track the current dictionary's total word count
         let helpUsedCount = 0; // Track how many times help has been used in this game
         const MAX_HELP_COUNT = 3; // Maximum number of help requests allowed per game
+        let currentGameGuesses = []; // Track all guesses with their responses and metrics for current game
 
         // Initialize page
         window.addEventListener('DOMContentLoaded', function() {
@@ -995,6 +1007,9 @@
                 helpUsedCount = 0;
                 updateHelpCounter();
                 
+                // Reset current game guesses
+                currentGameGuesses = [];
+                
                 // Set the strategy for the new game based on dropdown selection
                 await changeStrategy();
                 
@@ -1061,6 +1076,15 @@
                 if (data.remainingWordsCount !== undefined) {
                     updateAnalytics(word, data.remainingWordsCount, data.dictionaryMetrics);
                 }
+                
+                // Store detailed guess data for session analytics
+                currentGameGuesses.push({
+                    attempt: data.attemptNumber,
+                    guess: word,
+                    results: data.results,
+                    remainingWords: data.remainingWordsCount,
+                    dictionaryMetrics: data.dictionaryMetrics
+                });
                 
                 // Add guess to history
                 addGuessToHistory(word, data.results);
@@ -1328,7 +1352,10 @@
                 targetWord: targetWord,
                 attempts: attempts,
                 won: won,
-                timestamp: new Date().toISOString()
+                timestamp: new Date().toISOString(),
+                guesses: [...currentGameGuesses], // Store all guesses with detailed metrics
+                wordLength: currentWordLength,
+                dictionarySize: currentDictionarySize
             });
             
             // Keep only last 10 games in history (for display)
@@ -1489,6 +1516,8 @@
                 tipsDiv.innerHTML = '<strong>Random:</strong> Selects words randomly from valid options. Simple but effective!';
             } else if (strategy === 'ENTROPY') {
                 tipsDiv.innerHTML = '<strong>Maximum Entropy:</strong> Chooses words that maximize information gain. Uses statistical analysis to find the most informative guess.';
+            } else if (strategy === 'MOST_COMMON_LETTERS') {
+                tipsDiv.innerHTML = '<strong>Most Common Letters:</strong> Selects words containing the most frequently occurring letters in the remaining word pool. Prioritizes common letter patterns.';
             }
         }
 
@@ -1593,6 +1622,184 @@
             if (wordLength > 0) {
                 document.getElementById('letter0').focus();
             }
+        }
+
+        // Session Viewer Functions
+        function showSessionViewer() {
+            document.getElementById('gameView').style.display = 'none';
+            document.getElementById('sessionViewer').style.display = 'block';
+            renderSessionDetails();
+        }
+
+        function hideSessionViewer() {
+            document.getElementById('sessionViewer').style.display = 'none';
+            document.getElementById('gameView').style.display = 'flex';
+        }
+
+        function renderSessionDetails() {
+            const history = getGameHistory();
+            const stats = getGameStats();
+            const contentDiv = document.getElementById('sessionContent');
+
+            if (history.length === 0) {
+                contentDiv.innerHTML = `
+                    <div style="text-align: center; padding: 40px; color: #888;">
+                        <h3>No games played yet</h3>
+                        <p>Start playing to see detailed session analytics!</p>
+                    </div>
+                `;
+                return;
+            }
+
+            // Build comprehensive analytics view
+            let html = `
+                <!-- Overall Session Statistics -->
+                <div style="background: rgba(33, 150, 243, 0.08); padding: 20px; border-radius: 12px; margin-bottom: 20px; border: 2px solid var(--accent-blue-light);">
+                    <h3 style="margin-top: 0; color: var(--primary-slate);">📊 Overall Session Statistics</h3>
+                    <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-top: 15px;">
+                        <div style="background: white; padding: 15px; border-radius: 8px; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                            <div style="font-size: 0.8em; color: #666; font-weight: 700; text-transform: uppercase; margin-bottom: 8px;">Total Games</div>
+                            <div style="font-size: 2em; font-weight: 800; color: var(--accent-blue); font-family: var(--font-mono);">${stats.total}</div>
+                        </div>
+                        <div style="background: white; padding: 15px; border-radius: 8px; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                            <div style="font-size: 0.8em; color: #666; font-weight: 700; text-transform: uppercase; margin-bottom: 8px;">Win Rate</div>
+                            <div style="font-size: 2em; font-weight: 800; color: var(--success-green); font-family: var(--font-mono);">${stats.total > 0 ? Math.round((stats.won / stats.total) * 100) : 0}%</div>
+                        </div>
+                        <div style="background: white; padding: 15px; border-radius: 8px; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                            <div style="font-size: 0.8em; color: #666; font-weight: 700; text-transform: uppercase; margin-bottom: 8px;">Wins</div>
+                            <div style="font-size: 2em; font-weight: 800; color: var(--success-green); font-family: var(--font-mono);">${stats.won}</div>
+                        </div>
+                        <div style="background: white; padding: 15px; border-radius: 8px; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                            <div style="font-size: 0.8em; color: #666; font-weight: 700; text-transform: uppercase; margin-bottom: 8px;">Losses</div>
+                            <div style="font-size: 2em; font-weight: 800; color: var(--error-red); font-family: var(--font-mono);">${stats.lost}</div>
+                        </div>
+                    </div>
+            `;
+
+            // Add performance metrics if we have won games
+            if (stats.wonGames.length > 0) {
+                const minAttempts = Math.min(...stats.wonGames);
+                const maxAttempts = Math.max(...stats.wonGames);
+                const avgAttempts = (stats.wonGames.reduce((a, b) => a + b, 0) / stats.wonGames.length).toFixed(2);
+                
+                html += `
+                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-top: 15px;">
+                        <div style="background: white; padding: 15px; border-radius: 8px; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                            <div style="font-size: 0.8em; color: #666; font-weight: 700; text-transform: uppercase; margin-bottom: 8px;">Best (Min)</div>
+                            <div style="font-size: 2em; font-weight: 800; color: var(--success-green); font-family: var(--font-mono);">${minAttempts}</div>
+                        </div>
+                        <div style="background: white; padding: 15px; border-radius: 8px; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                            <div style="font-size: 0.8em; color: #666; font-weight: 700; text-transform: uppercase; margin-bottom: 8px;">Average</div>
+                            <div style="font-size: 2em; font-weight: 800; color: var(--accent-blue); font-family: var(--font-mono);">${avgAttempts}</div>
+                        </div>
+                        <div style="background: white; padding: 15px; border-radius: 8px; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                            <div style="font-size: 0.8em; color: #666; font-weight: 700; text-transform: uppercase; margin-bottom: 8px;">Worst (Max)</div>
+                            <div style="font-size: 2em; font-weight: 800; color: var(--warning-amber); font-family: var(--font-mono);">${maxAttempts}</div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            html += `</div>`;
+
+            // Detailed game-by-game breakdown
+            html += `
+                <h3 style="color: var(--primary-slate); margin-top: 30px; margin-bottom: 15px;">🎮 Game Details</h3>
+            `;
+
+            history.forEach((game, index) => {
+                const gameNumber = history.length - index;
+                const date = new Date(game.timestamp);
+                const formattedDate = date.toLocaleString();
+
+                html += `
+                    <div style="background: white; border-radius: 12px; padding: 20px; margin-bottom: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); border-left: 5px solid ${game.won ? 'var(--success-green)' : 'var(--error-red)'};">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                            <div>
+                                <h4 style="margin: 0; color: var(--primary-slate);">Game #${gameNumber}: ${game.targetWord.toUpperCase()}</h4>
+                                <div style="font-size: 0.85em; color: #888; margin-top: 5px;">${formattedDate}</div>
+                            </div>
+                            <div style="text-align: right;">
+                                <span style="display: inline-block; padding: 8px 16px; border-radius: 20px; font-weight: 700; font-size: 0.9em; ${game.won ? 'background: var(--success-green); color: white;' : 'background: var(--error-red); color: white;'}">
+                                    ${game.won ? '✓ WON' : '✗ LOST'}
+                                </span>
+                                <div style="margin-top: 8px; font-size: 1.2em; font-weight: 700; color: var(--primary-slate);">${game.attempts} Attempts</div>
+                            </div>
+                        </div>
+                `;
+
+                // Show detailed guess history if available
+                if (game.guesses && game.guesses.length > 0) {
+                    html += `
+                        <div style="margin-top: 20px;">
+                            <h5 style="color: var(--primary-slate); margin-bottom: 10px;">Guess History:</h5>
+                            <table style="width: 100%; border-collapse: collapse;">
+                                <thead>
+                                    <tr style="background: var(--gray-100); font-size: 0.85em; text-transform: uppercase;">
+                                        <th style="padding: 10px; text-align: left; border-bottom: 2px solid var(--gray-300);">Attempt</th>
+                                        <th style="padding: 10px; text-align: left; border-bottom: 2px solid var(--gray-300);">Guess</th>
+                                        <th style="padding: 10px; text-align: left; border-bottom: 2px solid var(--gray-300);">Response</th>
+                                        <th style="padding: 10px; text-align: right; border-bottom: 2px solid var(--gray-300);">Remaining Words</th>
+                                        <th style="padding: 10px; text-align: right; border-bottom: 2px solid var(--gray-300);">Reduction %</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                    `;
+
+                    game.guesses.forEach((guessData) => {
+                        const reductionPercent = game.dictionarySize > 0 
+                            ? (((game.dictionarySize - guessData.remainingWords) / game.dictionarySize) * 100).toFixed(1)
+                            : 0;
+
+                        // Build visual response
+                        let responseHtml = '<div style="display: flex; gap: 3px;">';
+                        guessData.results.forEach(result => {
+                            let bgColor = '#787c7e'; // Red/absent
+                            if (result.status === 'G') bgColor = '#6aaa64'; // Green
+                            else if (result.status === 'A') bgColor = '#c9b458'; // Amber
+                            
+                            responseHtml += `<div style="width: 30px; height: 30px; background: ${bgColor}; color: white; display: flex; align-items: center; justify-content: center; border-radius: 4px; font-weight: 700; font-family: var(--font-mono);">${result.letter}</div>`;
+                        });
+                        responseHtml += '</div>';
+
+                        html += `
+                            <tr style="border-bottom: 1px solid var(--gray-200);">
+                                <td style="padding: 12px; font-weight: 700; color: var(--primary-slate);">#${guessData.attempt}</td>
+                                <td style="padding: 12px; font-family: var(--font-mono); font-weight: 700; font-size: 1.1em;">${guessData.guess.toUpperCase()}</td>
+                                <td style="padding: 12px;">${responseHtml}</td>
+                                <td style="padding: 12px; text-align: right; font-family: var(--font-mono); font-weight: 600;">${guessData.remainingWords || 'N/A'}</td>
+                                <td style="padding: 12px; text-align: right; font-family: var(--font-mono); font-weight: 600; color: var(--success-green);">${reductionPercent}%</td>
+                            </tr>
+                        `;
+
+                        // Add dictionary metrics if available
+                        if (guessData.dictionaryMetrics) {
+                            html += `
+                                <tr style="background: rgba(33, 150, 243, 0.05);">
+                                    <td colspan="5" style="padding: 10px 12px; font-size: 0.85em;">
+                                        <strong>Metrics:</strong> 
+                                        Unique Letters: ${guessData.dictionaryMetrics.uniqueCharacters || 'N/A'} | 
+                                        Total Letter Count: ${guessData.dictionaryMetrics.letterCount || 'N/A'}
+                                        ${guessData.dictionaryMetrics.columnLengths ? ' | Column Lengths: [' + guessData.dictionaryMetrics.columnLengths.join(', ') + ']' : ''}
+                                    </td>
+                                </tr>
+                            `;
+                        }
+                    });
+
+                    html += `
+                                </tbody>
+                            </table>
+                        </div>
+                    `;
+                } else {
+                    html += `<div style="color: #888; font-style: italic; margin-top: 10px;">Detailed guess data not available for this game.</div>`;
+                }
+
+                html += `</div>`;
+            });
+
+            contentDiv.innerHTML = html;
         }
 
         // Initialize dictionaries on page load
