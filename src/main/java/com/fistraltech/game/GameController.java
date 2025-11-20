@@ -73,6 +73,8 @@ public class GameController {
      * before loading dictionaries will result in exceptions.
      */
     public GameController(){
+        this.config = new Config();
+        this.config.setMaxAttempts(6);
         this.game = new WordGame(allValidWords, allValidWords, config);
     }
 

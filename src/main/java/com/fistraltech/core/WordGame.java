@@ -98,7 +98,7 @@ public class WordGame {
     /** When a guess is made, information is returned to the player */
     public Response guess(String targetWord, String word) throws InvalidWordException {
         checkWordIsValid(word);
-        //checkMaxAttempts();
+        checkMaxAttempts();
 
         char[] guessedLetters = word.toCharArray();
         boolean isWinner = word.equals(targetWord);

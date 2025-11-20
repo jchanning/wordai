@@ -207,13 +207,9 @@ public class Filter {
     /** Applies the Filter to the input Dictionary and returns a new Dictionary containing only words that are valid
      * and therefore passed through the filter*/
     public Dictionary apply(Dictionary input){
-        // Filter words based on the filter criteria /
-        //System.out.println("Number of possible answers before filtering:" + input.getWordCount());
-
+        // Filter words based on the filter criteria
         Set<String> filteredWords = input.getWords(filterArray);
         
-        //System.out.println("Number of possible answers after filtering:" + filteredWords.size());
-
         Set<String> result = new TreeSet<>();
       
         // Remove any words that do not contain the required count of each letter
@@ -245,7 +241,6 @@ public class Filter {
         Dictionary d = new Dictionary(wordLength);
             d.addWords(result);
 
-        //System.out.println("Size of Dictionary after filtering:" + d.getWordCount());
         return d;
     }
 }

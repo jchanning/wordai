@@ -102,8 +102,7 @@ public class Dictionary {
 
     public String selectRandomWord(){
         int index = (int)(Math.random()* masterSetOfWords.size());
-        System.out.println("Random index:" + index);
-        System.out.println("Word count:" + masterSetOfWords.size());
+        // Logger is better handled in the calling class or a dedicated logger instance
         String[] wordArray = masterSetOfWords.toArray(new String[0]);
         return wordArray[index];
     }

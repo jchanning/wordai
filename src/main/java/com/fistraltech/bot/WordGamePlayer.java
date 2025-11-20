@@ -6,6 +6,8 @@ import com.fistraltech.core.Dictionary;
 import com.fistraltech.core.InvalidWordException;
 import com.fistraltech.core.Response;
 import com.fistraltech.core.WordGame;
+import java.util.logging.Logger;
+import java.util.logging.Level;
 
 /**
  * Automated player implementation for word-guessing games using pluggable strategies.
@@ -68,6 +70,7 @@ import com.fistraltech.core.WordGame;
  * @see GameAnalytics
  */
 public class WordGamePlayer implements Player {
+    private static final Logger logger = Logger.getLogger(WordGamePlayer.class.getName());
     private final Dictionary dictionary;
     private final SelectionAlgo algo;
 
@@ -101,22 +104,16 @@ public class WordGamePlayer implements Player {
         this.wordGame = wordGame;
     }
 
-    public void play(){
-
-    }
-
     /** Plays a single randomly selected game*/
     @Override
     public void playGame(WordGame wg){
         try {
-            Filter filter = new Filter(dictionary.getWordLength());
-            
             /* For the first guess, you do not have a result yet, so the word is an empty String*/
             Response response = new Response("");
 
             while(!response.getWinner()){
                 String selectedWord = algo.selectWord(response);
-                //System.out.println("The algo selected: " + selectedWord + " from " + algo.getUpdatedDictionary().getWordCount() + " words.");
+                //logger.info("The algo selected: " + selectedWord + " from " + algo.getUpdatedDictionary().getWordCount() + " words.");
                 
                 response = wg.guess(selectedWord);
 
@@ -127,7 +124,7 @@ public class WordGamePlayer implements Player {
 
         }
         catch(InvalidWordException e){
-            System.out.println("playGame:");
+            logger.log(Level.SEVERE, "Error playing game", e);
         }
     }
 
