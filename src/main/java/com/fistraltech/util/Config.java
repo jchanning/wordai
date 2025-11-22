@@ -3,7 +3,7 @@ package com.fistraltech.util;
 public class Config {
 
     private int wordLength;
-    private int maxAttempts;
+    private int maxAttempts = 6;
     private boolean hardMode;
     private boolean showHints;
     private String pathToDictionaryOfAllWords;
