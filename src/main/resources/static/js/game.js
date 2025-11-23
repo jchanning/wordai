@@ -459,35 +459,9 @@ function updateColumnLengthsChart(columnLengths) {
 }
 
 function updateAssistant(status, attempts = 0, remainingWords = 0) {
-    const statsDiv = document.getElementById('assistant-stats');
-    
-    if (status === 'new') {
-        statsDiv.innerHTML = `
-            <div style="color: #2e7d32; font-weight: bold;">📝 New game started!</div>
-            <div style="margin-top: 5px; font-size: 0.85em;">Attempts: 0/6</div>
-            <div style="font-size: 0.85em;">Good luck!</div>
-        `;
-    } else if (status === 'playing') {
-        const maxAttempts = document.getElementById('maxAttempts').textContent;
-        const remaining = parseInt(maxAttempts) - attempts;
-        statsDiv.innerHTML = `
-            <div style="font-weight: bold;">📝 Attempt ${attempts}/${maxAttempts}</div>
-            <div style="margin-top: 5px; font-size: 0.85em;">${remaining} attempts remaining</div>
-            <div style="font-size: 0.85em; color: #1976d2;">${remainingWords} possible words</div>
-        `;
-    } else if (status === 'won') {
-        statsDiv.innerHTML = `
-            <div style="color: #2e7d32; font-weight: bold;">🎉 Victory!</div>
-            <div style="margin-top: 5px; font-size: 0.85em;">Solved in ${attempts} attempt${attempts > 1 ? 's' : ''}!</div>
-            <div style="font-size: 0.85em;">Great job!</div>
-        `;
-    } else if (status === 'lost') {
-        statsDiv.innerHTML = `
-            <div style="color: #c62828; font-weight: bold;">💔 Game Over</div>
-            <div style="margin-top: 5px; font-size: 0.85em;">Used all ${attempts} attempts</div>
-            <div style="font-size: 0.85em;">Try again!</div>
-        `;
-    }
+    // Quick Stats section has been removed
+    // This function is now a no-op but kept for compatibility
+    return;
 }
 
 // Game History Management
@@ -554,21 +528,41 @@ function updateHistoryDisplay() {
     const historyContainer = document.getElementById('game-history');
     
     if (history.length === 0) {
-        historyContainer.innerHTML = '<p style="text-align: center; color: #888; padding: 20px;">No games played yet</p>';
+        historyContainer.innerHTML = '<p style="text-align: center; color: var(--text-secondary); padding: 20px;">No games played yet</p>';
         return;
     }
     
     // Display only last 5 games
     const recentGames = history.slice(0, 5);
-    historyContainer.innerHTML = recentGames.map(game => `
-        <div class="history-item">
-            <div class="history-word">${game.targetWord.toUpperCase()}</div>
-            <div class="history-attempts">${game.attempts} attempt${game.attempts !== 1 ? 's' : ''}</div>
-            <span class="history-status ${game.won ? 'history-won' : 'history-lost'}">
-                ${game.won ? '✓ WON' : '✗ LOST'}
-            </span>
-        </div>
-    `).join('');
+    
+    let tableHtml = `
+        <table style="width: 100%; border-collapse: collapse; font-size: 0.9em;">
+            <thead>
+                <tr style="border-bottom: 1px solid var(--border-color); color: var(--text-secondary); text-align: left;">
+                    <th style="padding: 8px;">Word</th>
+                    <th style="padding: 8px;">Attempts</th>
+                    <th style="padding: 8px; text-align: right;">Result</th>
+                </tr>
+            </thead>
+            <tbody>
+    `;
+    
+    recentGames.forEach(game => {
+        tableHtml += `
+            <tr style="border-bottom: 1px solid var(--border-color);">
+                <td style="padding: 8px; font-family: var(--font-mono); font-weight: 700; color: var(--text-primary);">${game.targetWord.toUpperCase()}</td>
+                <td style="padding: 8px; color: var(--text-secondary);">${game.attempts}</td>
+                <td style="padding: 8px; text-align: right;">
+                    <span style="color: ${game.won ? 'var(--success)' : 'var(--error)'}; font-weight: 700;">
+                        ${game.won ? 'WON' : 'LOST'}
+                    </span>
+                </td>
+            </tr>
+        `;
+    });
+    
+    tableHtml += `</tbody></table>`;
+    historyContainer.innerHTML = tableHtml;
 }
 
 function updateStats() {
@@ -803,7 +797,7 @@ function showSessionViewer() {
 
 function hideSessionViewer() {
     document.getElementById('sessionViewer').style.display = 'none';
-    document.getElementById('gameView').style.display = 'flex';
+    document.getElementById('gameView').style.display = 'grid';
 }
 
 function renderSessionDetails() {
@@ -824,24 +818,24 @@ function renderSessionDetails() {
     // Build comprehensive analytics view
     let html = `
         <!-- Overall Session Statistics -->
-        <div style="background: rgba(33, 150, 243, 0.08); padding: 20px; border-radius: 12px; margin-bottom: 20px; border: 2px solid var(--accent-blue-light);">
-            <h3 style="margin-top: 0; color: var(--primary-slate);">📊 Overall Session Statistics</h3>
+        <div style="background: rgba(33, 150, 243, 0.08); padding: 20px; border-radius: 12px; margin-bottom: 20px; border: 2px solid var(--accent-primary);">
+            <h3 style="margin-top: 0; color: var(--text-primary);">Overall Session Statistics</h3>
             <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-top: 15px;">
                 <div style="background: white; padding: 15px; border-radius: 8px; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
-                    <div style="font-size: 0.8em; color: #666; font-weight: 700; text-transform: uppercase; margin-bottom: 8px;">Total Games</div>
-                    <div style="font-size: 2em; font-weight: 800; color: var(--accent-blue); font-family: var(--font-mono);">${stats.total}</div>
+                    <div style="font-size: 0.8em; color: var(--bg-tertiary); font-weight: 700; text-transform: uppercase; margin-bottom: 8px;">Total Games</div>
+                    <div style="font-size: 2em; font-weight: 800; color: var(--accent-primary); font-family: var(--font-mono);">${stats.total}</div>
                 </div>
                 <div style="background: white; padding: 15px; border-radius: 8px; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
-                    <div style="font-size: 0.8em; color: #666; font-weight: 700; text-transform: uppercase; margin-bottom: 8px;">Win Rate</div>
-                    <div style="font-size: 2em; font-weight: 800; color: var(--success-green); font-family: var(--font-mono);">${stats.total > 0 ? Math.round((stats.won / stats.total) * 100) : 0}%</div>
+                    <div style="font-size: 0.8em; color: var(--bg-tertiary); font-weight: 700; text-transform: uppercase; margin-bottom: 8px;">Win Rate</div>
+                    <div style="font-size: 2em; font-weight: 800; color: var(--success); font-family: var(--font-mono);">${stats.total > 0 ? Math.round((stats.won / stats.total) * 100) : 0}%</div>
                 </div>
                 <div style="background: white; padding: 15px; border-radius: 8px; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
-                    <div style="font-size: 0.8em; color: #666; font-weight: 700; text-transform: uppercase; margin-bottom: 8px;">Wins</div>
-                    <div style="font-size: 2em; font-weight: 800; color: var(--success-green); font-family: var(--font-mono);">${stats.won}</div>
+                    <div style="font-size: 0.8em; color: var(--bg-tertiary); font-weight: 700; text-transform: uppercase; margin-bottom: 8px;">Wins</div>
+                    <div style="font-size: 2em; font-weight: 800; color: var(--success); font-family: var(--font-mono);">${stats.won}</div>
                 </div>
                 <div style="background: white; padding: 15px; border-radius: 8px; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
-                    <div style="font-size: 0.8em; color: #666; font-weight: 700; text-transform: uppercase; margin-bottom: 8px;">Losses</div>
-                    <div style="font-size: 2em; font-weight: 800; color: var(--error-red); font-family: var(--font-mono);">${stats.lost}</div>
+                    <div style="font-size: 0.8em; color: var(--bg-tertiary); font-weight: 700; text-transform: uppercase; margin-bottom: 8px;">Losses</div>
+                    <div style="font-size: 2em; font-weight: 800; color: var(--error); font-family: var(--font-mono);">${stats.lost}</div>
                 </div>
             </div>
     `;
@@ -855,16 +849,16 @@ function renderSessionDetails() {
         html += `
             <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-top: 15px;">
                 <div style="background: white; padding: 15px; border-radius: 8px; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
-                    <div style="font-size: 0.8em; color: #666; font-weight: 700; text-transform: uppercase; margin-bottom: 8px;">Best (Min)</div>
-                    <div style="font-size: 2em; font-weight: 800; color: var(--success-green); font-family: var(--font-mono);">${minAttempts}</div>
+                    <div style="font-size: 0.8em; color: var(--bg-tertiary); font-weight: 700; text-transform: uppercase; margin-bottom: 8px;">Best (Min)</div>
+                    <div style="font-size: 2em; font-weight: 800; color: var(--success); font-family: var(--font-mono);">${minAttempts}</div>
                 </div>
                 <div style="background: white; padding: 15px; border-radius: 8px; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
-                    <div style="font-size: 0.8em; color: #666; font-weight: 700; text-transform: uppercase; margin-bottom: 8px;">Average</div>
-                    <div style="font-size: 2em; font-weight: 800; color: var(--accent-blue); font-family: var(--font-mono);">${avgAttempts}</div>
+                    <div style="font-size: 0.8em; color: var(--bg-tertiary); font-weight: 700; text-transform: uppercase; margin-bottom: 8px;">Average</div>
+                    <div style="font-size: 2em; font-weight: 800; color: var(--accent-primary); font-family: var(--font-mono);">${avgAttempts}</div>
                 </div>
                 <div style="background: white; padding: 15px; border-radius: 8px; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
-                    <div style="font-size: 0.8em; color: #666; font-weight: 700; text-transform: uppercase; margin-bottom: 8px;">Worst (Max)</div>
-                    <div style="font-size: 2em; font-weight: 800; color: var(--warning-amber); font-family: var(--font-mono);">${maxAttempts}</div>
+                    <div style="font-size: 0.8em; color: var(--bg-tertiary); font-weight: 700; text-transform: uppercase; margin-bottom: 8px;">Worst (Max)</div>
+                    <div style="font-size: 2em; font-weight: 800; color: var(--warning); font-family: var(--font-mono);">${maxAttempts}</div>
                 </div>
             </div>
         `;
@@ -874,7 +868,7 @@ function renderSessionDetails() {
 
     // Detailed game-by-game breakdown
     html += `
-        <h3 style="color: var(--primary-slate); margin-top: 30px; margin-bottom: 15px;">🎮 Game Details</h3>
+        <h3 style="color: var(--text-primary); margin-top: 30px; margin-bottom: 15px;">Game Details</h3>
     `;
 
     history.forEach((game, index) => {
@@ -883,17 +877,17 @@ function renderSessionDetails() {
         const formattedDate = date.toLocaleString();
 
         html += `
-            <div style="background: white; border-radius: 12px; padding: 20px; margin-bottom: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); border-left: 5px solid ${game.won ? 'var(--success-green)' : 'var(--error-red)'};">
+            <div style="background: white; color: var(--bg-primary); border-radius: 12px; padding: 20px; margin-bottom: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); border-left: 5px solid ${game.won ? 'var(--success-green)' : 'var(--error-red)'};">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
                     <div>
-                        <h4 style="margin: 0; color: var(--primary-slate);">Game #${gameNumber}: ${game.targetWord.toUpperCase()}</h4>
+                        <h4 style="margin: 0; color: var(--bg-primary);">Game #${gameNumber}: ${game.targetWord.toUpperCase()}</h4>
                         <div style="font-size: 0.85em; color: #888; margin-top: 5px;">${formattedDate}</div>
                     </div>
                     <div style="text-align: right;">
                         <span style="display: inline-block; padding: 8px 16px; border-radius: 20px; font-weight: 700; font-size: 0.9em; ${game.won ? 'background: var(--success-green); color: white;' : 'background: var(--error-red); color: white;'}">
                             ${game.won ? '✓ WON' : '✗ LOST'}
                         </span>
-                        <div style="margin-top: 8px; font-size: 1.2em; font-weight: 700; color: var(--primary-slate);">${game.attempts} Attempts</div>
+                        <div style="margin-top: 8px; font-size: 1.2em; font-weight: 700; color: var(--bg-primary);">${game.attempts} Attempts</div>
                     </div>
                 </div>
         `;
@@ -902,15 +896,15 @@ function renderSessionDetails() {
         if (game.guesses && game.guesses.length > 0) {
             html += `
                 <div style="margin-top: 20px;">
-                    <h5 style="color: var(--primary-slate); margin-bottom: 10px;">Guess History:</h5>
+                    <h5 style="color: var(--bg-primary); margin-bottom: 10px;">Guess History:</h5>
                     <table style="width: 100%; border-collapse: collapse;">
                         <thead>
-                            <tr style="background: var(--gray-100); font-size: 0.85em; text-transform: uppercase;">
-                                <th style="padding: 10px; text-align: left; border-bottom: 2px solid var(--gray-300);">Attempt</th>
-                                <th style="padding: 10px; text-align: left; border-bottom: 2px solid var(--gray-300);">Guess</th>
-                                <th style="padding: 10px; text-align: left; border-bottom: 2px solid var(--gray-300);">Response</th>
-                                <th style="padding: 10px; text-align: right; border-bottom: 2px solid var(--gray-300);">Remaining Words</th>
-                                <th style="padding: 10px; text-align: right; border-bottom: 2px solid var(--gray-300);">Reduction %</th>
+                            <tr style="background: #f1f5f9; color: var(--bg-primary); font-size: 0.85em; text-transform: uppercase;">
+                                <th style="padding: 10px; text-align: left; border-bottom: 2px solid #cbd5e1;">Attempt</th>
+                                <th style="padding: 10px; text-align: left; border-bottom: 2px solid #cbd5e1;">Guess</th>
+                                <th style="padding: 10px; text-align: left; border-bottom: 2px solid #cbd5e1;">Response</th>
+                                <th style="padding: 10px; text-align: right; border-bottom: 2px solid #cbd5e1;">Remaining Words</th>
+                                <th style="padding: 10px; text-align: right; border-bottom: 2px solid #cbd5e1;">Reduction %</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -933,8 +927,8 @@ function renderSessionDetails() {
                 responseHtml += '</div>';
 
                 html += `
-                    <tr style="border-bottom: 1px solid var(--gray-200);">
-                        <td style="padding: 12px; font-weight: 700; color: var(--primary-slate);">#${guessData.attempt}</td>
+                    <tr style="border-bottom: 1px solid #e2e8f0; color: var(--bg-primary);">
+                        <td style="padding: 12px; font-weight: 700; color: var(--bg-primary);">#${guessData.attempt}</td>
                         <td style="padding: 12px; font-family: var(--font-mono); font-weight: 700; font-size: 1.1em;">${guessData.guess.toUpperCase()}</td>
                         <td style="padding: 12px;">${responseHtml}</td>
                         <td style="padding: 12px; text-align: right; font-family: var(--font-mono); font-weight: 600;">${guessData.remainingWords || 'N/A'}</td>

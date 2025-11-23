@@ -11,8 +11,9 @@
 </head>
 <body>
     <div class="header-bar">
-        <h1 class="header-title"><span style="color: #ffffff !important;">📝</span> WordAI Game</h1>
+        <h1 class="header-title">WordAI Game</h1>
         <div class="header-actions">
+            <div id="status" class="status" style="display:none;"></div>
             <select id="dictionarySelector" class="dictionary-selector" onchange="onDictionaryChange()">
                 <option value="">Loading dictionaries...</option>
             </select>
@@ -24,18 +25,18 @@
     </div>
     
     <!-- Session Viewer (hidden by default) -->
-    <div id="sessionViewer" style="display: none; background: var(--panel-bg); border-radius: 12px; padding: 20px; margin-bottom: 20px; box-shadow: var(--panel-shadow);">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-            <h2 style="color: var(--primary-slate); margin: 0;">📊 Session Analytics</h2>
+    <div id="sessionViewer" style="display: none;" class="session-viewer-panel">
+        <div class="session-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; background: var(--bg-secondary); padding: 20px; border-radius: 12px;">
+            <h2>Session Analytics</h2>
             <button class="btn btn-secondary" onclick="hideSessionViewer()">← Back to Game</button>
         </div>
-        <div id="sessionContent"></div>
+        <div id="sessionContent" style="background: var(--bg-secondary); padding: 20px; border-radius: 12px;"></div>
     </div>
     
     <div class="main-layout" id="gameView">
-        <!-- Game History Panel -->
+        <!-- Left Column: Game History -->
         <div class="history-panel">
-            <h3 style="margin: 0 0 10px 0;">📊 Session Stats</h3>
+            <h3>Session Stats</h3>
             <div class="win-rate-stat">
                 <div class="win-rate-label">Win Rate</div>
                 <div class="win-rate-value" id="stat-winrate">0%</div>
@@ -69,21 +70,15 @@
                 </div>
             </div>
             
-            <h3>🕐 Recent Games</h3>
+            <h3>Recent Games</h3>
             <div class="game-history" id="game-history">
-                <p style="text-align: center; color: #888; padding: 20px;">No games played yet</p>
-            </div>
-            
-            <h3>🎯 Quick Stats</h3>
-            <div class="hint-value" id="assistant-stats" style="padding: 15px; background: #f5f5f5; border-radius: 8px; margin-top: 10px;">
-                No active game
+                <p class="empty-history-msg" style="text-align: center; color: var(--text-secondary); padding: 20px;">No games played yet</p>
             </div>
         </div>
         
+        <!-- Middle Column: Game Board -->
         <div class="game-container">
-            <h3>📝 Game</h3>
-            
-            <div id="status" class="status" style="display:none;"></div>
+            <h3>Game</h3>
             
             <div class="game-info">
                 <div>Attempts: <span id="attempts">0</span>/<span id="maxAttempts">6</span></div>
@@ -99,20 +94,19 @@
             <div class="guess-history" id="guessHistory"></div>
         </div>
         
+        <!-- Right Column: Assistant & Analytics -->
         <!-- Game Assistant Panel -->
         <div class="assistant-panel">
-            <h3>💡 Game Assistant</h3>
+            <h3>Game Assistant</h3>
             
             <div class="assistant-content">
-                <p style="margin: 0 0 10px 0; color: #666; font-size: 0.85em;">
-                    Get AI-powered word suggestions to help you win!
-                </p>
+                <p style="margin: 0; color: var(--text-secondary);">Get AI-powered word suggestions to help you win!</p>
             </div>
             
             <div class="hint-section">
                 <div class="hint-label">Strategy Selection</div>
                 <div class="hint-value">
-                    <select id="strategySelector" onchange="changeStrategy()" style="width: 100%; padding: 8px; border-radius: 6px; border: 2px solid var(--accent-blue-lighter); font-family: var(--font-main); font-weight: 600; background: white; color: var(--primary-slate); cursor: pointer; font-size: 0.9em;">
+                    <select id="strategySelector" onchange="changeStrategy()" style="width: 100%;">
                         <option value="RANDOM">Random Selection</option>
                         <option value="ENTROPY">Maximum Entropy</option>
                         <option value="MOST_COMMON_LETTERS">Most Common Letters</option>
@@ -121,15 +115,15 @@
             </div>
             
             <div class="hint-section">
-                <div class="hint-label">💭 Suggested Word</div>
-                <div class="hint-value" id="suggestedWord" style="font-size: 1.3em; font-weight: 800; color: var(--accent-blue); text-transform: uppercase; letter-spacing: 2px; font-family: var(--font-mono);">
+                <div class="hint-label">Suggested Word</div>
+                <div class="hint-value" id="suggestedWord">
                     Click "Get Suggestion"
                 </div>
-                <div style="display: flex; align-items: center; gap: 10px; margin-top: 8px;">
-                    <button id="getSuggestionBtn" onclick="getSuggestion()" style="flex: 1; padding: 10px; background: linear-gradient(135deg, var(--success-green), #43a047); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 700; font-family: var(--font-main); text-transform: uppercase; letter-spacing: 0.5px; font-size: 0.85em; transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(76, 175, 80, 0.4);" onmouseover="if(!this.disabled) { this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 20px rgba(76, 175, 80, 0.6)'; }" onmouseout="if(!this.disabled) { this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 15px rgba(76, 175, 80, 0.4)'; }">
+                <div class="suggestion-controls" style="display: flex; gap: 10px; margin-top: 10px;">
+                    <button id="getSuggestionBtn" class="btn btn-success" onclick="getSuggestion()" style="flex: 1;">
                         Get Suggestion
                     </button>
-                    <div id="helpCounter" style="padding: 10px 15px; background: var(--gray-100); border-radius: 8px; font-weight: 700; color: var(--primary-slate); font-size: 0.9em; white-space: nowrap;">
+                    <div id="helpCounter" style="padding: 0.6rem; background: var(--bg-primary); border-radius: 0.5rem; font-weight: 700; color: var(--text-primary); display: flex; align-items: center;">
                         3/3
                     </div>
                 </div>
@@ -144,7 +138,7 @@
         </div>
         
         <div class="info-panel">
-            <h3>📊 Game Analytics</h3>
+            <h3>Game Analytics</h3>
             
             <div class="info-section">
                 <div class="info-label">Total Dictionary Words:</div>
@@ -166,8 +160,6 @@
                 <div class="info-value" id="reductionPercent">0%</div>
             </div>
             
-            <hr style="border: none; border-top: 1px solid #ddd; margin: 15px 0;">
-            
             <div class="info-section">
                 <div class="info-label">Unique Letters Remaining:</div>
                 <div class="info-value" id="uniqueLetters">26</div>
@@ -180,14 +172,14 @@
             
             <div class="info-section">
                 <div class="info-label">Column Lengths:</div>
-                <div id="columnLengthsChart" style="display: flex; align-items: flex-end; gap: 8px; height: 130px; padding: 10px; background: rgba(255,255,255,0.3); border-radius: 6px; margin-top: 8px;">
+                <div id="columnLengthsChart" style="display: flex; align-items: flex-end; gap: 4px; height: 100px; padding: 10px; background: var(--bg-primary); border-radius: 6px; margin-top: 8px; width: 100%;">
                     <!-- Bar chart will be dynamically generated here -->
                 </div>
             </div>
             
             <div class="remaining-words">
                 <div class="info-label">After Last Guess:</div>
-                <div id="lastGuessInfo" style="font-size: 14px; color: #666; margin-top: 5px;">
+                <div id="lastGuessInfo" style="font-size: 0.9rem; color: var(--text-secondary); margin-top: 5px;">
                     Start guessing to see word reduction analytics!
                 </div>
             </div>
