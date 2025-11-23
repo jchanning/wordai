@@ -318,11 +318,12 @@ public class ConfigManager {
      */
     private String resolveDictionaryPath(String primaryPath, String fallbackPath) {
         // Try primary path first
-        if (primaryPath != null) {
+        if (primaryPath != null && !primaryPath.isEmpty()) {
             Path path = Paths.get(primaryPath);
             if (Files.exists(path)) {
                 return path.toString();
             }
+            logger.warning(() -> "Primary dictionary path not found: " + primaryPath + ", trying fallback");
         }
         
         // Try fallback path
@@ -333,6 +334,7 @@ public class ConfigManager {
                 try {
                     resourceStream.close();
                     // Return the classpath path prefixed with "classpath:"
+                    logger.info(() -> "Using classpath resource: " + fallbackPath);
                     return "classpath:" + fallbackPath;
                 } catch (IOException e) {
                     logger.warning(() -> "Error checking classpath resource: " + fallbackPath);
@@ -346,11 +348,14 @@ public class ConfigManager {
             }
             
             if (Files.exists(path)) {
+                logger.info(() -> "Using filesystem fallback: " + path);
                 return path.toString();
             }
         }
         
-        return primaryPath; // Return primary path even if not found (will error later)
+        // If both paths failed, return null to indicate failure
+        logger.severe(() -> "Failed to resolve dictionary path. Primary: " + primaryPath + ", Fallback: " + fallbackPath);
+        return null;
     }
     
     /**

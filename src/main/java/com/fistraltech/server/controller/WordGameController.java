@@ -208,6 +208,11 @@ public class WordGameController {
             gameState.put("gameEnded", session.isGameEnded());
             gameState.put("wordLength", session.getWordGame().getDictionary().getWordLength());
             
+            // Include target word if game has ended
+            if (session.isGameEnded()) {
+                gameState.put("targetWord", session.getWordGame().getTargetWord());
+            }
+            
             // Add guess history
             gameState.put("guesses", session.getWordGame().getGuesses());
             

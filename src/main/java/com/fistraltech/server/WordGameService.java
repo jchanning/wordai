@@ -70,6 +70,10 @@ public class WordGameService {
         if (dictionaryId != null && !dictionaryId.isEmpty()) {
             // Use specified dictionary
             dictionaryPath = configManager.getDictionaryPathById(dictionaryId);
+            if (dictionaryPath == null) {
+                logger.warning("Dictionary not found for ID: " + dictionaryId);
+                throw new InvalidWordException("Dictionary not found: " + dictionaryId);
+            }
             actualWordLength = configManager.getWordLengthForDictionary(dictionaryId);
         } else {
             // Use default dictionary

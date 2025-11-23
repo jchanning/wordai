@@ -157,10 +157,12 @@ async function newGame() {
         currentWordLength = data.wordLength; // Store the word length for this game
         gameEnded = false;
         
+        // Create letter inputs based on word length
+        adjustLetterInputGrid(data.wordLength);
+        
         document.getElementById('attempts').textContent = '0';
         document.getElementById('maxAttempts').textContent = data.maxAttempts;
         document.getElementById('guessHistory').innerHTML = '';
-        clearLetterInputs();
         document.getElementById('guessBtn').disabled = false;
         
         // Initialize analytics panel with initial dictionary metrics
@@ -275,9 +277,7 @@ async function makeGuess() {
             gameEnded = true;
             disableLetterInputs();
             document.getElementById('guessBtn').disabled = true;
-            showStatus('💔 Game Over! Better luck next time!', 'error');
-            updateAssistant('lost', data.attemptNumber);
-            // Fetch game status to get target word
+            // Fetch game status to get target word and update status
             fetchTargetWordAndSave(data.attemptNumber);
         } else {
             showStatus(`Keep going! ${data.maxAttempts - data.attemptNumber} attempts left.`, 'info');
@@ -353,8 +353,6 @@ function initializeAnalytics(dictionaryMetrics) {
     } else {
         updateColumnLengthsChart(null);
     }
-    
-    document.getElementById('lastGuessInfo').textContent = 'Start guessing to see word reduction analytics!';
 }
 
 function resetAnalytics() {
@@ -366,7 +364,6 @@ function resetAnalytics() {
     document.getElementById('uniqueLetters').textContent = '26';
     document.getElementById('letterCount').textContent = '-';
     updateColumnLengthsChart(null);
-    document.getElementById('lastGuessInfo').textContent = 'Start guessing to see word reduction analytics!';
 }
 
 function updateAnalytics(guessedWord, remainingCount, dictionaryMetrics) {
@@ -377,8 +374,6 @@ function updateAnalytics(guessedWord, remainingCount, dictionaryMetrics) {
     document.getElementById('remainingWords').textContent = remainingCount;
     document.getElementById('eliminatedWords').textContent = eliminated;
     document.getElementById('reductionPercent').textContent = reductionPercent + '%';
-    document.getElementById('lastGuessInfo').textContent = 
-        `After "${guessedWord}": ${remainingCount} words remain (${eliminated} eliminated)`;
     
     // Update dictionary metrics if available
     if (dictionaryMetrics) {
@@ -404,11 +399,11 @@ function updateColumnLengthsChart(columnLengths) {
     }
     
     const maxHeight = 26; // Maximum possible unique letters per position
-    const chartHeight = 100; // Height of chart area in pixels
+    const chartHeight = 120; // Height available for bars (reduced to leave space for labels below)
     
     columnLengths.forEach((count, index) => {
         const barContainer = document.createElement('div');
-        barContainer.style.cssText = 'flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px;';
+        barContainer.style.cssText = 'flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px;';
         
         // Create bar wrapper for positioning
         const barWrapper = document.createElement('div');
@@ -423,36 +418,26 @@ function updateColumnLengthsChart(columnLengths) {
         bar.style.cssText = `
             width: 100%;
             height: ${barHeight}px;
-            background: linear-gradient(180deg, var(--accent-blue-light) 0%, var(--accent-blue) 100%);
+            background: linear-gradient(180deg, var(--accent-primary) 0%, #1e40af 100%);
             border-radius: 4px 4px 0 0;
             transition: all 0.3s ease;
-            box-shadow: 0 2px 8px rgba(33, 150, 243, 0.3);
-            position: relative;
+            box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
         `;
-        
-        // Add count label on top of bar
-        const countLabel = document.createElement('div');
-        countLabel.style.cssText = `
-            position: absolute;
-            top: -20px;
-            left: 50%;
-            transform: translateX(-50%);
-            font-size: 0.75em;
-            font-weight: 700;
-            color: var(--primary-slate);
-            white-space: nowrap;
-        `;
-        countLabel.textContent = count;
-        bar.appendChild(countLabel);
         
         barWrapper.appendChild(bar);
         barContainer.appendChild(barWrapper);
         
-        // Add position label below bar
-        const label = document.createElement('div');
-        label.style.cssText = 'font-size: 0.7em; color: #666; font-weight: bold;';
-        label.textContent = `P${index + 1}`;
-        barContainer.appendChild(label);
+        // Add count label below bar
+        const countLabel = document.createElement('div');
+        countLabel.style.cssText = 'font-size: 0.85em; font-weight: 700; color: var(--text-primary);';
+        countLabel.textContent = count;
+        barContainer.appendChild(countLabel);
+        
+        // Add position label below count
+        const positionLabel = document.createElement('div');
+        positionLabel.style.cssText = 'font-size: 0.7em; color: var(--text-secondary); font-weight: bold;';
+        positionLabel.textContent = `P${index + 1}`;
+        barContainer.appendChild(positionLabel);
         
         chartContainer.appendChild(barContainer);
     });
@@ -471,9 +456,11 @@ async function fetchTargetWordAndSave(attempts) {
         const data = await response.json();
         // Use a placeholder if target word is not available
         const targetWord = data.targetWord || '?????';
+        showStatus(`Game Over! The word was: ${targetWord.toUpperCase()}`, 'error');
         saveGameResult(targetWord, attempts, false);
     } catch (error) {
         console.error('Failed to fetch target word:', error);
+        showStatus('Game Over! Better luck next time!', 'error');
         // Still save the game as lost even if we can't get the target word
         saveGameResult('?????', attempts, false);
     }
