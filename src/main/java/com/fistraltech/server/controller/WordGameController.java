@@ -1,5 +1,6 @@
 package com.fistraltech.server.controller;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -19,6 +20,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.fistraltech.core.Dictionary;
 import com.fistraltech.core.InvalidWordException;
 import com.fistraltech.core.Response;
 import com.fistraltech.server.WordGameService;
@@ -257,6 +259,43 @@ public class WordGameController {
             Map<String, String> error = new HashMap<>();
             error.put("error", "Internal server error");
             error.put("message", "Failed to delete game");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
+        }
+    }
+    
+    /**
+     * Get the remaining valid words in the dictionary
+     * GET /api/wordai/games/{gameId}/words
+     */
+    @GetMapping("/games/{gameId}/words")
+    public ResponseEntity<?> getDictionaryWords(@PathVariable String gameId) {
+        try {
+            GameSession session = gameService.getGameSession(gameId);
+            
+            if (session == null) {
+                Map<String, String> error = new HashMap<>();
+                error.put("error", "Game not found");
+                error.put("message", "Game session " + gameId + " does not exist");
+                return ResponseEntity.notFound().build();
+            }
+            
+            // Get the filtered dictionary based on current game state
+            Dictionary filteredDictionary = session.getWordFilter().apply(session.getWordGame().getDictionary());
+            List<String> words = new ArrayList<>(filteredDictionary.getMasterSetOfWords());
+            words.sort(String::compareTo);
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("gameId", gameId);
+            response.put("words", words);
+            response.put("count", words.size());
+            
+            return ResponseEntity.ok(response);
+            
+        } catch (Exception e) {
+            logger.severe("Unexpected error getting dictionary words for game " + gameId + ": " + e.getMessage());
+            Map<String, String> error = new HashMap<>();
+            error.put("error", "Internal server error");
+            error.put("message", "Failed to get dictionary words");
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
         }
     }

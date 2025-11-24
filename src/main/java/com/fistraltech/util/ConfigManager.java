@@ -347,9 +347,10 @@ public class ConfigManager {
                 path = Paths.get(System.getProperty("user.dir"), fallbackPath);
             }
             
-            if (Files.exists(path)) {
-                logger.info(() -> "Using filesystem fallback: " + path);
-                return path.toString();
+            final Path finalPath = path;
+            if (Files.exists(finalPath)) {
+                logger.info(() -> "Using filesystem fallback: " + finalPath);
+                return finalPath.toString();
             }
         }
         

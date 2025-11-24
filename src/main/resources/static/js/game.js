@@ -179,6 +179,22 @@ async function newGame() {
         helpUsedCount = 0;
         updateHelpCounter();
         
+        // Clear suggested word from previous game
+        document.getElementById('suggestedWord').textContent = '';
+        
+        // Reset dictionary viewer (after analytics are initialized)
+        const dictionaryViewer = document.getElementById('dictionaryViewer');
+        if (dictionaryViewer) {
+            dictionaryViewer.style.display = 'none';
+            document.getElementById('dictionaryWordList').innerHTML = '';
+        }
+        const viewDictionaryBtn = document.getElementById('viewDictionaryBtn');
+        if (viewDictionaryBtn) {
+            const wordCountElement = document.getElementById('dictionaryWordCount');
+            const count = wordCountElement ? wordCountElement.textContent : '0';
+            viewDictionaryBtn.innerHTML = `View Words (<span id="dictionaryWordCount">${count}</span>)`;
+        }
+        
         // Reset current game guesses
         currentGameGuesses = [];
         
@@ -247,6 +263,12 @@ async function makeGuess() {
         // Update analytics if remaining words count is available
         if (data.remainingWordsCount !== undefined) {
             updateAnalytics(word, data.remainingWordsCount, data.dictionaryMetrics);
+        }
+        
+        // Refresh dictionary viewer if it's currently visible
+        const dictionaryViewer = document.getElementById('dictionaryViewer');
+        if (dictionaryViewer && dictionaryViewer.style.display !== 'none') {
+            await loadDictionaryWords();
         }
         
         // Store detailed guess data for session analytics
@@ -343,6 +365,12 @@ function initializeAnalytics(dictionaryMetrics) {
     document.getElementById('eliminatedWords').textContent = '0';
     document.getElementById('reductionPercent').textContent = '0%';
     
+    // Initialize dictionary word count for viewer
+    const wordCountElement = document.getElementById('dictionaryWordCount');
+    if (wordCountElement) {
+        wordCountElement.textContent = totalWords;
+    }
+    
     // Populate dictionary metrics from server response
     document.getElementById('uniqueLetters').textContent = dictionaryMetrics.uniqueCharacters || '26';
     document.getElementById('letterCount').textContent = dictionaryMetrics.letterCount || '-';
@@ -374,6 +402,12 @@ function updateAnalytics(guessedWord, remainingCount, dictionaryMetrics) {
     document.getElementById('remainingWords').textContent = remainingCount;
     document.getElementById('eliminatedWords').textContent = eliminated;
     document.getElementById('reductionPercent').textContent = reductionPercent + '%';
+    
+    // Update dictionary word count for viewer (if element exists)
+    const wordCountElement = document.getElementById('dictionaryWordCount');
+    if (wordCountElement) {
+        wordCountElement.textContent = remainingCount;
+    }
     
     // Update dictionary metrics if available
     if (dictionaryMetrics) {
@@ -732,7 +766,7 @@ function onDictionaryChange() {
     const selectedDict = availableDictionaries.find(d => d.id === selectedId);
     
     if (selectedDict) {
-        showStatus(`Dictionary changed to: ${selectedDict.name} (${selectedDict.wordLength} letters)`, 'success');
+        showStatus(`Dictionary changed to: ${selectedDict.name}`, 'success');
         
         // Adjust the letter input grid for the new word length
         adjustLetterInputGrid(selectedDict.wordLength);
@@ -951,6 +985,75 @@ function renderSessionDetails() {
     });
 
     contentDiv.innerHTML = html;
+}
+
+// Dictionary Viewer Functions
+async function toggleDictionaryViewer() {
+    const viewer = document.getElementById('dictionaryViewer');
+    const isVisible = viewer.style.display !== 'none';
+    const wordCount = document.getElementById('dictionaryWordCount').textContent;
+    
+    if (isVisible) {
+        viewer.style.display = 'none';
+        document.getElementById('viewDictionaryBtn').innerHTML = `View Words (<span id="dictionaryWordCount">${wordCount}</span>)`;
+    } else {
+        await loadDictionaryWords();
+        viewer.style.display = 'block';
+        document.getElementById('viewDictionaryBtn').innerHTML = `Hide Words (<span id="dictionaryWordCount">${wordCount}</span>)`;
+    }
+}
+
+async function loadDictionaryWords() {
+    if (!currentGameId) {
+        showStatus('No active game', 'error');
+        return;
+    }
+    
+    try {
+        const response = await fetch(`${API_BASE}/games/${currentGameId}/words`);
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        displayDictionaryWords(data.words);
+        document.getElementById('dictionaryWordCount').textContent = data.count;
+    } catch (error) {
+        console.error('Failed to load dictionary words:', error);
+        showStatus('Failed to load dictionary words: ' + error.message, 'error');
+    }
+}
+
+function displayDictionaryWords(words) {
+    const listDiv = document.getElementById('dictionaryWordList');
+    listDiv.innerHTML = '';
+    
+    if (words.length === 0) {
+        listDiv.innerHTML = '<div style=\"grid-column: 1/-1; text-align: center; color: var(--text-secondary); padding: 20px;\">No valid words remaining</div>';
+        return;
+    }
+    
+    words.forEach(word => {
+        const wordSpan = document.createElement('span');
+        wordSpan.textContent = word.toUpperCase();
+        wordSpan.style.cssText = 'padding: 6px; background: var(--bg-secondary); border-radius: 4px; text-align: center; font-weight: 600; cursor: pointer; transition: all 0.2s;';
+        wordSpan.onmouseover = function() {
+            this.style.background = 'var(--accent-primary)';
+            this.style.color = 'white';
+        };
+        wordSpan.onmouseout = function() {
+            this.style.background = 'var(--bg-secondary)';
+            this.style.color = '';
+        };
+        wordSpan.onclick = function() {
+            // Copy word to clipboard
+            navigator.clipboard.writeText(word.toUpperCase()).then(() => {
+                showStatus(`Copied ${word.toUpperCase()} to clipboard`, 'success');
+                setTimeout(hideStatus, 2000);
+            });
+        };
+        listDiv.appendChild(wordSpan);
+    });
 }
 
 // Initialize dictionaries on page load
