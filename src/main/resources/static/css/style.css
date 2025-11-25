@@ -31,6 +31,18 @@
     /* Typography */
     --font-main: 'Inter', sans-serif;
     --font-mono: 'JetBrains Mono', monospace;
+    
+    /* Spacing Scale */
+    --padding-xs: 0.5rem;
+    --padding-sm: 0.75rem;
+    --padding-md: 1rem;
+    --padding-lg: 1.5rem;
+    --padding-xl: 2rem;
+    
+    /* Letter Spacing */
+    --letter-spacing-tight: -0.025em;
+    --letter-spacing-normal: 0;
+    --letter-spacing-wide: 0.05em;
 }
 
 * {
@@ -52,7 +64,7 @@ body {
 /* --- Header --- */
 .header-bar {
     width: 100%;
-    padding: 1rem 2rem;
+    padding: var(--padding-md) var(--padding-xl);
     background: rgba(15, 23, 42, 0.8);
     backdrop-filter: blur(12px);
     border-bottom: 1px solid var(--border-color);
@@ -71,13 +83,13 @@ body {
     margin: 0;
     display: flex;
     align-items: center;
-    gap: 0.5rem;
-    letter-spacing: -0.025em;
+    gap: var(--padding-xs);
+    letter-spacing: var(--letter-spacing-tight);
 }
 
 .header-actions {
     display: flex;
-    gap: 0.75rem;
+    gap: var(--padding-sm);
     align-items: center;
 }
 
@@ -85,8 +97,8 @@ body {
 .main-layout {
     display: grid;
     grid-template-columns: minmax(250px, 300px) minmax(350px, 1fr) minmax(250px, 300px) minmax(250px, 300px);
-    gap: 1.5rem;
-    padding: 1rem 2rem;
+    gap: var(--padding-lg);
+    padding: var(--padding-md) var(--padding-xl);
     width: 100%;
     max-width: 1600px;
     flex: 1;
@@ -118,11 +130,11 @@ body {
     background: var(--bg-secondary);
     border: 1px solid var(--border-color);
     border-radius: 1rem;
-    padding: 1.5rem;
+    padding: var(--padding-lg);
     box-shadow: var(--shadow-md);
     display: flex;
     flex-direction: column;
-    gap: 0.75rem;
+    gap: var(--padding-sm);
     height: 100%; /* Match container height */
     overflow: hidden; /* Prevent scrolling */
 }
@@ -137,9 +149,9 @@ h3 {
     font-weight: 700;
     color: var(--text-primary);
     border-bottom: 2px solid var(--border-color);
-    padding-bottom: 0.5rem;
+    padding-bottom: var(--padding-xs);
     text-transform: uppercase;
-    letter-spacing: 0.05em;
+    letter-spacing: var(--letter-spacing-wide);
     flex-shrink: 0;
 }
 
@@ -169,20 +181,20 @@ h3 {
     font-family: var(--font-mono);
     color: var(--text-secondary);
     font-size: 0.9rem;
-    margin-bottom: 1rem;
+    margin-bottom: var(--padding-md);
 }
 
 .guess-container {
     display: flex;
     flex-direction: column;
-    gap: 1rem;
+    gap: var(--padding-md);
     width: 100%;
     align-items: center;
 }
 
 .letter-inputs {
     display: flex;
-    gap: 0.5rem;
+    gap: var(--padding-xs);
 }
 
 .letter-input {
@@ -218,18 +230,18 @@ h3 {
 .guess-history {
     display: flex;
     flex-direction: column;
-    gap: 0.5rem;
+    gap: var(--padding-xs);
     width: 100%;
     align-items: center;
-    margin-top: 1rem;
+    margin-top: var(--padding-md);
     max-height: 400px;
     overflow-y: auto;
-    padding-right: 0.5rem;
+    padding-right: var(--padding-xs);
 }
 
 .guess-row {
     display: flex;
-    gap: 0.5rem;
+    gap: var(--padding-xs);
 }
 
 .letter-box {
@@ -268,7 +280,7 @@ h3 {
 
 /* --- Buttons --- */
 .btn {
-    padding: 0.6rem 1.2rem;
+    padding: var(--padding-xs) var(--padding-md);
     border-radius: 0.5rem;
     font-weight: 600;
     font-size: 0.9rem;
@@ -278,7 +290,7 @@ h3 {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    gap: 0.5rem;
+    gap: var(--padding-xs);
 }
 
 .btn-success {
@@ -302,11 +314,11 @@ h3 {
 #guessBtn {
     width: 100%;
     max-width: 200px;
-    padding: 0.8rem;
+    padding: var(--padding-sm);
     font-size: 1rem;
     background-color: var(--accent-primary);
     color: white;
-    margin-top: 0.5rem;
+    margin-top: var(--padding-xs);
 }
 #guessBtn:hover { background-color: var(--accent-hover); }
 #guessBtn:disabled { background-color: var(--bg-tertiary); cursor: not-allowed; opacity: 0.7; }
@@ -316,7 +328,7 @@ select {
     background-color: var(--bg-tertiary);
     color: var(--text-primary);
     border: 1px solid var(--border-color);
-    padding: 0.5rem 1rem;
+    padding: var(--padding-xs) var(--padding-md);
     border-radius: 0.5rem;
     font-family: var(--font-main);
     cursor: pointer;
@@ -331,12 +343,12 @@ select:focus {
 .stats-grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    gap: 0.5rem;
+    gap: var(--padding-xs);
 }
 
 .stat-item {
     background: var(--bg-primary);
-    padding: 0.75rem;
+    padding: var(--padding-sm);
     border-radius: 0.5rem;
     text-align: center;
 }
@@ -345,7 +357,7 @@ select:focus {
     font-size: 0.7rem;
     color: var(--text-secondary);
     text-transform: uppercase;
-    letter-spacing: 0.05em;
+    letter-spacing: var(--letter-spacing-wide);
 }
 
 .stat-value {
@@ -358,10 +370,10 @@ select:focus {
 .win-rate-stat {
     background: rgba(34, 197, 94, 0.1);
     border: 1px solid rgba(34, 197, 94, 0.2);
-    padding: 1rem;
+    padding: var(--padding-md);
     border-radius: 0.5rem;
     text-align: center;
-    margin-bottom: 1rem;
+    margin-bottom: var(--padding-md);
 }
 
 .win-rate-value {
@@ -372,7 +384,7 @@ select:focus {
 
 /* --- Status Messages --- */
 .status {
-    padding: 0.5rem 1rem;
+    padding: var(--padding-xs) var(--padding-md);
     border-radius: 0.5rem;
     text-align: center;
     font-weight: 600;
@@ -423,9 +435,9 @@ select:focus {
 /* --- Assistant Panel Specifics --- */
 .hint-section {
     background: var(--bg-primary);
-    padding: 1rem;
+    padding: var(--padding-md);
     border-radius: 0.5rem;
-    margin-bottom: 1rem;
+    margin-bottom: var(--padding-md);
 }
 
 .hint-value {
@@ -442,7 +454,7 @@ select:focus {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 0.5rem 0;
+    padding: var(--padding-xs) 0;
     border-bottom: 1px solid var(--border-color);
 }
 .info-section:last-child { border-bottom: none; }
@@ -450,6 +462,6 @@ select:focus {
 .column-chart-section {
     flex-direction: column;
     align-items: flex-start;
-    padding: 0.75rem 0;
-    gap: 0.5rem;
+    padding: var(--padding-sm) 0;
+    gap: var(--padding-xs);
 }
