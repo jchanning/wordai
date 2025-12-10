@@ -18,9 +18,45 @@
                 <option value="">Loading dictionaries...</option>
             </select>
             <button class="btn btn-success" onclick="newGame()">New Game</button>
+            <button class="btn btn-info" onclick="showAutoplayModal()">Autoplay Games</button>
             <button class="btn btn-secondary" onclick="checkHealth()">Server Status</button>
             <button class="btn btn-danger" onclick="newSession()">New Session</button>
             <button class="btn btn-secondary" onclick="showSessionViewer()">View Session</button>
+        </div>
+    </div>
+    
+    
+    <!-- Autoplay Modal (hidden by default) -->
+    <div id="autoplayModal" style="display: none;" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Autoplay Games</h2>
+                <button class="modal-close-btn" onclick="hideAutoplayModal()">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="autoplayGameCount">Number of Games:</label>
+                    <input type="number" id="autoplayGameCount" min="1" max="1000" value="100" class="form-input">
+                </div>
+                <div class="form-group">
+                    <label for="autoplayStrategy">Strategy:</label>
+                    <select id="autoplayStrategy" class="form-input">
+                        <option value="RANDOM">Random Selection</option>
+                        <option value="ENTROPY" selected>Maximum Entropy</option>
+                        <option value="MOST_COMMON_LETTERS">Most Common Letters</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="autoplayDictionary">Dictionary:</label>
+                    <select id="autoplayDictionary" class="form-input">
+                        <option value="">Use current selection</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="hideAutoplayModal()">Cancel</button>
+                <button class="btn btn-success" onclick="startAutoplay()">Start Autoplay</button>
+            </div>
         </div>
     </div>
     
@@ -186,6 +222,6 @@
         </div>
     </div>
 
-    <script src="js/game.js"></script>
+    <script src="js/game.js?v=7"></script>
 </body>
 </html>

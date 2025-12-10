@@ -1056,5 +1056,313 @@ function displayDictionaryWords(words) {
     });
 }
 
+// ===== AUTOPLAY FUNCTIONALITY =====
+
+let autoplayState = {
+    isRunning: false,
+    gameCount: 0,
+    gamesCompleted: 0,
+    strategy: 'RANDOM',
+    sessionStats: null
+};
+
+function showAutoplayModal() {
+    const modal = document.getElementById('autoplayModal');
+    modal.style.display = 'flex';
+    
+    // Populate dictionary selector if not already done
+    const dictionarySelect = document.getElementById('autoplayDictionary');
+    const mainDictionarySelect = document.getElementById('dictionarySelector');
+    
+    // Copy available options from main selector
+    if (dictionarySelect.childElementCount === 1) {
+        for (let option of mainDictionarySelect.options) {
+            if (option.value !== '') {
+                const newOption = document.createElement('option');
+                newOption.value = option.value;
+                newOption.textContent = option.textContent;
+                dictionarySelect.appendChild(newOption);
+            }
+        }
+    }
+}
+
+function hideAutoplayModal() {
+    const modal = document.getElementById('autoplayModal');
+    modal.style.display = 'none';
+}
+
+async function startAutoplay() {
+    if (autoplayState.isRunning) {
+        showStatus('Autoplay is already running!', 'error');
+        return;
+    }
+    
+    const gameCount = parseInt(document.getElementById('autoplayGameCount').value);
+    const strategy = document.getElementById('autoplayStrategy').value;
+    const selectedDict = document.getElementById('autoplayDictionary').value;
+    
+    if (gameCount < 1 || gameCount > 1000) {
+        showStatus('Please enter a number between 1 and 1000', 'error');
+        return;
+    }
+    
+    hideAutoplayModal();
+    
+    // Create new session
+    try {
+        sessionStorage.removeItem('gameHistory');
+        sessionStorage.removeItem('gameStats');
+        updateHistoryDisplay();
+        updateStats();
+        helpUsedCount = 0;
+        updateHelpCounter();
+        
+        autoplayState.isRunning = true;
+        autoplayState.gameCount = gameCount;
+        autoplayState.gamesCompleted = 0;
+        autoplayState.strategy = strategy;
+        
+        document.getElementById('dictionarySelector').disabled = true;
+        document.getElementById('guessBtn').disabled = true;
+        
+        showStatus(`Starting autoplay: ${gameCount} games with ${strategy} strategy`, 'success');
+        
+        await runAutoplayGames(selectedDict, strategy);
+        
+        autoplayState.isRunning = false;
+        document.getElementById('dictionarySelector').disabled = false;
+        
+        showStatus('Autoplay completed! Displaying session statistics...', 'success');
+        showSessionViewer();
+        
+    } catch (error) {
+        autoplayState.isRunning = false;
+        document.getElementById('dictionarySelector').disabled = false;
+        showStatus('Autoplay failed: ' + error.message, 'error');
+    }
+}
+
+async function runAutoplayGames(dictionaryId, strategy) {
+    for (let i = 0; i < autoplayState.gameCount; i++) {
+        autoplayState.gamesCompleted = i;
+        
+        try {
+            const requestBody = dictionaryId ? { dictionaryId: dictionaryId } : {};
+            
+            const createResponse = await fetch(`${API_BASE}/games`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(requestBody)
+            });
+            
+            if (!createResponse.ok) {
+                throw new Error('Failed to create game');
+            }
+            
+            const gameData = await createResponse.json();
+            const gameId = gameData.gameId;
+            
+            if (!gameId) {
+                console.error('No gameId returned from API:', gameData);
+                throw new Error('Failed to create game - no gameId returned');
+            }
+            
+            console.log(`Created game ${i + 1}/${autoplayState.gameCount} with ID: ${gameId}`);
+            
+            currentGameId = gameId;
+            currentWordLength = gameData.wordLength || 5;
+            currentDictionarySize = gameData.dictionarySize || 2315;
+            currentGameGuesses = [];
+            gameEnded = false;
+            helpUsedCount = 0;
+            
+            // Update UI elements
+            document.getElementById('attempts').textContent = '0';
+            document.getElementById('maxAttempts').textContent = gameData.maxAttempts || 6;
+            
+            // Adjust letter inputs for the word length
+            adjustLetterInputGrid(currentWordLength);
+            
+            await fetch(`${API_BASE}/games/${gameId}/strategy`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ strategy: strategy })
+            });
+            
+            document.getElementById('guessHistory').innerHTML = '';
+            
+            // Initialize analytics with the game data
+            if (gameData.dictionaryMetrics) {
+                initializeAnalytics(gameData.dictionaryMetrics);
+            } else {
+                resetAnalytics();
+            }
+            
+            showStatus(`Game ${i + 1}/${autoplayState.gameCount} - Playing...`, 'info');
+            
+            await playAutoplayGame(gameId, strategy);
+            
+            try {
+                await fetch(`${API_BASE}/games/${gameId}`, {
+                    method: 'DELETE'
+                });
+            } catch (e) {
+                console.warn('Failed to delete game session:', e);
+            }
+            
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            
+        } catch (error) {
+            console.error(`Error in game ${i + 1}:`, error);
+            showStatus(`Error in game ${i + 1}: ${error.message} - Continuing...`, 'warning');
+            // Continue to next game despite error
+            await new Promise(resolve => setTimeout(resolve, 500));
+        }
+    }
+}
+
+async function playAutoplayGame(gameId, strategy) {
+    let attemptCount = 0;
+    const maxAttempts = 6;
+    
+    while (attemptCount < maxAttempts && !gameEnded) {
+        try {
+            // Fetch suggestion
+            const suggestionResponse = await fetch(`${API_BASE}/games/${gameId}/suggestion`);
+            
+            if (!suggestionResponse.ok) {
+                console.error(`Suggestion API failed with status ${suggestionResponse.status}`);
+                // If suggestion fails, try to get game state and end gracefully
+                try {
+                    const statusResponse = await fetch(`${API_BASE}/games/${gameId}`);
+                    if (statusResponse.ok) {
+                        const statusData = await statusResponse.json();
+                        const targetWord = statusData.targetWord || '?????';
+                        saveGameResult(targetWord, attemptCount || 1, false);
+                        return;
+                    }
+                } catch (e) {
+                    console.error('Failed to fetch game state after suggestion error:', e);
+                }
+                throw new Error('Failed to get suggestion');
+            }
+            
+            const suggestionData = await suggestionResponse.json();
+            
+            if (!suggestionData.suggestion) {
+                console.error('No suggestion returned from API');
+                // No valid words left - end game gracefully
+                try {
+                    const statusResponse = await fetch(`${API_BASE}/games/${gameId}`);
+                    if (statusResponse.ok) {
+                        const statusData = await statusResponse.json();
+                        const targetWord = statusData.targetWord || '?????';
+                        saveGameResult(targetWord, attemptCount || 1, false);
+                        return;
+                    }
+                } catch (e) {
+                    console.error('Failed to fetch game state after no suggestion:', e);
+                }
+                throw new Error('No valid words available');
+            }
+            
+            const guess = suggestionData.suggestion.toUpperCase();
+            console.log(`Autoplay attempt ${attemptCount + 1}: ${guess}`);
+            
+            // Make guess
+            const guessResponse = await fetch(`${API_BASE}/games/${gameId}/guess`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ word: guess })
+            });
+            
+            if (!guessResponse.ok) {
+                const errorData = await guessResponse.json().catch(() => ({}));
+                console.error('Guess API failed:', errorData);
+                throw new Error(errorData.message || 'Failed to make guess');
+            }
+            
+            const guessData = await guessResponse.json();
+            attemptCount = guessData.attemptNumber;
+            
+            // Update UI
+            document.getElementById('attempts').textContent = attemptCount;
+            
+            addGuessToHistory(guess, guessData.results);
+            
+            if (guessData.remainingWordsCount !== undefined) {
+                updateAnalytics(guess, guessData.remainingWordsCount, guessData.dictionaryMetrics);
+            }
+            
+            currentGameGuesses.push({
+                attempt: attemptCount,
+                guess: guess,
+                results: guessData.results,
+                remainingWords: guessData.remainingWordsCount,
+                dictionaryMetrics: guessData.dictionaryMetrics
+            });
+            
+            // Check game status
+            if (guessData.gameWon) {
+                console.log(`Game won with word: ${guess}`);
+                saveGameResult(guess, attemptCount, true);
+                return;
+            }
+            
+            if (guessData.gameOver) {
+                console.log('Game over, fetching target word...');
+                try {
+                    const statusResponse = await fetch(`${API_BASE}/games/${gameId}`);
+                    if (statusResponse.ok) {
+                        const statusData = await statusResponse.json();
+                        const targetWord = statusData.targetWord || '?????';
+                        console.log(`Game lost, target word was: ${targetWord}`);
+                        saveGameResult(targetWord, attemptCount, false);
+                    } else {
+                        console.warn('Failed to fetch game status');
+                        saveGameResult('?????', attemptCount, false);
+                    }
+                } catch (e) {
+                    console.error('Error fetching target word:', e);
+                    saveGameResult('?????', attemptCount, false);
+                }
+                return;
+            }
+            
+            // Wait 1 second before next guess
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            
+        } catch (error) {
+            console.error('Error during autoplay guess:', error);
+            throw error;
+        }
+    }
+    
+    // Max attempts reached
+    console.log('Max attempts reached, fetching target word...');
+    try {
+        const statusResponse = await fetch(`${API_BASE}/games/${gameId}`);
+        if (statusResponse.ok) {
+            const statusData = await statusResponse.json();
+            const targetWord = statusData.targetWord || '?????';
+            console.log(`Max attempts, target word was: ${targetWord}`);
+            saveGameResult(targetWord, maxAttempts, false);
+        } else {
+            console.warn('Failed to fetch game status');
+            saveGameResult('?????', maxAttempts, false);
+        }
+    } catch (e) {
+        console.error('Error fetching target word:', e);
+        saveGameResult('?????', maxAttempts, false);
+    }
+}
+
 // Initialize dictionaries on page load
 loadDictionaries();

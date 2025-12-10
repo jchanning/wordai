@@ -311,6 +311,12 @@ h3 {
 }
 .btn-danger:hover { background-color: #dc2626; }
 
+.btn-info {
+    background-color: var(--accent-primary);
+    color: white;
+}
+.btn-info:hover { background-color: var(--accent-hover); }
+
 #guessBtn {
     width: 100%;
     max-width: 200px;
@@ -464,4 +470,127 @@ select:focus {
     align-items: flex-start;
     padding: var(--padding-sm) 0;
     gap: var(--padding-xs);
+}
+
+/* --- Modal Styles --- */
+.modal-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.7);
+    z-index: 1000;
+    align-items: center;
+    justify-content: center;
+    animation: fadeIn 0.2s ease;
+}
+
+.modal-overlay[style*="display: flex"] {
+    display: flex !important;
+}
+
+.modal-content {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 1rem;
+    box-shadow: var(--shadow-lg);
+    max-width: 500px;
+    width: 90%;
+    max-height: 90vh;
+    overflow-y: auto;
+    animation: slideIn 0.3s ease;
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--padding-lg);
+    border-bottom: 1px solid var(--border-color);
+}
+
+.modal-header h2 {
+    margin: 0;
+    font-size: 1.5rem;
+    color: var(--text-primary);
+}
+
+.modal-close-btn {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    color: var(--text-secondary);
+    cursor: pointer;
+    padding: 0;
+    width: 32px;
+    height: 32px;
+    transition: all 0.2s;
+}
+
+.modal-close-btn:hover {
+    color: var(--text-primary);
+    background: var(--bg-tertiary);
+    border-radius: 0.5rem;
+}
+
+.modal-body {
+    padding: var(--padding-lg);
+    display: flex;
+    flex-direction: column;
+    gap: var(--padding-md);
+}
+
+.modal-footer {
+    padding: var(--padding-lg);
+    border-top: 1px solid var(--border-color);
+    display: flex;
+    gap: var(--padding-md);
+    justify-content: flex-end;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: var(--padding-sm);
+}
+
+.form-group label {
+    font-weight: 600;
+    color: var(--text-primary);
+    font-size: 0.95rem;
+}
+
+.form-input {
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+    padding: var(--padding-sm) var(--padding-md);
+    border-radius: 0.5rem;
+    font-family: var(--font-main);
+    font-size: 1rem;
+    transition: all 0.2s;
+}
+
+.form-input:focus {
+    outline: none;
+    border-color: var(--accent-primary);
+    box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateY(-20px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
 }
