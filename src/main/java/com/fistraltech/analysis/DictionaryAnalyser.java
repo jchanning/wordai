@@ -13,6 +13,28 @@ import com.fistraltech.core.Dictionary;
 import com.fistraltech.core.Response;
 import com.fistraltech.core.WordGame;
 import com.fistraltech.util.Config;
+/**
+ * Performs statistical and information–theoretic analysis over a {@link Dictionary}.
+ * <p>
+ * Core responsibilities:
+ * <ul>
+ *   <li>Aggregate letter frequency statistics (overall and by position).</li>
+ *   <li>Bucket words by their feedback (response) pattern when a candidate word is guessed.</li>
+ *   <li>Compute Shannon entropy for a candidate guess to estimate expected information gain.</li>
+ *   <li>Identify words with maximal entropy (strong initial or exploratory guesses).</li>
+ * </ul>
+ * The analysis functions enable selection algorithms to prioritise guesses that reduce the remaining
+ * search space most efficiently.
+ * <p>
+ * Performance notes:
+ * <ul>
+ *   <li>Methods that iterate the full dictionary are O(N * L) where N = number of words, L = word length.</li>
+ *   <li>{@code getResponseBuckets} constructs a new {@link WordGame} per target word; consider caching if invoked heavily.</li>
+ *   <li>Entropy calculations depend on response bucket distribution and are O(B) where B = number of distinct patterns.</li>
+ * </ul>
+ * Thread-safety: This analyser is not inherently thread-safe; concurrent access should provide external synchronisation
+ * if the underlying {@link Dictionary} is mutable.
+ */
 
 /** A class used to analyse Dictionaries */
 public class DictionaryAnalyser {
@@ -23,8 +45,11 @@ public class DictionaryAnalyser {
         this.dictionary = dictionary;
     }
 
-    /** A method used to identify the number of times each letter appears in the Dictionary across all words and in any
-     * position*/
+    /**
+     * Counts total occurrences of each letter across all words, disregarding position.
+     * @return map from letter to total count (unspecified order – currently {@link TreeMap} sorted by letter)
+     * Complexity: O(N * L)
+     */
     public Map<Character, Integer> getLetterCount() {
         Map<Character,Integer> letterCount = new TreeMap<>();
         Set<String> words = dictionary.getMasterSetOfWords();
@@ -45,8 +70,13 @@ public class DictionaryAnalyser {
         return letterCount;
     }
 
-    /** For each character of the alphabet, A to Z, returns the number of times that letter appears in each position
-     * from 0 to n-1 for n letter words */
+    /**
+     * For each letter, returns a list of counts by positional index (0..wordLength-1).
+     * The list length equals dictionary word length; each entry is how many words contain the letter at that position.
+     * Initialises absent letters lazily.
+     * @return map from letter to list of positional counts.
+     * Complexity: O(N * L)
+     */
     public Map<Character, List<Integer>> getOccurrenceCountByPosition() {
         Map<Character, List<Integer>> result = new HashMap<>();
         Set<String> words = dictionary.getMasterSetOfWords();
@@ -73,10 +103,17 @@ public class DictionaryAnalyser {
     }
 
 
+    /**
+     * Groups every word in the dictionary into buckets keyed by the response pattern produced
+     * when comparing the candidate {@code word} against each target word.
+     * The response pattern string encodes per-position feedback (e.g. Greens, Ambers, Reds, Excess).
+     * @param word candidate guess word used to produce response patterns
+     * @return map from response pattern string to set of words generating that pattern
+     * Complexity: O(N * C) where C is cost of computing a response (roughly O(L)).
+     */
     public Map<String, Set<String>> getResponseBuckets(String word) {
         Map<String, Set<String>> result = new HashMap<>();
         Set<String> words = dictionary.getMasterSetOfWords();
-        
         for (String w : words) {
             try {
                 Config config = new Config();
@@ -84,14 +121,8 @@ public class DictionaryAnalyser {
                 game.setTargetWord(w);
                 Response r = game.guess(w, word);
                 String bucket = r.toString();
-                if (result.containsKey(bucket)) {
-                    result.get(bucket).add(w);
-                } else {
-                    Set<String> l = new HashSet<>();
-                    l.add(w);
-                    result.put(bucket, l);
-                }
-            }catch (Exception ex){
+                result.computeIfAbsent(bucket, k -> new HashSet<>()).add(w);
+            } catch (Exception ex) {
                 ex.printStackTrace();
             }
         }
@@ -99,7 +130,12 @@ public class DictionaryAnalyser {
     }
 
 
-    /** Returns the word with the highest Entropy in the Dictionary */
+    /**
+     * Finds the word with maximal Shannon entropy relative to the current dictionary state.
+     * Higher entropy implies greater expected reduction of remaining search space on next guess.
+     * @return word yielding highest entropy (first encountered in case of ties)
+     * Complexity: O(N * (B + response cost)) due to repeated entropy computations.
+     */
     public String getMaximumEntropyWord(){
         float maximumEntropy = 0f;
         String result="";
@@ -118,20 +154,46 @@ public class DictionaryAnalyser {
         }
         return result;
     }
-    /** Returns the entropy of an individual word in the Dictionary */
-    public float getEntropy(String word){
-        float entropy = 0f;
-        int dictonarySize = dictionary.getWordCount();
-        Map<String, Set<String>> buckets = getResponseBuckets(word);
-        for(Map.Entry<String, Set<String>> e : buckets.entrySet()){
-            int bucketCount = e.getValue().size();
-            double p = ((double)bucketCount/(double)dictonarySize);
-            double pe = Math.log(p)/Math.log(2);
-            entropy += -(p * pe);
+    /**
+     * Calculates Shannon entropy (in bits) for a candidate guess based on distribution of
+     * response pattern buckets: -Σ p * log2(p). Higher values indicate greater expected information gain.
+     * @param word candidate guess word
+     * @return entropy value in bits (0 if dictionary empty)
+     */
+    public float getEntropy(String word) {
+        int dictionarySize = dictionary.getWordCount();
+        
+        // Early exit for edge cases
+        if (dictionarySize == 0) {
+            return 0f;
         }
+        
+        Map<String, Set<String>> buckets = getResponseBuckets(word);
+        float entropy = 0f;
+        
+        for (Set<String> bucket : buckets.values()) {
+            int bucketSize = bucket.size();
+            
+            // Skip empty buckets (shouldn't happen but safe to check)
+            if (bucketSize == 0) {
+                continue;
+            }
+            
+            // Calculate probability and entropy contribution
+            double probability = (double) bucketSize / dictionarySize;
+            
+            // Shannon entropy formula: -sum(p * log2(p))
+            double logProbability = Math.log(probability) / Math.log(2);
+            entropy += -(probability * logProbability);
+        }
+        
         return entropy;
     }
 
+    /**
+     * Returns, for each column (position), the most frequently occurring letter across all words.
+     * @return list of letters where index i corresponds to column i
+     */
     public List<Character> getMostFrequentCharByPosition(){
         List<Character> result = new ArrayList<>();
         for(Column c: dictionary.getColumns()){
@@ -140,7 +202,10 @@ public class DictionaryAnalyser {
         return result;
     }
 
-    /** Returns the least frequently occurring letter by column position (0 to n-1 in an n letter word)     */
+    /**
+     * Returns, for each column (position), the least frequently occurring letter across all words.
+     * @return list of letters where index i corresponds to column i
+     */
     public List<Character> getLeastFrequentCharByPosition(){
         List<Character> result = new ArrayList<>();
         for(Column c: dictionary.getColumns()){

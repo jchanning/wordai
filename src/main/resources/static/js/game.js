@@ -1070,20 +1070,37 @@ function showAutoplayModal() {
     const modal = document.getElementById('autoplayModal');
     modal.style.display = 'flex';
     
-    // Populate dictionary selector if not already done
+    // Set default word length to 5 and populate dictionaries
+    document.getElementById('autoplayWordLength').value = '5';
+    filterAutoplayDictionaries();
+}
+
+function filterAutoplayDictionaries() {
+    const wordLength = parseInt(document.getElementById('autoplayWordLength').value);
     const dictionarySelect = document.getElementById('autoplayDictionary');
-    const mainDictionarySelect = document.getElementById('dictionarySelector');
     
-    // Copy available options from main selector
-    if (dictionarySelect.childElementCount === 1) {
-        for (let option of mainDictionarySelect.options) {
-            if (option.value !== '') {
-                const newOption = document.createElement('option');
-                newOption.value = option.value;
-                newOption.textContent = option.textContent;
-                dictionarySelect.appendChild(newOption);
-            }
+    // Clear existing options except the first "Use first available" option
+    dictionarySelect.innerHTML = '<option value="">Use first available</option>';
+    
+    // Filter and add dictionaries matching the selected word length
+    const matchingDicts = availableDictionaries.filter(d => d.available && d.wordLength === wordLength);
+    
+    matchingDicts.forEach(dict => {
+        const option = document.createElement('option');
+        option.value = dict.id;
+        option.textContent = dict.name;
+        if (dict.description) {
+            option.title = dict.description;
         }
+        dictionarySelect.appendChild(option);
+    });
+    
+    if (matchingDicts.length === 0) {
+        const option = document.createElement('option');
+        option.value = '';
+        option.textContent = `No ${wordLength}-letter dictionaries available`;
+        option.disabled = true;
+        dictionarySelect.appendChild(option);
     }
 }
 
@@ -1100,11 +1117,21 @@ async function startAutoplay() {
     
     const gameCount = parseInt(document.getElementById('autoplayGameCount').value);
     const strategy = document.getElementById('autoplayStrategy').value;
+    const wordLength = parseInt(document.getElementById('autoplayWordLength').value);
     const selectedDict = document.getElementById('autoplayDictionary').value;
     
     if (gameCount < 1 || gameCount > 1000) {
         showStatus('Please enter a number between 1 and 1000', 'error');
         return;
+    }
+    
+    // Validate dictionary selection for chosen word length
+    if (!selectedDict) {
+        const availableDict = availableDictionaries.find(d => d.available && d.wordLength === wordLength);
+        if (!availableDict) {
+            showStatus(`No ${wordLength}-letter dictionaries available`, 'error');
+            return;
+        }
     }
     
     hideAutoplayModal();
@@ -1126,9 +1153,9 @@ async function startAutoplay() {
         document.getElementById('dictionarySelector').disabled = true;
         document.getElementById('guessBtn').disabled = true;
         
-        showStatus(`Starting autoplay: ${gameCount} games with ${strategy} strategy`, 'success');
+        showStatus(`Starting autoplay: ${gameCount} ${wordLength}-letter games with ${strategy} strategy`, 'success');
         
-        await runAutoplayGames(selectedDict, strategy);
+        await runAutoplayGames(selectedDict, strategy, wordLength);
         
         autoplayState.isRunning = false;
         document.getElementById('dictionarySelector').disabled = false;
@@ -1143,12 +1170,21 @@ async function startAutoplay() {
     }
 }
 
-async function runAutoplayGames(dictionaryId, strategy) {
+async function runAutoplayGames(dictionaryId, strategy, wordLength) {
     for (let i = 0; i < autoplayState.gameCount; i++) {
         autoplayState.gamesCompleted = i;
         
         try {
-            const requestBody = dictionaryId ? { dictionaryId: dictionaryId } : {};
+            // If no specific dictionary selected, find first available for word length
+            let dictToUse = dictionaryId;
+            if (!dictToUse) {
+                const availableDict = availableDictionaries.find(d => d.available && d.wordLength === wordLength);
+                if (availableDict) {
+                    dictToUse = availableDict.id;
+                }
+            }
+            
+            const requestBody = dictToUse ? { dictionaryId: dictToUse } : {};
             
             const createResponse = await fetch(`${API_BASE}/games`, {
                 method: 'POST',

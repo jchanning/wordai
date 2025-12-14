@@ -1,114 +1,66 @@
-# WordAI Copilot Instructions
+# WordAI Copilot Instructions (Updated)
 
-WordAI is a Wordle-like word guessing game AI system with sophisticated bot strategies and analytics. This system simulates and analyzes different word-guessing algorithms.
+WordAI is a Wordle-like simulation and analysis system. This guide equips AI agents to make correct, fast changes aligned with project conventions.
 
-## Architecture Overview
+## Architecture Map
+- `com.fistraltech.core`: Game primitives
+	- `WordGame`: Applies a guess to a target; produces `Response` of per-position codes: `G` (green), `A` (amber), `R` (red), `X` (excess).
+	- `Dictionary`: Word set, word length, column stats (`Column`), and helpers.
+- `com.fistraltech.bot`: Bots and game orchestration
+	- `WordGamePlayer` + `SelectionAlgo` strategies (e.g., random, letter-frequency, fixed-first-word).
+	- `filter.Filter`: Prunes dictionary using `Response` and occurrence rules.
+- `com.fistraltech.analysis`: Analytics
+	- `DictionaryAnalyser`: letter/position stats, response buckets, entropy and max-entropy word.
+	- `GameAnalytics`: writes CSV summaries; `ComplexityAnalyser`: performance.
+- `com.fistraltech.server`: Simple HTTP API and static UI (`static/css`, `static/js`, `index.html`).
 
-### Core Game Engine (`com.fistraltech.core`)
-- **WordGame**: Main game engine handling guesses and responses
-- **Dictionary**: Word management with filtering capabilities and character indexing
-- **Response/ResponseEntry**: Encodes guess feedback using 'G'(Green), 'A'(Amber), 'R'(Red) status codes
-- **WordSource**: Loads words from dictionary files
+## Core Patterns (must follow)
+- Response rules:
+	- `G`: fix letter at position; exclude others there.
+	- `A`: letter present elsewhere; remove from guessed position; add to must-contain.
+	- `X`: letter present but too many occurrences; treat like `A` and track counts.
+	- `R`: letter absent; remove from all positions.
+- Selection strategies implement `SelectionAlgo.selectWord(Response lastResponse, Dictionary dictionary)`.
+- Entropy: `DictionaryAnalyser.getEntropy(word)` computes $-\sum p \log_2 p$ from `getResponseBuckets(word)`.
 
-### Bot System (`com.fistraltech.bot`)
-- **Player interface**: Defines bot behavior with `playGame()` method
-- **WordGamePlayer**: Main bot implementation using pluggable selection algorithms
-- **SelectionAlgo**: Abstract base for word selection strategies (SelectRandom, SelectMostCommonLetters, SelectFixedFirstWord)
-- **Filter**: Core filtering logic that eliminates impossible words based on game responses
-- **FilterCharacters**: Manages valid characters per position
+## Build, Test, Run
+- Build/tests: `mvn clean test` (JUnit 5). Artifacts in `target/`.
+- Run server/UI (if present): check `WordAIApplication` main and `server/*` controllers.
+- Static UI split: logic in `src/main/resources/static/js/game.js`, styles in `static/css/style.css`.
 
-### Analytics & Analysis (`com.fistraltech.analysis`)
-- **GameAnalytics**: Captures game metrics and exports to CSV files
-- **DictionaryAnalyser**: Analyzes word patterns and letter frequencies
-- **ComplexityAnalyser**: Measures algorithm performance
+## Configuration
+- Defaults: `src/main/resources/application.properties`.
+- Optional override: `wordai.properties` at repo root; `ConfigManager` resolves paths.
+- Dictionary fallback: `src/main/resources/dictionaries/5_letter_words.txt` if external path missing.
 
-## Key Patterns
+## Conventions & Gotchas
+- Word length is fixed by config; validate indices when iterating positions to avoid `ArrayIndexOutOfBounds`.
+- Keep classes in their packages; avoid leaking server concerns into core/bot/analysis.
+- When computing buckets/entropy, reuse a single `WordGame` if possible; current code constructs per target—cache only if performance becomes an issue.
+- Tests live under `src/test/java/com/fistraltech/...`; mimic existing naming and package layout.
 
-### Response Status Codes
-```java
-// Game feedback encoding
-'G' = Green (correct letter, correct position)
-'A' = Amber (correct letter, wrong position) 
-'R' = Red (letter not in word)
-```
+## Examples
+- Implement a new selection algo:
+	```java
+	public class SelectHighestEntropy extends SelectionAlgo {
+			@Override
+			public String selectWord(Response lastResponse, Dictionary dictionary) {
+					return new DictionaryAnalyser(dictionary).getMaximumEntropyWord();
+			}
+	}
+	```
+- Use response buckets:
+	```java
+	Map<String, Set<String>> buckets = analyser.getResponseBuckets("slate");
+	// keys like "GARXR" denote per-position feedback
+	```
 
+## Analytics Outputs
+- CSVs under `${user.home}/OneDrive/Projects/Wordlex`: `summary-*.csv`, `details-*.csv`, `columns-*.csv`.
+- Use `GameAnalytics` to append per-game metrics.
 
+## CI/Editor Tips
+- VS Code: Java extensions, `mvn clean compile` via terminal.
+- Prefer incremental, surgical edits; keep APIs stable unless explicitly changing strategy.
 
-### Filter Update Pattern
-When processing game responses, the Filter class updates position-based character constraints:
-- Green letters: Remove all other letters from that position
-- Amber letters: Remove letter from guessed position, add to mustContain
-- Red letters: Remove letter from all positions
-
-### Selection Algorithm Pattern
-All bots extend `SelectionAlgo` and implement:
-```java
-abstract String selectWord(Response lastResponse, Dictionary dictionary);
-```
-
-## Build & Development
-
-### Maven Configuration
-- **Source**: `src/main/java` (Maven standard)
-- **Tests**: `src/test/java` with JUnit 5
-- **Build**: `mvn clean compile` or VS Code Java extensions
-- **Run**: Execute `Main.playMultipleGames()` for batch simulation
-
-### Configuration System
-- **Main config**: `src/main/resources/application.properties`
-- **User config**: `wordai.properties` (optional override)
-- **Fallback dictionary**: `src/main/resources/dictionaries/5_letter_words.txt`
-- **ConfigManager**: Handles path resolution and validation
-
-### Configuration Properties
-```properties
-# Dictionary configuration
-dictionary.base.path=${user.home}/OneDrive/Projects/Wordlex
-dictionary.file.name=5_Letter_Words_Official.txt
-dictionary.fallback.paths=dictionaries/5_letter_words.txt
-
-# Game settings
-game.word.length=5
-game.max.attempts=6
-game.simulation.iterations=1
-```
-
-### Common Issues
-- **Configuration validation**: Check `ConfigManager.validateConfiguration()` for setup issues
-- **Missing dictionary**: System falls back to `src/main/resources/dictionaries/5_letter_words.txt`
-- **ArrayIndexOutOfBounds**: Usually in word length validation or filter array access
-- **Missing classes**: Ensure all core classes exist before running simulations
-
-## Testing & Analytics
-
-### Simulation Output
-Games generate timestamped CSV files:
-- `summary-{timestamp}.csv`: Game outcomes and attempt counts
-- `details-{timestamp}.csv`: Detailed move-by-move analysis
-- `columns-{timestamp}.csv`: Dictionary size reduction tracking
-
-### Performance Metrics
-Key analytics focus on:
-- Average attempts per word
-- Dictionary reduction efficiency
-- Algorithm comparison across word sets
-
-## VS Code Development
-
-### Build Commands
-- `Ctrl+Shift+P` → "Java: Rebuild Projects"
-- Terminal: `mvn clean compile`
-- Create `.vscode/tasks.json` for custom build tasks
-
-### Common Debugging
-Add debugging to `Main.playMultipleGames()` to trace ArrayIndexOutOfBounds:
-```java
-System.out.println("Processing word: " + targetWord + " (length: " + targetWord.length() + ")");
-```
-
-## Project Conventions
-
-- **Package structure**: Strict separation of core game logic, bot implementations, and analysis tools
-- **Error handling**: InvalidWordException for game rule violations
-- **Configuration**: Config class for game parameters (max attempts, etc.)
-- **Data persistence**: Optional SQL Server DAO classes for result storage
+If any section is unclear (e.g., server routes, Filter character accounting), tell us and we’ll refine this guide.

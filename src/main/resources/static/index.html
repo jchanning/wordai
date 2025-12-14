@@ -39,6 +39,15 @@
                     <input type="number" id="autoplayGameCount" min="1" max="1000" value="100" class="form-input">
                 </div>
                 <div class="form-group">
+                    <label for="autoplayWordLength">Word Length:</label>
+                    <select id="autoplayWordLength" class="form-input" onchange="filterAutoplayDictionaries()">
+                        <option value="4">4 Letters</option>
+                        <option value="5" selected>5 Letters</option>
+                        <option value="6">6 Letters</option>
+                        <option value="7">7 Letters</option>
+                    </select>
+                </div>
+                <div class="form-group">
                     <label for="autoplayStrategy">Strategy:</label>
                     <select id="autoplayStrategy" class="form-input">
                         <option value="RANDOM">Random Selection</option>
@@ -49,7 +58,7 @@
                 <div class="form-group">
                     <label for="autoplayDictionary">Dictionary:</label>
                     <select id="autoplayDictionary" class="form-input">
-                        <option value="">Use current selection</option>
+                        <option value="">Use first available</option>
                     </select>
                 </div>
             </div>
