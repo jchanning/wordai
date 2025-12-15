@@ -703,6 +703,8 @@ function updateStrategyTips(strategy) {
         tipsDiv.innerHTML = '<strong>Maximum Entropy:</strong> Chooses words that maximize information gain. Uses statistical analysis to find the most informative guess.';
     } else if (strategy === 'MOST_COMMON_LETTERS') {
         tipsDiv.innerHTML = '<strong>Most Common Letters:</strong> Selects words containing the most frequently occurring letters in the remaining word pool. Prioritizes common letter patterns.';
+    } else if (strategy === 'MINIMISE_COLUMN_LENGTHS') {
+        tipsDiv.innerHTML = '<strong>Minimise Column Lengths:</strong> Selects guesses that most effectively reduce the number of possible letters at each position. Directly minimizes positional entropy for maximum constraint.';
     }
 }
 

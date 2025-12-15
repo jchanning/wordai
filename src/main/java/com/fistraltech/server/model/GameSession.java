@@ -105,6 +105,9 @@ public class GameSession {
             case "MAXIMUM_ENTROPY":
                 algo = new SelectMaximumEntropy(filteredDictionary);
                 break;
+            case "MINIMISE_COLUMN_LENGTHS":
+                algo = new com.fistraltech.bot.selection.MinimiseColumnLengths(filteredDictionary);
+                break;
             case "RANDOM":
             default:
                 algo = new SelectRandom(filteredDictionary);

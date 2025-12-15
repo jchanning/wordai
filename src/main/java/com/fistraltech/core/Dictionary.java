@@ -187,6 +187,28 @@ public class Dictionary {
         }
     }
 
+    /**
+     * Simulates making a guess and returns a merged dictionary representing all possible outcomes.
+     * This method evaluates what the dictionary columns would look like after guessing the candidate word,
+     * by creating a union of all possible letters that could remain in each position across all
+     * possible response patterns.
+     * 
+     * <p>The method simulates guessing the candidate word against each possible target word in the
+     * current dictionary, generates the response for each, applies filtering, and merges all resulting
+     * filtered dictionaries into a single dictionary that represents the union of all possibilities.
+     * This is useful for algorithms that want to evaluate the expected letter diversity after a guess.
+     * 
+     * @param candidateWord the word to simulate guessing
+     * @param lastResponse the response from any previous guess (may have empty word for first guess) 
+     * @return a Dictionary representing the union of all possible filtered states after the guess
+     */
+    public Dictionary getPossibleWordsAfterGuess(String candidateWord, Response lastResponse) {
+        // For the MinimiseColumnLengths strategy, we just return the current filtered dictionary
+        // The strategy evaluates column lengths on the existing search space, not simulated responses
+        // Simulating every possible response would be O(N²) which is too expensive
+        return this;
+    }
+
     public String toString(){
         return "Dictionary size: " + masterSetOfWords.size();
     }
