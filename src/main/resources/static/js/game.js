@@ -1062,6 +1062,7 @@ function displayDictionaryWords(words) {
 
 let autoplayState = {
     isRunning: false,
+    shouldStop: false,
     gameCount: 0,
     gamesCompleted: 0,
     strategy: 'RANDOM',
@@ -1111,6 +1112,45 @@ function hideAutoplayModal() {
     modal.style.display = 'none';
 }
 
+function toggleAutoplay() {
+    if (autoplayState.isRunning) {
+        // Stop autoplay
+        stopAutoplay();
+    } else {
+        // Show modal to start autoplay
+        showAutoplayModal();
+    }
+}
+
+function stopAutoplay() {
+    if (!autoplayState.isRunning) {
+        return;
+    }
+    
+    autoplayState.shouldStop = true;
+    
+    const autoplayBtn = document.getElementById('autoplayBtn');
+    autoplayBtn.textContent = 'Stopping...';
+    autoplayBtn.disabled = true;
+    
+    showStatus('Stopping autoplay after current game completes...', 'info');
+}
+
+function updateAutoplayButton(isRunning) {
+    const autoplayBtn = document.getElementById('autoplayBtn');
+    if (isRunning) {
+        autoplayBtn.textContent = 'Stop Autoplay';
+        autoplayBtn.classList.remove('btn-info');
+        autoplayBtn.classList.add('btn-danger');
+        autoplayBtn.disabled = false;
+    } else {
+        autoplayBtn.textContent = 'Autoplay Games';
+        autoplayBtn.classList.remove('btn-danger');
+        autoplayBtn.classList.add('btn-info');
+        autoplayBtn.disabled = false;
+    }
+}
+
 async function startAutoplay() {
     if (autoplayState.isRunning) {
         showStatus('Autoplay is already running!', 'error');
@@ -1148,6 +1188,7 @@ async function startAutoplay() {
         updateHelpCounter();
         
         autoplayState.isRunning = true;
+        autoplayState.shouldStop = false;
         autoplayState.gameCount = gameCount;
         autoplayState.gamesCompleted = 0;
         autoplayState.strategy = strategy;
@@ -1155,25 +1196,41 @@ async function startAutoplay() {
         document.getElementById('dictionarySelector').disabled = true;
         document.getElementById('guessBtn').disabled = true;
         
+        updateAutoplayButton(true);
+        
         showStatus(`Starting autoplay: ${gameCount} ${wordLength}-letter games with ${strategy} strategy`, 'success');
         
         await runAutoplayGames(selectedDict, strategy, wordLength);
         
         autoplayState.isRunning = false;
+        autoplayState.shouldStop = false;
         document.getElementById('dictionarySelector').disabled = false;
         
-        showStatus('Autoplay completed! Displaying session statistics...', 'success');
+        updateAutoplayButton(false);
+        
+        const statusMessage = autoplayState.gamesCompleted < gameCount 
+            ? `Autoplay stopped after ${autoplayState.gamesCompleted} games. Displaying session statistics...`
+            : 'Autoplay completed! Displaying session statistics...';
+        showStatus(statusMessage, 'success');
         showSessionViewer();
         
     } catch (error) {
         autoplayState.isRunning = false;
+        autoplayState.shouldStop = false;
         document.getElementById('dictionarySelector').disabled = false;
+        updateAutoplayButton(false);
         showStatus('Autoplay failed: ' + error.message, 'error');
     }
 }
 
 async function runAutoplayGames(dictionaryId, strategy, wordLength) {
     for (let i = 0; i < autoplayState.gameCount; i++) {
+        // Check if stop was requested
+        if (autoplayState.shouldStop) {
+            console.log('Autoplay stop requested, finishing after current game');
+            break;
+        }
+        
         autoplayState.gamesCompleted = i;
         
         try {
