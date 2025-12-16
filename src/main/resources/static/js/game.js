@@ -694,6 +694,21 @@ async function getSuggestion() {
     }
 }
 
+function getStrategyDisplayName(strategy) {
+    switch(strategy) {
+        case 'RANDOM':
+            return 'Random Selection';
+        case 'ENTROPY':
+            return 'Maximum Entropy';
+        case 'MOST_COMMON_LETTERS':
+            return 'Most Common Letters';
+        case 'MINIMISE_COLUMN_LENGTHS':
+            return 'Minimise Column Lengths';
+        default:
+            return strategy;
+    }
+}
+
 function updateStrategyTips(strategy) {
     const tipsDiv = document.getElementById('strategyTips');
     
@@ -1298,7 +1313,8 @@ async function runAutoplayGames(dictionaryId, strategy, wordLength) {
                 resetAnalytics();
             }
             
-            showStatus(`Game ${i + 1}/${autoplayState.gameCount} - Playing...`, 'info');
+            const strategyName = getStrategyDisplayName(strategy);
+            showStatus(`${strategyName}, Game ${i + 1}/${autoplayState.gameCount}`, 'info');
             
             await playAutoplayGame(gameId, strategy);
             
