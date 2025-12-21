@@ -29,8 +29,9 @@ import com.fistraltech.util.Config;
  * Performance notes:
  * <ul>
  *   <li>Methods that iterate the full dictionary are O(N * L) where N = number of words, L = word length.</li>
- *   <li>{@code getResponseBuckets} constructs a new {@link WordGame} per target word; consider caching if invoked heavily.</li>
+ *   <li>{@code getResponseBuckets} uses response caching: responses for word pairs are computed once and reused.</li>
  *   <li>Entropy calculations depend on response bucket distribution and are O(B) where B = number of distinct patterns.</li>
+ *   <li>Response cache dramatically improves {@code getMaximumEntropyWord} from O(N²×C) to O(N²×C) first call, O(N²) subsequent.</li>
  * </ul>
  * Thread-safety: This analyser is not inherently thread-safe; concurrent access should provide external synchronisation
  * if the underlying {@link Dictionary} is mutable.
@@ -40,6 +41,15 @@ import com.fistraltech.util.Config;
 public class DictionaryAnalyser {
 
     private final Dictionary dictionary;
+    
+    /**
+     * Global cache of response patterns for word pairs. Key format: "guessWord:targetWord" -> response pattern.
+     * Since responses are deterministic based solely on the two words (independent of dictionary or game state),
+     * this cache is shared across all DictionaryAnalyser instances and persists for the application lifetime.
+     * This dramatically reduces computation in entropy analysis across multiple games and sessions.
+     * Thread-safe: uses ConcurrentHashMap for safe concurrent access.
+     */
+    private static final Map<String, String> responseCache = new java.util.concurrent.ConcurrentHashMap<>();
 
     public DictionaryAnalyser(Dictionary dictionary) {
         this.dictionary = dictionary;
@@ -107,26 +117,55 @@ public class DictionaryAnalyser {
      * Groups every word in the dictionary into buckets keyed by the response pattern produced
      * when comparing the candidate {@code word} against each target word.
      * The response pattern string encodes per-position feedback (e.g. Greens, Ambers, Reds, Excess).
+     * Uses response caching to avoid recomputing responses for previously seen word pairs.
      * @param word candidate guess word used to produce response patterns
      * @return map from response pattern string to set of words generating that pattern
-     * Complexity: O(N * C) where C is cost of computing a response (roughly O(L)).
+     * Complexity: O(N * C) first call per guess word, O(N) on cache hits where C = cost of computing response.
      */
     public Map<String, Set<String>> getResponseBuckets(String word) {
         Map<String, Set<String>> result = new HashMap<>();
         Set<String> words = dictionary.getMasterSetOfWords();
+        
+        // Create Config and WordGame once, reuse for all targets
+        Config config = new Config();
+        WordGame game = new WordGame(dictionary, config);
+        
         for (String w : words) {
             try {
-                Config config = new Config();
-                WordGame game = new WordGame(dictionary, config);
-                game.setTargetWord(w);
-                Response r = game.guess(w, word);
-                String bucket = r.toString();
+                // Check cache first using composite key
+                String cacheKey = word + ":" + w;
+                String bucket = responseCache.get(cacheKey);
+                
+                if (bucket == null) {
+                    // Not in cache - compute and store
+                    game.setTargetWord(w);
+                    Response r = game.evaluate(word);
+                    bucket = r.toString();
+                    responseCache.put(cacheKey, bucket);
+                }
+                
                 result.computeIfAbsent(bucket, k -> new HashSet<>()).add(w);
             } catch (Exception ex) {
                 ex.printStackTrace();
             }
         }
         return result;
+    }
+    
+    /**
+     * Clears the response cache. Useful if dictionary content changes or to free memory.
+     * Note: Typically not needed as responses are deterministic for a given word pair.
+     */
+    public void clearResponseCache() {
+        responseCache.clear();
+    }
+    
+    /**
+     * Returns the current size of the response cache (number of cached word pair responses).
+     * @return number of cached responses
+     */
+    public int getResponseCacheSize() {
+        return responseCache.size();
     }
 
 

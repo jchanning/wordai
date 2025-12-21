@@ -95,11 +95,7 @@ public class WordGame {
         return guess(targetWord, word);
     }
 
-    /** When a guess is made, information is returned to the player */
-    public Response guess(String targetWord, String word) throws InvalidWordException {
-        checkWordIsValid(word);
-        checkMaxAttempts();
-
+    public Response evaluate(String word) throws InvalidWordException {
         char[] guessedLetters = word.toCharArray();
         boolean isWinner = word.equals(targetWord);
 
@@ -158,6 +154,16 @@ public class WordGame {
         for (int i = 0; i < wordLength; ++i) {
             response.setStatus(guessedLetters[i], statusArray[i]);
         }
+        return response;
+    }
+
+    /** When a guess is made, information is returned to the player */
+    public Response guess(String targetWord, String word) throws InvalidWordException {
+        checkWordIsValid(word);
+        checkMaxAttempts();
+        
+        Response response = evaluate(word);
+
         guesses.add(response);
         return response;
     }

@@ -1177,6 +1177,7 @@ async function startAutoplay() {
     const strategy = document.getElementById('autoplayStrategy').value;
     const wordLength = parseInt(document.getElementById('autoplayWordLength').value);
     const selectedDict = document.getElementById('autoplayDictionary').value;
+    const guessDelay = parseInt(document.getElementById('autoplayDelay').value) || 1000;
     
     if (gameCount < 1 || gameCount > 1000) {
         showStatus('Please enter a number between 1 and 1000', 'error');
@@ -1214,9 +1215,9 @@ async function startAutoplay() {
         
         updateAutoplayButton(true);
         
-        showStatus(`Starting autoplay: ${gameCount} ${wordLength}-letter games with ${strategy} strategy`, 'success');
+        showStatus(`Starting autoplay: ${gameCount} ${wordLength}-letter games with ${strategy} strategy (${guessDelay}ms delay)`, 'success');
         
-        await runAutoplayGames(selectedDict, strategy, wordLength);
+        await runAutoplayGames(selectedDict, strategy, wordLength, guessDelay);
         
         autoplayState.isRunning = false;
         autoplayState.shouldStop = false;
@@ -1239,7 +1240,7 @@ async function startAutoplay() {
     }
 }
 
-async function runAutoplayGames(dictionaryId, strategy, wordLength) {
+async function runAutoplayGames(dictionaryId, strategy, wordLength, guessDelay = 1000) {
     for (let i = 0; i < autoplayState.gameCount; i++) {
         // Check if stop was requested
         if (autoplayState.shouldStop) {
@@ -1317,7 +1318,7 @@ async function runAutoplayGames(dictionaryId, strategy, wordLength) {
             const strategyName = getStrategyDisplayName(strategy);
             showStatus(`${strategyName}, Game ${i + 1}/${autoplayState.gameCount}`, 'info');
             
-            await playAutoplayGame(gameId, strategy);
+            await playAutoplayGame(gameId, strategy, guessDelay);
             
             try {
                 await fetch(`${API_BASE}/games/${gameId}`, {
@@ -1327,18 +1328,23 @@ async function runAutoplayGames(dictionaryId, strategy, wordLength) {
                 console.warn('Failed to delete game session:', e);
             }
             
-            await new Promise(resolve => setTimeout(resolve, 1000));
+            // Use configurable delay between games (if delay > 0)
+            if (guessDelay > 0) {
+                await new Promise(resolve => setTimeout(resolve, guessDelay));
+            }
             
         } catch (error) {
             console.error(`Error in game ${i + 1}:`, error);
             showStatus(`Error in game ${i + 1}: ${error.message} - Continuing...`, 'warning');
-            // Continue to next game despite error
-            await new Promise(resolve => setTimeout(resolve, 500));
+            // Continue to next game despite error with shorter delay
+            if (guessDelay > 0) {
+                await new Promise(resolve => setTimeout(resolve, Math.min(500, guessDelay)));
+            }
         }
     }
 }
 
-async function playAutoplayGame(gameId, strategy) {
+async function playAutoplayGame(gameId, strategy, guessDelay = 1000) {
     let attemptCount = 0;
     const maxAttempts = 6;
     
@@ -1448,8 +1454,10 @@ async function playAutoplayGame(gameId, strategy) {
                 return;
             }
             
-            // Wait 1 second before next guess
-            await new Promise(resolve => setTimeout(resolve, 1000));
+            // Wait configured delay before next guess (if delay > 0)
+            if (guessDelay > 0) {
+                await new Promise(resolve => setTimeout(resolve, guessDelay));
+            }
             
         } catch (error) {
             console.error('Error during autoplay guess:', error);
