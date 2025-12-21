@@ -603,7 +603,8 @@ function updateStats() {
     const total = stats.total;
     const won = stats.won;
     const lost = stats.lost;
-    const winRate = Math.round((won / total) * 100);
+    const winRateValue = (won / total) * 100;
+    const winRate = winRateValue === 100 ? '100' : winRateValue.toFixed(2);
     
     // Calculate min, max, avg from won games
     let minGuesses = '-';
