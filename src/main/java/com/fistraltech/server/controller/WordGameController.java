@@ -103,12 +103,16 @@ public class WordGameController {
             
             // Add initial dictionary metrics
             com.fistraltech.core.Dictionary filteredDict = session.getFilteredDictionary();
+            com.fistraltech.analysis.DictionaryAnalyser analyser = new com.fistraltech.analysis.DictionaryAnalyser(filteredDict);
+            
             CreateGameResponse.DictionaryMetrics metrics = new CreateGameResponse.DictionaryMetrics(
                 filteredDict.getWordCount(),
                 filteredDict.getLetterCount(),
                 filteredDict.getUniqueCharacters().size(),
                 filteredDict.getColumnLengths()
             );
+            metrics.setOccurrenceCountByPosition(analyser.getOccurrenceCountByPosition());
+            metrics.setMostFrequentCharByPosition(analyser.getMostFrequentCharByPosition());
             response.setDictionaryMetrics(metrics);
             
             logger.log(Level.INFO, "Game created: {0}", gameId);
@@ -162,11 +166,15 @@ public class WordGameController {
             
             // Add dictionary metrics
             com.fistraltech.core.Dictionary filteredDict = session.getFilteredDictionary();
+            com.fistraltech.analysis.DictionaryAnalyser analyser = new com.fistraltech.analysis.DictionaryAnalyser(filteredDict);
+            
             GameResponse.DictionaryMetrics metrics = new GameResponse.DictionaryMetrics(
                 filteredDict.getLetterCount(),
                 filteredDict.getUniqueCharacters().size(),
                 filteredDict.getColumnLengths()
             );
+            metrics.setOccurrenceCountByPosition(analyser.getOccurrenceCountByPosition());
+            metrics.setMostFrequentCharByPosition(analyser.getMostFrequentCharByPosition());
             response.setDictionaryMetrics(metrics);
             
             logger.info("Guess made for game " + gameId + ": " + request.getWord());

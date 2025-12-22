@@ -11,17 +11,19 @@
 </head>
 <body>
     <div class="header-bar">
-        <h1 class="header-title">WordAI Game</h1>
-        <div class="header-actions">
-            <div id="status" class="status" style="display:none;"></div>
-            <select id="dictionarySelector" class="dictionary-selector" onchange="onDictionaryChange()">
-                <option value="">Loading dictionaries...</option>
-            </select>
-            <button class="btn btn-success" onclick="newGame()">New Game</button>
-            <button id="autoplayBtn" class="btn btn-info" onclick="toggleAutoplay()">Autoplay Games</button>
-            <button class="btn btn-secondary" onclick="checkHealth()">Server Status</button>
-            <button class="btn btn-danger" onclick="newSession()">New Session</button>
-            <button class="btn btn-secondary" onclick="showSessionViewer()">View Session</button>
+        <div>
+            <h1 class="header-title">WordAI Game</h1>
+            <div class="header-actions">
+                <div id="status" class="status" style="display:none;"></div>
+                <select id="dictionarySelector" class="dictionary-selector" onchange="onDictionaryChange()">
+                    <option value="">Loading dictionaries...</option>
+                </select>
+                <button class="btn btn-success" onclick="newGame()">New Game</button>
+                <button id="autoplayBtn" class="btn btn-info" onclick="toggleAutoplay()">Autoplay Games</button>
+                <button class="btn btn-secondary" onclick="checkHealth()">Server Status</button>
+                <button class="btn btn-danger" onclick="newSession()">New Session</button>
+                <button class="btn btn-secondary" onclick="showSessionViewer()">View Session</button>
+            </div>
         </div>
     </div>
     
@@ -194,45 +196,68 @@
                     </div>
                 </div>
             </div>
+            
         </div>
         
         <div class="info-panel">
             <h3>Game Analytics</h3>
             
-            <div class="info-section">
-                <div class="info-label">Total Dictionary Words:</div>
-                <div class="info-value" id="totalWords">2315</div>
-            </div>
-            
-            <div class="info-section">
-                <div class="info-label">Remaining Valid Words:</div>
-                <div class="info-value" id="remainingWords">2315</div>
-            </div>
-            
-            <div class="info-section">
-                <div class="info-label">Words Eliminated:</div>
-                <div class="info-value" id="eliminatedWords">0</div>
-            </div>
-            
-            <div class="info-section">
-                <div class="info-label">Reduction %:</div>
-                <div class="info-value" id="reductionPercent">0%</div>
-            </div>
-            
-            <div class="info-section">
-                <div class="info-label">Unique Letters Remaining:</div>
-                <div class="info-value" id="uniqueLetters">26</div>
-            </div>
-            
-            <div class="info-section">
-                <div class="info-label">Total Letter Count:</div>
-                <div class="info-value" id="letterCount">-</div>
-            </div>
-            
-            <div class="info-section column-chart-section">
-                <div class="info-label" style="margin-bottom: 10px;">Column Lengths:</div>
-                <div id="columnLengthsChart" style="display: flex; align-items: flex-end; gap: 4px; height: 180px; padding: 10px 10px 20px 10px; background: var(--bg-primary); border-radius: 6px; width: 100%; box-sizing: border-box;">
-                    <!-- Bar chart will be dynamically generated here -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--padding-lg); flex: 1; overflow: hidden;">
+                <!-- Left Column -->
+                <div style="display: flex; flex-direction: column; gap: var(--padding-sm); overflow-y: auto;">
+                    <div class="info-section">
+                        <div class="info-label">Total Dictionary Words:</div>
+                        <div class="info-value" id="totalWords">2315</div>
+                    </div>
+                    
+                    <div class="info-section">
+                        <div class="info-label">Remaining Valid Words:</div>
+                        <div class="info-value" id="remainingWords">2315</div>
+                    </div>
+                    
+                    <div class="info-section">
+                        <div class="info-label">Words Eliminated:</div>
+                        <div class="info-value" id="eliminatedWords">0</div>
+                    </div>
+                    
+                    <div class="info-section">
+                        <div class="info-label">Reduction %:</div>
+                        <div class="info-value" id="reductionPercent">0%</div>
+                    </div>
+                    
+                    <div class="info-section">
+                        <div class="info-label">Unique Letters Remaining:</div>
+                        <div class="info-value" id="uniqueLetters">26</div>
+                    </div>
+                    
+                    <div class="info-section">
+                        <div class="info-label">Total Letter Count:</div>
+                        <div class="info-value" id="letterCount">-</div>
+                    </div>
+                </div>
+                
+                <!-- Right Column -->
+                <div style="display: flex; flex-direction: column; gap: var(--padding-md); overflow-y: auto;">
+                    <div class="analytics-section">
+                        <h4 style="margin: 0 0 10px 0; font-size: 1em; font-weight: 600; color: var(--text-primary); border-bottom: 2px solid var(--border-color); padding-bottom: var(--padding-xs); text-transform: uppercase; letter-spacing: var(--letter-spacing-wide);">Most Common Letters</h4>
+                        <div id="mostFrequentTable" style="background: var(--bg-primary); border-radius: 6px; padding: 10px;">
+                            <!-- Table will be dynamically generated here -->
+                        </div>
+                    </div>
+                    
+                    <div class="analytics-section">
+                        <h4 style="margin: 0 0 10px 0; font-size: 1em; font-weight: 600; color: var(--text-primary); border-bottom: 2px solid var(--border-color); padding-bottom: var(--padding-xs); text-transform: uppercase; letter-spacing: var(--letter-spacing-wide);">Total Letters by Position</h4>
+                        <div id="columnLengthsChart" style="display: flex; align-items: flex-end; gap: 4px; height: 180px; padding: 10px 10px 20px 10px; background: var(--bg-primary); border-radius: 6px; width: 100%; box-sizing: border-box;">
+                            <!-- Bar chart will be dynamically generated here -->
+                        </div>
+                    </div>
+                    
+                    <div class="analytics-section">
+                        <h4 style="margin: 0 0 10px 0; font-size: 1em; font-weight: 600; color: var(--text-primary); border-bottom: 2px solid var(--border-color); padding-bottom: var(--padding-xs); text-transform: uppercase; letter-spacing: var(--letter-spacing-wide);">Letters by Position</h4>
+                        <div id="occurrenceTable" style="background: var(--bg-primary); border-radius: 6px; padding: 10px;">
+                            <!-- Table will be dynamically generated here -->
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>

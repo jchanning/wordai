@@ -64,17 +64,25 @@ body {
 /* --- Header --- */
 .header-bar {
     width: 100%;
-    padding: var(--padding-md) var(--padding-xl);
     background: rgba(15, 23, 42, 0.8);
     backdrop-filter: blur(12px);
     border-bottom: 1px solid var(--border-color);
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
     position: sticky;
     top: 0;
     z-index: 100;
     box-shadow: var(--shadow-md);
+    display: flex;
+    justify-content: center;
+}
+
+.header-bar > div {
+    width: 100%;
+    max-width: 1600px;
+    padding: var(--padding-md) var(--padding-xl);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: var(--padding-md);
 }
 
 .header-title {
@@ -85,43 +93,90 @@ body {
     align-items: center;
     gap: var(--padding-xs);
     letter-spacing: var(--letter-spacing-tight);
+    white-space: nowrap;
 }
 
 .header-actions {
     display: flex;
     gap: var(--padding-sm);
     align-items: center;
+    flex-wrap: wrap;
+    justify-content: flex-end;
 }
 
 /* --- Layout --- */
 .main-layout {
     display: grid;
-    grid-template-columns: minmax(250px, 300px) minmax(350px, 1fr) minmax(250px, 300px) minmax(250px, 300px);
+    grid-template-columns: 280px 400px 280px 640px;
     gap: var(--padding-lg);
     padding: var(--padding-md) var(--padding-xl);
     width: 100%;
     max-width: 1600px;
+    margin: 0 auto;
     flex: 1;
-    height: calc(100vh - 80px); /* Fit to viewport height */
+    height: calc(100vh - 80px);
     align-items: start;
 }
 
-@media (max-width: 1400px) {
+.info-panel {
+    grid-column: 4; /* Analytics panel in column 4 (double width) */
+}
+
+/* Tablet/Small Desktop: 2-column layout */
+@media (max-width: 1650px) {
     .main-layout {
         grid-template-columns: 1fr 1fr;
-        grid-template-rows: auto auto;
-        height: auto; /* Allow scrolling on smaller screens */
+        max-width: 100%;
+        height: auto;
     }
     
     .game-container {
-        grid-column: 1 / -1; /* Game board takes full width on top */
-        order: -1;
+        grid-column: 1 / -1;
+        order: 1;
+    }
+    
+    .info-panel {
+        grid-column: 1 / -1;
+        order: 2;
+    }
+    
+    .assistant-panel {
+        order: 3;
+    }
+    
+    .history-panel {
+        order: 4;
     }
 }
 
-@media (max-width: 800px) {
+/* Mobile: Single column stack */
+@media (max-width: 768px) {
     .main-layout {
         grid-template-columns: 1fr;
+        padding: var(--padding-sm);
+    }
+    
+    .header-bar > div {
+        padding: var(--padding-sm) var(--padding-md);
+        flex-direction: column;
+        align-items: stretch;
+        gap: var(--padding-sm);
+    }
+    
+    .header-title {
+        font-size: 1.25rem;
+        justify-content: center;
+    }
+    
+    .header-actions {
+        justify-content: center;
+    }
+    
+    .header-actions .btn {
+        flex: 1;
+        min-width: 0;
+        padding: var(--padding-xs) var(--padding-sm);
+        font-size: 0.8rem;
     }
 }
 

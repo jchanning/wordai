@@ -44,6 +44,8 @@ public class CreateGameResponse {
         private int letterCount;
         private int uniqueCharacters;
         private List<Integer> columnLengths;
+        private java.util.Map<Character, List<Integer>> occurrenceCountByPosition;
+        private List<Character> mostFrequentCharByPosition;
         
         public DictionaryMetrics() {}
         
@@ -65,5 +67,15 @@ public class CreateGameResponse {
         
         public List<Integer> getColumnLengths() { return columnLengths; }
         public void setColumnLengths(List<Integer> columnLengths) { this.columnLengths = columnLengths; }
+        
+        public java.util.Map<Character, List<Integer>> getOccurrenceCountByPosition() { return occurrenceCountByPosition; }
+        public void setOccurrenceCountByPosition(java.util.Map<Character, List<Integer>> occurrenceCountByPosition) { 
+            this.occurrenceCountByPosition = occurrenceCountByPosition; 
+        }
+        
+        public List<Character> getMostFrequentCharByPosition() { return mostFrequentCharByPosition; }
+        public void setMostFrequentCharByPosition(List<Character> mostFrequentCharByPosition) { 
+            this.mostFrequentCharByPosition = mostFrequentCharByPosition; 
+        }
     }
 }

@@ -381,6 +381,20 @@ function initializeAnalytics(dictionaryMetrics) {
     } else {
         updateColumnLengthsChart(null);
     }
+    
+    // Update occurrence count by position table
+    if (dictionaryMetrics.occurrenceCountByPosition) {
+        updateOccurrenceTable(dictionaryMetrics.occurrenceCountByPosition);
+    } else {
+        updateOccurrenceTable(null);
+    }
+    
+    // Update most frequent char by position table
+    if (dictionaryMetrics.mostFrequentCharByPosition) {
+        updateMostFrequentTable(dictionaryMetrics.mostFrequentCharByPosition);
+    } else {
+        updateMostFrequentTable(null);
+    }
 }
 
 function resetAnalytics() {
@@ -392,6 +406,8 @@ function resetAnalytics() {
     document.getElementById('uniqueLetters').textContent = '26';
     document.getElementById('letterCount').textContent = '-';
     updateColumnLengthsChart(null);
+    updateOccurrenceTable(null);
+    updateMostFrequentTable(null);
 }
 
 function updateAnalytics(guessedWord, remainingCount, dictionaryMetrics) {
@@ -419,6 +435,16 @@ function updateAnalytics(guessedWord, remainingCount, dictionaryMetrics) {
             updateColumnLengthsChart(dictionaryMetrics.columnLengths);
         } else {
             updateColumnLengthsChart(null);
+        }
+        
+        // Update occurrence count by position table
+        if (dictionaryMetrics.occurrenceCountByPosition) {
+            updateOccurrenceTable(dictionaryMetrics.occurrenceCountByPosition);
+        }
+        
+        // Update most frequent char by position table
+        if (dictionaryMetrics.mostFrequentCharByPosition) {
+            updateMostFrequentTable(dictionaryMetrics.mostFrequentCharByPosition);
         }
     }
 }
@@ -475,6 +501,126 @@ function updateColumnLengthsChart(columnLengths) {
         
         chartContainer.appendChild(barContainer);
     });
+}
+
+function updateOccurrenceTable(occurrenceData) {
+    const tableContainer = document.getElementById('occurrenceTable');
+    tableContainer.innerHTML = '';
+    
+    if (!occurrenceData || Object.keys(occurrenceData).length === 0) {
+        tableContainer.innerHTML = '<div style="text-align: center; color: #888; padding: 20px;">No data yet</div>';
+        return;
+    }
+    
+    // Create table
+    const table = document.createElement('table');
+    table.style.cssText = 'width: 100%; border-collapse: collapse; font-size: 0.85em; font-family: monospace; table-layout: fixed;';
+    
+    // Get number of positions from first entry
+    const firstKey = Object.keys(occurrenceData)[0];
+    const numPositions = occurrenceData[firstKey] ? occurrenceData[firstKey].length : 0;
+    
+    // Create header row
+    const thead = document.createElement('thead');
+    const headerRow = document.createElement('tr');
+    
+    // Letter column header - empty header with narrower width
+    const letterHeader = document.createElement('th');
+    letterHeader.textContent = '';
+    letterHeader.style.cssText = 'padding: 6px 8px; text-align: center; border-bottom: 2px solid var(--text-secondary); position: sticky; top: 0; background: var(--bg-primary); z-index: 1; font-weight: 600; width: 30px;';
+    headerRow.appendChild(letterHeader);
+    
+    // Position column headers
+    for (let i = 0; i < numPositions; i++) {
+        const posHeader = document.createElement('th');
+        posHeader.textContent = `P${i + 1}`;
+        posHeader.style.cssText = 'padding: 6px 4px; text-align: center; border-bottom: 2px solid var(--text-secondary); position: sticky; top: 0; background: var(--bg-primary); z-index: 1; font-weight: 600;';
+        headerRow.appendChild(posHeader);
+    }
+    
+    thead.appendChild(headerRow);
+    table.appendChild(thead);
+    
+    // Create body
+    const tbody = document.createElement('tbody');
+    
+    // Sort letters a-z
+    const letters = Object.keys(occurrenceData).sort();
+    
+    letters.forEach((letter, idx) => {
+        const row = document.createElement('tr');
+        row.style.cssText = `border-bottom: 1px solid rgba(255,255,255,0.1); ${idx % 2 === 1 ? 'background: rgba(255,255,255,0.02);' : ''}`;
+        
+        // Letter cell - centered with reduced padding
+        const letterCell = document.createElement('td');
+        letterCell.textContent = letter.toUpperCase();
+        letterCell.style.cssText = 'padding: 6px 4px; font-weight: bold; text-align: center; color: var(--text-primary);';
+        row.appendChild(letterCell);
+        
+        // Position count cells
+        const counts = occurrenceData[letter] || [];
+        const maxCount = Math.max(...counts);
+        
+        for (let i = 0; i < numPositions; i++) {
+            const countCell = document.createElement('td');
+            const count = counts[i] || 0;
+            countCell.textContent = count;
+            
+            // Highlight cells with higher counts
+            let bgColor = '';
+            if (count > 0 && maxCount > 0) {
+                const intensity = count / maxCount;
+                bgColor = `background: rgba(106, 170, 100, ${intensity * 0.3});`;
+            }
+            
+            countCell.style.cssText = `padding: 6px 4px; text-align: center; ${count > 0 ? 'color: var(--text-primary); font-weight: 500;' : 'color: var(--text-secondary);'} ${bgColor}`;
+            row.appendChild(countCell);
+        }
+        
+        tbody.appendChild(row);
+    });
+    
+    table.appendChild(tbody);
+    tableContainer.appendChild(table);
+}
+
+function updateMostFrequentTable(mostFrequentData) {
+    const tableContainer = document.getElementById('mostFrequentTable');
+    tableContainer.innerHTML = '';
+    
+    if (!mostFrequentData || mostFrequentData.length === 0) {
+        tableContainer.innerHTML = '<div style="text-align: center; color: #888; padding: 20px;">No data yet</div>';
+        return;
+    }
+    
+    // Create table
+    const table = document.createElement('table');
+    table.style.cssText = 'width: 100%; border-collapse: collapse; font-size: 0.9em; font-family: monospace;';
+    
+    // Create single row for data
+    const row = document.createElement('tr');
+    
+    mostFrequentData.forEach((letter, index) => {
+        const cell = document.createElement('td');
+        cell.textContent = letter ? letter.toUpperCase() : '-';
+        cell.style.cssText = `padding: 12px 8px; text-align: center; font-weight: bold; font-size: 1.2em; color: var(--correct-color); border: 1px solid rgba(255,255,255,0.1); background: rgba(106, 170, 100, 0.15);`;
+        row.appendChild(cell);
+    });
+    
+    table.appendChild(row);
+    
+    // Create position labels row
+    const labelRow = document.createElement('tr');
+    
+    mostFrequentData.forEach((letter, index) => {
+        const labelCell = document.createElement('td');
+        labelCell.textContent = `P${index + 1}`;
+        labelCell.style.cssText = 'padding: 6px 4px; text-align: center; font-size: 0.85em; color: var(--text-secondary); font-weight: 600; border: 1px solid rgba(255,255,255,0.1);';
+        labelRow.appendChild(labelCell);
+    });
+    
+    table.appendChild(labelRow);
+    tableContainer.appendChild(table);
 }
 
 function updateAssistant(status, attempts = 0, remainingWords = 0) {
