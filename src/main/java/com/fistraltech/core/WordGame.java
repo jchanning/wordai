@@ -96,7 +96,7 @@ public class WordGame {
     }
 
     public Response evaluate(String word) throws InvalidWordException {
-        return GameResponse.evaluate(targetWord, word);
+        return ResponseHelper.evaluate(targetWord, word);
     }
 
     /** When a guess is made, information is returned to the player */

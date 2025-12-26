@@ -63,6 +63,9 @@ All enhanced class documentation now includes:
 🔲 **GameResponse** - Needs review
 🔲 **DictionaryOption** - Needs review
 
+### Core Package (`com.fistraltech.core`)
+🔲 **ResponseHelper** - Helper class for game response evaluation
+
 ### Util Package (`com.fistraltech.util`)
 🔲 **Config** - Needs review
 🔲 **ConfigManager** - Needs review

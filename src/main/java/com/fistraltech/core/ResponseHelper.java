@@ -6,7 +6,7 @@ import com.fistraltech.bot.filter.Filter;
 /** Static methods that are used in a WordGame to process guesses and create responses. This has been refactored out of WordGame as it is used in selection
  * algorithms and Dictionary analysis and provides better separation of concerns. */
 
-public class GameResponse {
+public class ResponseHelper {
     public static Response evaluate(String targetWord, String word) throws InvalidWordException {
         
         // Check word length

@@ -1,9 +1,9 @@
 package com.fistraltech.analysis;
 
 import com.fistraltech.core.Dictionary;
-import com.fistraltech.core.GameResponse;
 import com.fistraltech.core.InvalidWordException;
 import com.fistraltech.core.Response;
+import com.fistraltech.core.ResponseHelper;
 
 public class DictionaryReduction {
     private final Dictionary dictionary;
@@ -38,7 +38,7 @@ public class DictionaryReduction {
         // Group all words by their response pattern when guessWord is used as the guess
         for (String targetWord : dictionary.getMasterSetOfWords()) {
             try{
-                Response response = GameResponse.evaluate(targetWord, guessWord);
+                Response response = ResponseHelper.evaluate(targetWord, guessWord);
                 String responseKey = response.toString();
                 
                 responseBuckets.computeIfAbsent(responseKey, k -> new java.util.HashSet<>()).add(targetWord);
