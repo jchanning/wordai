@@ -1,6 +1,5 @@
 package com.fistraltech.util;
 
-import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -117,78 +116,6 @@ public class ConfigManager {
         return null;
     }
     
-    public String getDictionaryPath() {
-        String primaryPath = properties.getProperty("dictionary.full.path");
-        
-        // Check if primary path exists
-        if (primaryPath != null && Files.exists(Paths.get(primaryPath))) {
-            return primaryPath;
-        }
-        
-        // Try fallback paths
-        String fallbackPaths = properties.getProperty("dictionary.fallback.paths", "");
-        for (String fallbackPath : fallbackPaths.split(",")) {
-            fallbackPath = fallbackPath.trim();
-            if (!fallbackPath.isEmpty()) {
-                // Expand relative paths
-                Path path = Paths.get(fallbackPath);
-                if (!path.isAbsolute()) {
-                    path = Paths.get(System.getProperty("user.dir"), fallbackPath);
-                }
-                
-                if (Files.exists(path)) {
-                    final String pathStr = path.toString();
-                    logger.info(() -> "Using fallback dictionary path: " + pathStr);
-                    return pathStr;
-                }
-            }
-        }
-        
-        // If no valid path found, return primary path anyway (will cause error later)
-        final String finalPrimaryPath = primaryPath;
-        logger.warning(() -> "No valid dictionary path found. Primary path: " + finalPrimaryPath);
-        return primaryPath;
-    }
-    
-    public String getOutputBasePath() {
-        return properties.getProperty("output.base.path", System.getProperty("user.dir"));
-    }
-    
-    public String generateOutputFilePath(String prefix) {
-        String basePath = getOutputBasePath();
-        String extension = properties.getProperty("output.file.extension", ".csv");
-        long timestamp = System.currentTimeMillis();
-        
-        return basePath + File.separator + prefix + timestamp + extension;
-    }
-    
-    public String getDetailsFilePath() {
-        String prefix = properties.getProperty("output.file.prefix.details", "details-");
-        return generateOutputFilePath(prefix);
-    }
-    
-    public String getSummaryFilePath() {
-        String prefix = properties.getProperty("output.file.prefix.summary", "summary-");
-        return generateOutputFilePath(prefix);
-    }
-    
-    public String getColumnsFilePath() {
-        String prefix = properties.getProperty("output.file.prefix.columns", "columns-");
-        return generateOutputFilePath(prefix);
-    }
-    
-    public int getWordLength() {
-        return Integer.parseInt(properties.getProperty("game.word.length", "5"));
-    }
-    
-    public int getMaxAttempts() {
-        return Integer.parseInt(properties.getProperty("game.max.attempts", "6"));
-    }
-    
-    public int getSimulationIterations() {
-        return Integer.parseInt(properties.getProperty("game.simulation.iterations", "1"));
-    }
-    
     public String getProperty(String key, String defaultValue) {
         return properties.getProperty(key, defaultValue);
     }
@@ -198,14 +125,27 @@ public class ConfigManager {
     }
     
     /**
-     * Creates a Config object populated with values from the configuration file
+     * Creates a Config object populated with values from the configuration file.
+     * This is the primary method for obtaining application configuration.
      */
     public Config createGameConfig() {
         Config config = new Config();
-        config.setWordLength(getWordLength());
-        config.setMaxAttempts(getMaxAttempts());
-        config.setPathToDictionaryOfAllWords(getDictionaryPath());
-        config.setPathToDictionaryOfGameWords(getDictionaryPath());
+        
+        // Read and set basic game configuration
+        config.setWordLength(Integer.parseInt(properties.getProperty("game.word.length", "5")));
+        config.setMaxAttempts(Integer.parseInt(properties.getProperty("game.max.attempts", "6")));
+        config.setSimulationIterations(Integer.parseInt(properties.getProperty("game.simulation.iterations", "1")));
+        
+        // Set dictionary paths (using legacy property for backward compatibility)
+        String dictPath = resolveLegacyDictionaryPath();
+        config.setPathToDictionaryOfAllWords(dictPath);
+        config.setPathToDictionaryOfGameWords(dictPath);
+        
+        // Set output configuration
+        config.setOutputBasePath(properties.getProperty("output.base.path", System.getProperty("user.dir")));
+        
+        // Build and set available dictionaries
+        config.setAvailableDictionaries(buildAvailableDictionaries());
         
         return config;
     }
@@ -217,7 +157,7 @@ public class ConfigManager {
         boolean valid = true;
         
         // Check dictionary path
-        String dictPath = getDictionaryPath();
+        String dictPath = resolveLegacyDictionaryPath();
         if (dictPath == null || !Files.exists(Paths.get(dictPath))) {
             final String finalDictPath = dictPath;
             logger.severe(() -> "Dictionary file not found: " + finalDictPath);
@@ -225,7 +165,7 @@ public class ConfigManager {
         }
         
         // Check output directory
-        String outputPath = getOutputBasePath();
+        String outputPath = properties.getProperty("output.base.path", System.getProperty("user.dir"));
         try {
             Path outputDir = Paths.get(outputPath);
             if (!Files.exists(outputDir)) {
@@ -243,16 +183,42 @@ public class ConfigManager {
     }
     
     /**
-     * Get all available dictionary options from configuration
+     * Resolves legacy dictionary.full.path property for backward compatibility
+     * @throws IllegalArgumentException if dictionary path is not configured or not found
      */
-    public List<DictionaryOption> getAvailableDictionaries() {
+    private String resolveLegacyDictionaryPath() {
+        String primaryPath = properties.getProperty("dictionary.full.path");
+        
+        if (primaryPath == null || primaryPath.isEmpty()) {
+            throw new IllegalArgumentException("dictionary.full.path is not configured");
+        }
+        
+        // Check if primary path exists
+        Path path = Paths.get(primaryPath);
+        if (!path.isAbsolute()) {
+            path = Paths.get(System.getProperty("user.dir"), primaryPath);
+        }
+        
+        final Path finalPath = path;
+        if (Files.exists(finalPath)) {
+            logger.info(() -> "Using dictionary path: " + finalPath);
+            return finalPath.toString();
+        }
+        
+        throw new IllegalArgumentException("Dictionary file not found: " + primaryPath + " (resolved to: " + finalPath + ")");
+    }
+    
+    /**
+     * Build list of available dictionary options from configuration
+     */
+    private List<DictionaryOption> buildAvailableDictionaries() {
         List<DictionaryOption> dictionaries = new ArrayList<>();
         
         // Find all dictionary configurations
         for (String key : properties.stringPropertyNames()) {
             if (key.startsWith("dictionaries.") && key.endsWith(".name")) {
                 String id = key.substring("dictionaries.".length(), key.length() - ".name".length());
-                DictionaryOption option = createDictionaryOption(id);
+                DictionaryOption option = buildDictionaryOption(id);
                 if (option != null) {
                     dictionaries.add(option);
                 }
@@ -266,12 +232,12 @@ public class ConfigManager {
     }
     
     /**
-     * Create a DictionaryOption from configuration
+     * Build a DictionaryOption from configuration properties
+     * @throws IllegalArgumentException if dictionary path cannot be resolved
      */
-    private DictionaryOption createDictionaryOption(String id) {
+    private DictionaryOption buildDictionaryOption(String id) {
         String name = properties.getProperty("dictionaries." + id + ".name");
         String path = properties.getProperty("dictionaries." + id + ".path");
-        String fallbackPath = properties.getProperty("dictionaries." + id + ".fallbackPath");
         String wordLengthStr = properties.getProperty("dictionaries." + id + ".wordLength");
         String description = properties.getProperty("dictionaries." + id + ".description", "");
         
@@ -281,92 +247,61 @@ public class ConfigManager {
         
         int wordLength = Integer.parseInt(wordLengthStr);
         
-        DictionaryOption option = new DictionaryOption(id, name, path, fallbackPath, wordLength, description);
+        DictionaryOption option = new DictionaryOption(id, name, path, null, wordLength, description);
         
-        // Check if dictionary file is available
-        String resolvedPath = resolveDictionaryPath(path, fallbackPath);
+        // Resolve dictionary path - will throw exception if invalid
+        String resolvedPath = resolveDictionaryPath(path);
         boolean isAvailable = false;
         
-        if (resolvedPath != null) {
-            if (resolvedPath.startsWith("classpath:")) {
-                // For classpath resources, check if the resource exists
-                String resourcePath = resolvedPath.substring("classpath:".length());
-                isAvailable = getClass().getClassLoader().getResource(resourcePath) != null;
-            } else {
-                // For filesystem paths, check if file exists
-                isAvailable = Files.exists(Paths.get(resolvedPath));
-            }
+        if (resolvedPath.startsWith("classpath:")) {
+            // For classpath resources, check if the resource exists
+            String resourcePath = resolvedPath.substring("classpath:".length());
+            isAvailable = getClass().getClassLoader().getResource(resourcePath) != null;
+        } else {
+            // For filesystem paths, check if file exists
+            isAvailable = Files.exists(Paths.get(resolvedPath));
         }
         
+        option.setResolvedPath(resolvedPath);
         option.setAvailable(isAvailable);
         
         return option;
     }
     
     /**
-     * Get dictionary path by ID
+     * Resolve dictionary path - no fallback, fails explicitly if path is invalid
+     * @throws IllegalArgumentException if the dictionary path cannot be resolved
      */
-    public String getDictionaryPathById(String id) {
-        String path = properties.getProperty("dictionaries." + id + ".path");
-        String fallbackPath = properties.getProperty("dictionaries." + id + ".fallbackPath");
-        
-        return resolveDictionaryPath(path, fallbackPath);
-    }
-    
-    /**
-     * Resolve dictionary path with fallback support
-     */
-    private String resolveDictionaryPath(String primaryPath, String fallbackPath) {
-        // Try primary path first
-        if (primaryPath != null && !primaryPath.isEmpty()) {
-            Path path = Paths.get(primaryPath);
-            if (Files.exists(path)) {
-                return path.toString();
-            }
-            logger.warning(() -> "Primary dictionary path not found: " + primaryPath + ", trying fallback");
+    private String resolveDictionaryPath(String dictionaryPath) {
+        if (dictionaryPath == null || dictionaryPath.isEmpty()) {
+            throw new IllegalArgumentException("Dictionary path is null or empty");
         }
         
-        // Try fallback path
-        if (fallbackPath != null && !fallbackPath.isEmpty()) {
-            // First check if it's a classpath resource
-            InputStream resourceStream = getClass().getClassLoader().getResourceAsStream(fallbackPath);
-            if (resourceStream != null) {
-                try {
-                    resourceStream.close();
-                    // Return the classpath path prefixed with "classpath:"
-                    logger.info(() -> "Using classpath resource: " + fallbackPath);
-                    return "classpath:" + fallbackPath;
-                } catch (IOException e) {
-                    logger.warning(() -> "Error checking classpath resource: " + fallbackPath);
-                }
-            }
-            
-            // Check as filesystem path
-            Path path = Paths.get(fallbackPath);
-            if (!path.isAbsolute()) {
-                path = Paths.get(System.getProperty("user.dir"), fallbackPath);
-            }
-            
-            final Path finalPath = path;
-            if (Files.exists(finalPath)) {
-                logger.info(() -> "Using filesystem fallback: " + finalPath);
-                return finalPath.toString();
+        // First check if it's a classpath resource
+        InputStream resourceStream = getClass().getClassLoader().getResourceAsStream(dictionaryPath);
+        if (resourceStream != null) {
+            try {
+                resourceStream.close();
+                logger.info(() -> "Using classpath resource: " + dictionaryPath);
+                return "classpath:" + dictionaryPath;
+            } catch (IOException e) {
+                logger.warning(() -> "Error checking classpath resource: " + dictionaryPath);
             }
         }
         
-        // If both paths failed, return null to indicate failure
-        logger.severe(() -> "Failed to resolve dictionary path. Primary: " + primaryPath + ", Fallback: " + fallbackPath);
-        return null;
-    }
-    
-    /**
-     * Get word length for a specific dictionary
-     */
-    public int getWordLengthForDictionary(String dictionaryId) {
-        String wordLengthStr = properties.getProperty("dictionaries." + dictionaryId + ".wordLength");
-        if (wordLengthStr != null) {
-            return Integer.parseInt(wordLengthStr);
+        // Then check as filesystem path
+        Path path = Paths.get(dictionaryPath);
+        if (!path.isAbsolute()) {
+            path = Paths.get(System.getProperty("user.dir"), dictionaryPath);
         }
-        return getWordLength(); // Default
+        
+        final Path finalPath = path;
+        if (Files.exists(finalPath)) {
+            logger.info(() -> "Using filesystem path: " + finalPath);
+            return finalPath.toString();
+        }
+        
+        // Fail explicitly if dictionary not found
+        throw new IllegalArgumentException("Dictionary file not found: " + dictionaryPath + " (resolved to: " + finalPath + ")");
     }
 }

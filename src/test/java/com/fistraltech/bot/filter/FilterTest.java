@@ -1,18 +1,19 @@
 package com.fistraltech.bot.filter;
 
-import static org.junit.jupiter.api.Assertions.*;
+import java.util.HashSet;
+import java.util.Set;
 
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
 
 import com.fistraltech.core.Dictionary;
+import com.fistraltech.core.InvalidWordException;
 import com.fistraltech.core.Response;
 import com.fistraltech.core.WordGame;
-import com.fistraltech.core.InvalidWordException;
 import com.fistraltech.util.Config;
-
-import java.util.Set;
-import java.util.HashSet;
+import com.fistraltech.util.ConfigManager;
 
 /**
  * Comprehensive tests for the Filter class, focusing on edge cases involving
@@ -280,7 +281,7 @@ class FilterTest {
     
     // Helper method to create test Config objects
     private Config createTestConfig() {
-        Config config = new Config();
+        Config config = ConfigManager.getInstance().createGameConfig();
         config.setWordLength(5);
         config.setMaxAttempts(6);
         return config;

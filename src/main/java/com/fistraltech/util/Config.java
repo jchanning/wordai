@@ -1,5 +1,11 @@
 package com.fistraltech.util;
 
+import com.fistraltech.server.dto.DictionaryOption;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 public class Config {
 
     private int wordLength;
@@ -8,6 +14,12 @@ public class Config {
     private boolean showHints;
     private String pathToDictionaryOfAllWords;
     private String pathToDictionaryOfGameWords;
+    
+    // Additional configuration properties
+    private String outputBasePath;
+    private int simulationIterations = 1;
+    private List<DictionaryOption> availableDictionaries;
+    private Map<String, DictionaryOption> dictionaryOptionsMap = new HashMap<>();
 
     public String getPathToDictionaryOfAllWords() {
         return pathToDictionaryOfAllWords;
@@ -55,5 +67,52 @@ public class Config {
 
     public void setShowHints(boolean showHints) {
         this.showHints = showHints;
+    }
+    
+    public String getOutputBasePath() {
+        return outputBasePath;
+    }
+    
+    public void setOutputBasePath(String outputBasePath) {
+        this.outputBasePath = outputBasePath;
+    }
+    
+    public int getSimulationIterations() {
+        return simulationIterations;
+    }
+    
+    public void setSimulationIterations(int simulationIterations) {
+        this.simulationIterations = simulationIterations;
+    }
+    
+    public List<DictionaryOption> getAvailableDictionaries() {
+        return availableDictionaries;
+    }
+    
+    public void setAvailableDictionaries(List<DictionaryOption> availableDictionaries) {
+        this.availableDictionaries = availableDictionaries;
+        // Build map for quick lookup by ID
+        dictionaryOptionsMap.clear();
+        if (availableDictionaries != null) {
+            for (DictionaryOption option : availableDictionaries) {
+                dictionaryOptionsMap.put(option.getId(), option);
+            }
+        }
+    }
+    
+    /**
+     * Get dictionary path by ID
+     */
+    public String getDictionaryPathById(String id) {
+        DictionaryOption option = dictionaryOptionsMap.get(id);
+        return option != null ? option.getResolvedPath() : null;
+    }
+    
+    /**
+     * Get word length for a specific dictionary
+     */
+    public int getWordLengthForDictionary(String dictionaryId) {
+        DictionaryOption option = dictionaryOptionsMap.get(dictionaryId);
+        return option != null ? option.getWordLength() : wordLength;
     }
 }

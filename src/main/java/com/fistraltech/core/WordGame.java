@@ -96,65 +96,7 @@ public class WordGame {
     }
 
     public Response evaluate(String word) throws InvalidWordException {
-        char[] guessedLetters = word.toCharArray();
-        boolean isWinner = word.equals(targetWord);
-
-        // Use to track the partial matches when a letter occurs multiple times in the guess or target word
-        boolean[] targetLetterUsed = new boolean[wordLength];
-
-
-        // Statuses are Red, Amber, Green, or eXcess
-        char[] statusArray = new char[wordLength];
-
-        // First pass: check for correct letters in the correct position
-        for (int i = 0; i < wordLength; ++i) {
-            if (guessedLetters[i] == targetWordLetters[i]) {
-                statusArray[i] = 'G';
-                targetLetterUsed[i] = true;
-            } else {
-                statusArray[i] = 'R';
-            }
-        }
-
-        // Second pass: check for correct letters in the wrong position
-        for (int i = 0; i < wordLength; ++i) {
-            if (statusArray[i] == 'R') {
-                for (int j = 0; j < wordLength; ++j) {
-                    if (!targetLetterUsed[j] && guessedLetters[i] == targetWordLetters[j]) {
-                        statusArray[i] = 'A';
-                        targetLetterUsed[j] = true;
-                        break;
-                    }
-                }
-            }
-        }
-        
-        // Third pass: mark excess letters as 'X' instead of 'R'
-        // If a letter has Green or Amber status elsewhere, remaining Red instances should be X (excess)
-        for (int i = 0; i < wordLength; ++i) {
-            if (statusArray[i] == 'R') {
-                // Check if this letter appears with G or A status anywhere else
-                boolean hasGreenOrAmber = false;
-                for (int j = 0; j < wordLength; ++j) {
-                    if (guessedLetters[i] == guessedLetters[j] && (statusArray[j] == 'G' || statusArray[j] == 'A')) {
-                        hasGreenOrAmber = true;
-                        break;
-                    }
-                }
-                if (hasGreenOrAmber) {
-                    statusArray[i] = 'X'; // Excess instance of a letter that exists in the word
-                }
-            }
-        }
-        
-        //Build the response object
-        Response response = new Response(word);
-        response.setWinner(isWinner);
-
-        for (int i = 0; i < wordLength; ++i) {
-            response.setStatus(guessedLetters[i], statusArray[i]);
-        }
-        return response;
+        return GameResponse.evaluate(targetWord, word);
     }
 
     /** When a guess is made, information is returned to the player */

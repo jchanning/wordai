@@ -1,5 +1,7 @@
 package com.fistraltech.server.model;
 
+import com.fistraltech.bot.filter.Filter;
+import com.fistraltech.bot.selection.SelectMaximumDictionaryReduction;
 import com.fistraltech.bot.selection.SelectMaximumEntropy;
 import com.fistraltech.bot.selection.SelectRandom;
 import com.fistraltech.bot.selection.SelectionAlgo;
@@ -16,8 +18,9 @@ public class GameSession {
     private final WordGame wordGame;
     private final Config config;
     private final Dictionary originalDictionary;
-    private final com.fistraltech.bot.filter.Filter wordFilter;
+    private final Filter wordFilter;
     private boolean gameEnded = false;
+    // Only valid in auto-play mode. In user interactive mode, strategy is chosen per guess.
     private String selectedStrategy = "RANDOM"; // Default strategy
     
     public GameSession(String gameId, WordGame wordGame, Config config, Dictionary dictionary) {
@@ -25,7 +28,7 @@ public class GameSession {
         this.wordGame = wordGame;
         this.config = config;
         this.originalDictionary = dictionary;
-        this.wordFilter = new com.fistraltech.bot.filter.Filter(dictionary.getWordLength());
+        this.wordFilter = new Filter(dictionary.getWordLength());
     }
     
     public String getGameId() {
@@ -60,7 +63,7 @@ public class GameSession {
         return getCurrentAttempts() >= getMaxAttempts();
     }
     
-    public com.fistraltech.bot.filter.Filter getWordFilter() {
+    public Filter getWordFilter() {
         return wordFilter;
     }
     
@@ -107,6 +110,9 @@ public class GameSession {
                 break;
             case "MINIMISE_COLUMN_LENGTHS":
                 algo = new com.fistraltech.bot.selection.MinimiseColumnLengths(filteredDictionary);
+                break;
+            case "DICTIONARY_REDUCTION":
+                algo = new SelectMaximumDictionaryReduction(filteredDictionary);
                 break;
             case "RANDOM":
             default:

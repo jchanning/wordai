@@ -8,6 +8,7 @@ public class DictionaryOption {
     private String name;
     private String path;
     private String fallbackPath;
+    private String resolvedPath;  // The actual resolved path (either primary or fallback)
     private int wordLength;
     private String description;
     private boolean available;
@@ -79,5 +80,13 @@ public class DictionaryOption {
     
     public void setAvailable(boolean available) {
         this.available = available;
+    }
+    
+    public String getResolvedPath() {
+        return resolvedPath;
+    }
+    
+    public void setResolvedPath(String resolvedPath) {
+        this.resolvedPath = resolvedPath;
     }
 }

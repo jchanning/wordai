@@ -56,6 +56,7 @@
                         <option value="ENTROPY" selected>Maximum Entropy</option>
                         <option value="MOST_COMMON_LETTERS">Most Common Letters</option>
                         <option value="MINIMISE_COLUMN_LENGTHS">Minimise Column Lengths</option>
+                        <option value="DICTIONARY_REDUCTION">Dictionary Reduction</option>
                     </select>
                 </div>
                 <div class="form-group">
@@ -123,6 +124,11 @@
                 </div>
             </div>
             
+            <h3>Guess Distribution</h3>
+            <div id="attemptsDistribution" style="padding: var(--padding-md); background: var(--bg-primary); border-radius: 0.5rem;">
+                <p style="text-align: center; color: var(--text-secondary); font-size: 0.85em;">No games played yet</p>
+            </div>
+            
             <h3>Recent Games</h3>
             <div class="game-history" id="game-history">
                 <p class="empty-history-msg" style="text-align: center; color: var(--text-secondary); padding: 20px;">No games played yet</p>
@@ -164,6 +170,7 @@
                         <option value="ENTROPY">Maximum Entropy</option>
                         <option value="MOST_COMMON_LETTERS">Most Common Letters</option>
                         <option value="MINIMISE_COLUMN_LENGTHS">Minimise Column Lengths</option>
+                        <option value="DICTIONARY_REDUCTION">Dictionary Reduction</option>
                     </select>
                     
                     <div class="suggestion-controls" style="display: flex; gap: 10px; margin-bottom: 12px;">

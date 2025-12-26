@@ -1,10 +1,12 @@
 package com.fistraltech.bot.selection;
 
-import com.fistraltech.analysis.DictionaryAnalyser;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+
+import com.fistraltech.analysis.DictionaryAnalytics;
 import com.fistraltech.core.Dictionary;
 import com.fistraltech.core.Response;
-
-import java.util.*;
 /** In this strategy, a configurable number of the most commonly occurring letters are selected and the word list is
  * filtered to contain only the words containing those letters. A word is then  randomly selected from this subset.  
  * Selecting 3 of the most commonly found letters was found to be the optimal strategy, using 4 or 5 letters 
@@ -29,7 +31,7 @@ public class SelectMostCommonLetters extends SelectionAlgo {
      * @return a randomly selected word from the filtered subset of words
      */
     String selectWord(Response lastResponse, Dictionary dictionary) {
-        DictionaryAnalyser analyser = new DictionaryAnalyser(dictionary);
+        DictionaryAnalytics analyser = new DictionaryAnalytics(dictionary);
         List<Map.Entry<Character, Integer>> letterFrequency = new ArrayList<>(analyser.getLetterCount().entrySet());
         letterFrequency.sort(Map.Entry.comparingByValue());
 

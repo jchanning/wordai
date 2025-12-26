@@ -5,7 +5,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-import com.fistraltech.analysis.DictionaryAnalyser;
+import com.fistraltech.analysis.WordEntropy;
 import com.fistraltech.core.Dictionary;
 import com.fistraltech.core.Response;
 
@@ -62,7 +62,7 @@ public class MinimiseColumnLengths extends SelectionAlgo{
         
         // Otherwise, calculate and cache
         Map<String, Float> results = new HashMap<>();
-        DictionaryAnalyser analyser = new DictionaryAnalyser(dictionary);
+        WordEntropy analyser = new WordEntropy(dictionary);
         
         // Evaluate each candidate word
         for (String candidateWord : dictionary.getMasterSetOfWords()) {
@@ -106,7 +106,7 @@ public class MinimiseColumnLengths extends SelectionAlgo{
      * @param analyser pre-constructed analyser for this dictionary
      * @return expected column length (lower is better)
      */
-    private float calculateExpectedColumnLength(String candidateWord, Dictionary dictionary, DictionaryAnalyser analyser) {
+    private float calculateExpectedColumnLength(String candidateWord, Dictionary dictionary, WordEntropy analyser) {
         Map<String, Set<String>> buckets = analyser.getResponseBuckets(candidateWord);
         int dictionarySize = dictionary.getWordCount();
         int wordLength = dictionary.getWordLength();

@@ -732,6 +732,69 @@ function updateHistoryDisplay() {
     historyContainer.innerHTML = tableHtml;
 }
 
+function updateAttemptsDistribution() {
+    const stats = getGameStats();
+    const container = document.getElementById('attemptsDistribution');
+    
+    if (stats.total === 0) {
+        container.innerHTML = '<p style="text-align: center; color: var(--text-secondary); font-size: 0.85em;">No games played yet</p>';
+        return;
+    }
+    
+    // Count attempts 1-6 and failures
+    const distribution = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0, fail: stats.lost };
+    
+    stats.wonGames.forEach(attempts => {
+        if (attempts >= 1 && attempts <= 6) {
+            distribution[attempts]++;
+        }
+    });
+    
+    // Find max count for scaling
+    const maxCount = Math.max(...Object.values(distribution));
+    
+    // Build chart HTML
+    let chartHTML = '<div style="display: flex; flex-direction: column; gap: 6px;">';
+    
+    for (let i = 1; i <= 6; i++) {
+        const count = distribution[i];
+        const percentage = maxCount > 0 ? (count / maxCount) * 100 : 0;
+        const barColor = 'var(--correct)';
+        
+        chartHTML += `
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <div style="min-width: 12px; text-align: right; font-size: 0.9em; font-weight: 600; color: var(--text-primary);">${i}</div>
+                <div style="flex: 1; height: 24px; background: rgba(106, 170, 100, 0.2); border-radius: 4px; overflow: hidden; position: relative;">
+                    <div style="height: 100%; width: ${percentage}%; background: ${barColor}; transition: width 0.3s ease; display: flex; align-items: center; justify-content: flex-end; padding-right: 6px;">
+                        ${count > 0 ? `<span style="font-size: 0.85em; font-weight: 600; color: white;">${count}</span>` : ''}
+                    </div>
+                    ${count === 0 ? `<div style="position: absolute; left: 6px; top: 50%; transform: translateY(-50%); font-size: 0.85em; color: var(--text-secondary);">${count}</div>` : ''}
+                </div>
+            </div>
+        `;
+    }
+    
+    // Add failures bar (in red)
+    const failCount = distribution.fail;
+    const failPercentage = maxCount > 0 ? (failCount / maxCount) * 100 : 0;
+    const failBarColor = 'var(--error)';
+    
+    chartHTML += `
+        <div style="display: flex; align-items: center; gap: 8px;">
+            <div style="min-width: 12px; text-align: right; font-size: 0.9em; font-weight: 600; color: var(--error);">✗</div>
+            <div style="flex: 1; height: 24px; background: rgba(239, 68, 68, 0.2); border-radius: 4px; overflow: hidden; position: relative;">
+                <div style="height: 100%; width: ${failPercentage}%; background: ${failBarColor}; transition: width 0.3s ease; display: flex; align-items: center; justify-content: flex-end; padding-right: 6px;">
+                    ${failCount > 0 ? `<span style="font-size: 0.85em; font-weight: 600; color: white;">${failCount}</span>` : ''}
+                </div>
+                ${failCount === 0 ? `<div style="position: absolute; left: 6px; top: 50%; transform: translateY(-50%); font-size: 0.85em; color: var(--text-secondary);">${failCount}</div>` : ''}
+            </div>
+        </div>
+    `;
+    
+    chartHTML += '</div>';
+    container.innerHTML = chartHTML;
+}
+
 function updateStats() {
     const stats = getGameStats();
     
@@ -743,6 +806,7 @@ function updateStats() {
         document.getElementById('stat-min').textContent = '-';
         document.getElementById('stat-max').textContent = '-';
         document.getElementById('stat-avg').textContent = '-';
+        updateAttemptsDistribution();
         return;
     }
     
@@ -771,6 +835,8 @@ function updateStats() {
     document.getElementById('stat-min').textContent = minGuesses;
     document.getElementById('stat-max').textContent = maxGuesses;
     document.getElementById('stat-avg').textContent = avgGuesses;
+    
+    updateAttemptsDistribution();
 }
 
 // Strategy and Suggestion Functions
@@ -851,6 +917,8 @@ function getStrategyDisplayName(strategy) {
             return 'Most Common Letters';
         case 'MINIMISE_COLUMN_LENGTHS':
             return 'Minimise Column Lengths';
+        case 'DICTIONARY_REDUCTION':
+            return 'Dictionary Reduction';
         default:
             return strategy;
     }
@@ -867,6 +935,8 @@ function updateStrategyTips(strategy) {
         tipsDiv.innerHTML = '<strong>Most Common Letters:</strong> Selects words containing the most frequently occurring letters in the remaining word pool. Prioritizes common letter patterns.';
     } else if (strategy === 'MINIMISE_COLUMN_LENGTHS') {
         tipsDiv.innerHTML = '<strong>Minimise Column Lengths:</strong> Selects guesses that most effectively reduce the number of possible letters at each position. Directly minimizes positional entropy for maximum constraint.';
+    } else if (strategy === 'DICTIONARY_REDUCTION') {
+        tipsDiv.innerHTML = '<strong>Dictionary Reduction:</strong> Selects the word that maximally reduces the dictionary size. Optimizes for the greatest expected reduction in remaining possibilities.';
     }
 }
 

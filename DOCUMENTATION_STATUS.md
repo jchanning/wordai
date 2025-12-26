@@ -70,7 +70,7 @@ All enhanced class documentation now includes:
 🔲 **Timer** - Needs review
 
 ### Analysis Package (`com.fistraltech.analysis`)
-🔲 **DictionaryAnalyser** - Needs review
+🔲 **DictionaryAnalytics** - Needs review
 🔲 **PlayerAnalyser** - Needs review
 🔲 **ComplexityAnalyser** - Needs review
 🔲 **Entropy** - Needs review

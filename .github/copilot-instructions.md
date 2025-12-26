@@ -10,7 +10,7 @@ WordAI is a Wordle-like simulation and analysis system. This guide equips AI age
 	- `WordGamePlayer` + `SelectionAlgo` strategies (e.g., random, letter-frequency, fixed-first-word).
 	- `filter.Filter`: Prunes dictionary using `Response` and occurrence rules.
 - `com.fistraltech.analysis`: Analytics
-	- `DictionaryAnalyser`: letter/position stats, response buckets, entropy and max-entropy word.
+	- `DictionaryAnalytics`: letter/position stats, response buckets, entropy and max-entropy word.
 	- `GameAnalytics`: writes CSV summaries; `ComplexityAnalyser`: performance.
 - `com.fistraltech.server`: Simple HTTP API and static UI (`static/css`, `static/js`, `index.html`).
 
@@ -21,7 +21,7 @@ WordAI is a Wordle-like simulation and analysis system. This guide equips AI age
 	- `X`: letter present but too many occurrences; treat like `A` and track counts.
 	- `R`: letter absent; remove from all positions.
 - Selection strategies implement `SelectionAlgo.selectWord(Response lastResponse, Dictionary dictionary)`.
-- Entropy: `DictionaryAnalyser.getEntropy(word)` computes $-\sum p \log_2 p$ from `getResponseBuckets(word)`.
+- Entropy: `DictionaryAnalytics.getEntropy(word)` computes $-\sum p \log_2 p$ from `getResponseBuckets(word)`.
 
 ## Build, Test, Run
 - Build/tests: `mvn clean test` (JUnit 5). Artifacts in `target/`.
@@ -45,7 +45,7 @@ WordAI is a Wordle-like simulation and analysis system. This guide equips AI age
 	public class SelectHighestEntropy extends SelectionAlgo {
 			@Override
 			public String selectWord(Response lastResponse, Dictionary dictionary) {
-					return new DictionaryAnalyser(dictionary).getMaximumEntropyWord();
+					return new DictionaryAnalytics(dictionary).getMaximumEntropyWord();
 			}
 	}
 	```

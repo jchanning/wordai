@@ -30,6 +30,7 @@ import com.fistraltech.server.dto.DictionaryOption;
 import com.fistraltech.server.dto.GameResponse;
 import com.fistraltech.server.dto.GuessRequest;
 import com.fistraltech.server.model.GameSession;
+import com.fistraltech.util.Config;
 import com.fistraltech.util.ConfigManager;
 
 /**
@@ -66,8 +67,8 @@ public class WordGameController {
     @GetMapping("/dictionaries")
     public ResponseEntity<List<DictionaryOption>> getDictionaries() {
         try {
-            ConfigManager configManager = ConfigManager.getInstance();
-            List<DictionaryOption> dictionaries = configManager.getAvailableDictionaries();
+            Config config = ConfigManager.getInstance().createGameConfig();
+            List<DictionaryOption> dictionaries = config.getAvailableDictionaries();
             return ResponseEntity.ok(dictionaries);
         } catch (Exception e) {
             logger.log(Level.SEVERE, "Error getting dictionaries: {0}", e.getMessage());
@@ -103,7 +104,7 @@ public class WordGameController {
             
             // Add initial dictionary metrics
             com.fistraltech.core.Dictionary filteredDict = session.getFilteredDictionary();
-            com.fistraltech.analysis.DictionaryAnalyser analyser = new com.fistraltech.analysis.DictionaryAnalyser(filteredDict);
+            com.fistraltech.analysis.DictionaryAnalytics analyser = new com.fistraltech.analysis.DictionaryAnalytics(filteredDict);
             
             CreateGameResponse.DictionaryMetrics metrics = new CreateGameResponse.DictionaryMetrics(
                 filteredDict.getWordCount(),
@@ -166,7 +167,7 @@ public class WordGameController {
             
             // Add dictionary metrics
             com.fistraltech.core.Dictionary filteredDict = session.getFilteredDictionary();
-            com.fistraltech.analysis.DictionaryAnalyser analyser = new com.fistraltech.analysis.DictionaryAnalyser(filteredDict);
+            com.fistraltech.analysis.DictionaryAnalytics analyser = new com.fistraltech.analysis.DictionaryAnalytics(filteredDict);
             
             GameResponse.DictionaryMetrics metrics = new GameResponse.DictionaryMetrics(
                 filteredDict.getLetterCount(),

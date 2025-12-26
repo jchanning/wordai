@@ -9,6 +9,7 @@ import java.util.logging.Logger;
 
 import org.springframework.stereotype.Service;
 
+import com.fistraltech.bot.filter.Filter;
 import com.fistraltech.core.Dictionary;
 import com.fistraltech.core.InvalidWordException;
 import com.fistraltech.core.Response;
@@ -27,17 +28,18 @@ public class WordGameService {
     
     private final Map<String, GameSession> activeSessions = new ConcurrentHashMap<>();
     private final Dictionary dictionary;
-    private final ConfigManager configManager;
+    private final Config config;
     
     public WordGameService() throws IOException {
-        this.configManager = ConfigManager.getInstance();
+        ConfigManager configManager = ConfigManager.getInstance();
+        this.config = configManager.createGameConfig();
         
         if (!configManager.validateConfiguration()) {
             throw new IOException("Configuration validation failed");
         }
         
-        String fileName = configManager.getDictionaryPath();
-        int wordLength = configManager.getWordLength();
+        String fileName = config.getPathToDictionaryOfAllWords();
+        int wordLength = config.getWordLength();
         this.dictionary = new Dictionary(wordLength);
         
         // Filter words to only include those with correct length
@@ -69,16 +71,16 @@ public class WordGameService {
         
         if (dictionaryId != null && !dictionaryId.isEmpty()) {
             // Use specified dictionary
-            dictionaryPath = configManager.getDictionaryPathById(dictionaryId);
+            dictionaryPath = config.getDictionaryPathById(dictionaryId);
             if (dictionaryPath == null) {
                 logger.warning("Dictionary not found for ID: " + dictionaryId);
                 throw new InvalidWordException("Dictionary not found: " + dictionaryId);
             }
-            actualWordLength = configManager.getWordLengthForDictionary(dictionaryId);
+            actualWordLength = config.getWordLengthForDictionary(dictionaryId);
         } else {
             // Use default dictionary
-            dictionaryPath = configManager.getDictionaryPath();
-            actualWordLength = wordLength != null ? wordLength : configManager.getWordLength();
+            dictionaryPath = config.getPathToDictionaryOfAllWords();
+            actualWordLength = wordLength != null ? wordLength : config.getWordLength();
         }
         
         // Create dictionary for this word length
@@ -96,8 +98,11 @@ public class WordGameService {
             throw new InvalidWordException("Failed to create game with dictionary: " + dictionaryId);
         }
         
-        Config gameConfig = configManager.createGameConfig();
+        Config gameConfig = new Config();
         gameConfig.setWordLength(actualWordLength);
+        gameConfig.setMaxAttempts(config.getMaxAttempts());
+        gameConfig.setPathToDictionaryOfAllWords(dictionaryPath);
+        gameConfig.setPathToDictionaryOfGameWords(dictionaryPath);
         WordGame wordGame = new WordGame(gameDictionary, gameConfig);
         
         // Set target word
@@ -189,7 +194,7 @@ public class WordGameService {
      * @param guessedWord The word that was guessed
      * @param response The response from the game
      */
-    private void updateFilterBasedOnResponse(com.fistraltech.bot.filter.Filter filter, Response response) {
+    private void updateFilterBasedOnResponse(Filter filter, Response response) {
         // Use the Filter's built-in update method which handles all the complex logic
         // including duplicate letters, excess markers, and proper counting
         filter.update(response);

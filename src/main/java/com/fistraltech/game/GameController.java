@@ -6,7 +6,7 @@ import com.fistraltech.core.Dictionary;
 import com.fistraltech.core.InvalidWordException;
 import com.fistraltech.core.Response;
 import com.fistraltech.core.WordGame;
-import com.fistraltech.util.Config;
+import com.fistraltech.util.ConfigManager;
 
 /**
  * Controller class that manages the game flow and coordinates between the word dictionaries
@@ -46,7 +46,8 @@ public class GameController {
     private WordGame game;
     
     /** Configuration object containing game settings and parameters */
-    private Config config;
+    private ConfigManager configManager;
+    private com.fistraltech.util.Config config;
 
     /**
      * Retrieves the dictionary containing all valid words that can be guessed in the game.
@@ -73,7 +74,8 @@ public class GameController {
      * before loading dictionaries will result in exceptions.
      */
     public GameController(){
-        this.config = new Config();
+        this.configManager = ConfigManager.getInstance();
+        this.config = configManager.createGameConfig();
         this.config.setMaxAttempts(6);
         this.game = new WordGame(allValidWords, allValidWords, config);
     }
