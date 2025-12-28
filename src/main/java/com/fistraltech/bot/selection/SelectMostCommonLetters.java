@@ -7,13 +7,27 @@ import java.util.Map;
 import com.fistraltech.analysis.DictionaryAnalytics;
 import com.fistraltech.core.Dictionary;
 import com.fistraltech.core.Response;
-/** In this strategy, a configurable number of the most commonly occurring letters are selected and the word list is
- * filtered to contain only the words containing those letters. A word is then  randomly selected from this subset.  
- * Selecting 3 of the most commonly found letters was found to be the optimal strategy, using 4 or 5 letters 
- * frequently leads to an empty list of words.
+
+/**
+ * Selection algorithm that biases guesses toward high-frequency letters in the remaining candidate set.
  *
- * Large scale simulation testing proved that this strategy is marginally better than just a random selection.
- * */
+ * <p>The algorithm computes overall letter frequencies for the current dictionary and then filters the dictionary
+ * to words that contain the top N most frequent letters. A word is then selected at random from this subset.
+ *
+ * <p><strong>Heuristic</strong>
+ * <ul>
+ *   <li>Compute letter counts over remaining candidates.</li>
+ *   <li>Choose the top 3 letters and filter to words containing them.</li>
+ *   <li>If that yields no candidates (too strict), fall back to top 2 letters.</li>
+ *   <li>Select a random word from the resulting subset.</li>
+ * </ul>
+ *
+ * <p><strong>When to use</strong>: a lightweight improvement over pure random selection.
+ *
+ * <p><strong>Thread safety</strong>: not thread-safe; use one instance per game.
+ *
+ * @author Fistral Technologies
+ */
 
 public class SelectMostCommonLetters extends SelectionAlgo {
 
@@ -22,14 +36,13 @@ public class SelectMostCommonLetters extends SelectionAlgo {
         setAlgoName("MostCommonLetters");
     }
 
-    @Override
     /**
-     * Selects a word from the dictionary based on the most common letters found in the last response.
+     * Selects a candidate word using the most common letters in the current dictionary.
      *
-     * @param lastResponse the last response received
-     * @param dictionary the dictionary to select words from
-     * @return a randomly selected word from the filtered subset of words
+     * <p>Note: {@code lastResponse} is not used directly; the {@link SelectionAlgo} base class has already
+     * applied it to produce the filtered {@code dictionary} passed in here.
      */
+    @Override
     String selectWord(Response lastResponse, Dictionary dictionary) {
         DictionaryAnalytics analyser = new DictionaryAnalytics(dictionary);
         List<Map.Entry<Character, Integer>> letterFrequency = new ArrayList<>(analyser.getLetterCount().entrySet());

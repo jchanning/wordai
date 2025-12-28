@@ -1,7 +1,23 @@
 package com.fistraltech.server.dto;
 
 /**
- * DTO representing a dictionary option available for selection
+ * DTO describing a dictionary option that the server can load.
+ *
+ * <p><strong>Endpoint</strong>: {@code GET /api/wordai/dictionaries}
+ *
+ * <p><strong>Example</strong>
+ * <pre>{@code
+ * {
+ *   "id": "5",
+ *   "name": "5 Letters",
+ *   "wordLength": 5,
+ *   "description": "Official 5-letter word list",
+ *   "available": true,
+ *   "resolvedPath": "..."
+ * }
+ * }</pre>
+ *
+ * @author Fistral Technologies
  */
 public class DictionaryOption {
     private String id;

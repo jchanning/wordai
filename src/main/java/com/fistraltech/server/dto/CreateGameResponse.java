@@ -3,7 +3,27 @@ package com.fistraltech.server.dto;
 import java.util.List;
 
 /**
- * Data Transfer Object for game creation responses
+ * Response DTO returned when a new game session is created.
+ *
+ * <p><strong>Endpoint</strong>: {@code POST /api/wordai/games}
+ *
+ * <p><strong>Example</strong>
+ * <pre>{@code
+ * {
+ *   "gameId": "...",
+ *   "wordLength": 5,
+ *   "maxAttempts": 6,
+ *   "message": "Game created successfully! Start guessing!",
+ *   "dictionaryMetrics": {
+ *     "totalWords": 2315,
+ *     "letterCount": 11575,
+ *     "uniqueCharacters": 26,
+ *     "columnLengths": [26,26,26,26,26]
+ *   }
+ * }
+ * }</pre>
+ *
+ * @author Fistral Technologies
  */
 public class CreateGameResponse {
     private String gameId;
@@ -37,7 +57,7 @@ public class CreateGameResponse {
     public void setDictionaryMetrics(DictionaryMetrics dictionaryMetrics) { this.dictionaryMetrics = dictionaryMetrics; }
     
     /**
-     * Metrics about the initial dictionary state
+     * Metrics describing the dictionary state at game creation time.
      */
     public static class DictionaryMetrics {
         private int totalWords;

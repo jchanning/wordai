@@ -11,7 +11,31 @@ import com.fistraltech.core.WordGame;
 import com.fistraltech.util.Config;
 
 /**
- * Represents a game session that can be stored and managed by the server
+ * In-memory representation of a single active game.
+ *
+ * <p>A {@link GameSession} binds together:
+ * <ul>
+ *   <li>the active {@link WordGame} instance (target word + guess history)</li>
+ *   <li>a cumulative {@link Filter} that encodes constraints derived from guesses</li>
+ *   <li>the original dictionary/config context used to create the game</li>
+ * </ul>
+ *
+ * <p><strong>Lifecycle</strong>
+ * <ol>
+ *   <li>Created by {@link com.fistraltech.server.WordGameService#createGame(String, Integer, String)}.</li>
+ *   <li>Mutated by guesses via {@link com.fistraltech.server.WordGameService#makeGuess(String, String)}.</li>
+ *   <li>Deleted via {@link com.fistraltech.server.WordGameService#removeGameSession(String)}.</li>
+ * </ol>
+ *
+ * <p><strong>Strategy</strong>
+ * <ul>
+ *   <li>The API stores a strategy id string (default {@code RANDOM}).</li>
+ *   <li>{@link #suggestWord()} uses the current strategy to propose a next guess based on the filtered dictionary.</li>
+ * </ul>
+ *
+ * <p><strong>Thread safety</strong>: sessions are not thread-safe; treat each {@code gameId} as single-writer.
+ *
+ * @author Fistral Technologies
  */
 public class GameSession {
     private final String gameId;
@@ -85,15 +109,16 @@ public class GameSession {
     }
     
     /**
-     * Get the current filtered dictionary based on guesses made so far
+     * Gets the current filtered dictionary based on all guesses made so far.
      */
     public Dictionary getFilteredDictionary() {
         return wordFilter.apply(originalDictionary);
     }
     
     /**
-     * Suggests a word based on the selected strategy
-     * @return A suggested word, or null if no valid words remain
+     * Suggests a next word based on {@link #selectedStrategy}.
+     *
+     * @return a suggested word, or {@code null} if no valid words remain
      */
     public String suggestWord() {
         Dictionary filteredDictionary = getFilteredDictionary();

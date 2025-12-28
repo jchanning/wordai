@@ -1,7 +1,16 @@
 package com.fistraltech.server.dto;
 
 /**
- * Data Transfer Object for guess requests
+ * Request DTO for submitting a guess.
+ *
+ * <p><strong>Endpoint</strong>: {@code POST /api/wordai/games/{gameId}/guess}
+ *
+ * <p><strong>Example</strong>
+ * <pre>{@code
+ * { "word": "CRANE" }
+ * }</pre>
+ *
+ * @author Fistral Technologies
  */
 public class GuessRequest {
     private String word;

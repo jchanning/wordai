@@ -1,6 +1,7 @@
 const API_BASE = '/api/wordai';
 let currentGameId = null;
 let gameEnded = false;
+let currentView = 'play';
 let currentWordLength = 5; // Track the current game's word length
 let currentDictionarySize = 2315; // Track the current dictionary's total word count
 let helpUsedCount = 0; // Track how many times help has been used in this game
@@ -9,11 +10,79 @@ let currentGameGuesses = []; // Track all guesses with their responses and metri
 
 // Initialize page
 window.addEventListener('DOMContentLoaded', function() {
+    initRouter();
+
+    // Create initial letter inputs with default word length
+    adjustLetterInputGrid(5);
+    
     newGame();
     updateHistoryDisplay();
     updateStats();
     updateHelpCounter();
 });
+
+function initRouter() {
+    window.addEventListener('hashchange', onRouteChange);
+    onRouteChange();
+}
+
+function onRouteChange() {
+    const hash = window.location.hash || '#/play';
+    const route = hash.replace(/^#\//, '').trim();
+    const view = route || 'play';
+    setView(view);
+}
+
+function setView(view) {
+    currentView = view;
+    const viewIds = ['play', 'session', 'bot-demo', 'bot-performance', 'dictionary', 'admin'];
+    viewIds.forEach(v => {
+        const section = document.getElementById(`screen-${v}`);
+        if (section) {
+            section.hidden = v !== view;
+        }
+    });
+
+    ensureGameViewHost(view);
+
+    document.querySelectorAll('.nav-link[data-nav]').forEach(link => {
+        const isActive = link.getAttribute('data-nav') === view;
+        link.classList.toggle('active', isActive);
+        if (isActive) {
+            link.setAttribute('aria-current', 'page');
+        } else {
+            link.removeAttribute('aria-current');
+        }
+    });
+
+    // The global dictionary selector is used for play + dictionary exploration.
+    const dictSelector = document.getElementById('dictionarySelector');
+    if (dictSelector) {
+        dictSelector.style.display = (view === 'play' || view === 'dictionary') ? '' : 'none';
+    }
+
+    if (view === 'dictionary') {
+        refreshDictionaryScreen();
+    }
+}
+
+function ensureGameViewHost(view) {
+    const gameView = document.getElementById('gameView');
+    if (!gameView) {
+        return;
+    }
+
+    const playHost = document.getElementById('playGameHost');
+    const botHost = document.getElementById('botDemoGameHost');
+    if (!playHost || !botHost) {
+        return;
+    }
+
+    const targetHost = view === 'bot-demo' ? botHost : playHost;
+    if (gameView.parentElement !== targetHost) {
+        targetHost.appendChild(gameView);
+    }
+}
 
 function setupLetterInputs() {
     const inputs = document.querySelectorAll('.letter-input');
@@ -88,15 +157,94 @@ function disableLetterInputs() {
     });
 }
 
-function showStatus(message, type = 'info') {
+let statusHideTimer = null;
+
+function isStatusInteracting(statusDiv) {
+    if (!statusDiv) return false;
+    if (statusDiv.matches(':hover')) return true;
+    const active = document.activeElement;
+    return !!(active && statusDiv.contains(active));
+}
+
+function showStatus(message, type = 'info', options = {}) {
     const statusDiv = document.getElementById('status');
-    statusDiv.textContent = message;
+    if (!statusDiv) {
+        return;
+    }
+
+    // Add Escape-to-dismiss once (delegated from focusable children like the dismiss button)
+    if (!statusDiv.dataset.escapeHandlerAttached) {
+        statusDiv.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                e.preventDefault();
+                hideStatus();
+            }
+        });
+        statusDiv.dataset.escapeHandlerAttached = 'true';
+    }
+
+    if (statusHideTimer) {
+        clearTimeout(statusHideTimer);
+        statusHideTimer = null;
+    }
+
+    const msgEl = document.getElementById('statusMessage');
+    if (msgEl) {
+        msgEl.textContent = message;
+    } else {
+        statusDiv.textContent = message;
+    }
+
     statusDiv.className = `status ${type}`;
-    statusDiv.style.display = 'block';
+
+    // Accessibility: errors/warnings should be more assertive
+    const isAlert = type === 'error' || type === 'warning';
+    statusDiv.setAttribute('role', isAlert ? 'alert' : 'status');
+    statusDiv.setAttribute('aria-live', isAlert ? 'assertive' : 'polite');
+
+    statusDiv.style.display = 'flex';
+
+    const defaultAutoHideMs = (t) => {
+        switch (t) {
+            case 'success':
+                return 3500;
+            case 'info':
+                return 5000;
+            case 'warning':
+                return 8000;
+            case 'error':
+                return 0;
+            default:
+                return 5000;
+        }
+    };
+
+    const autoHideMs = Number.isFinite(options.autoHideMs) ? options.autoHideMs : defaultAutoHideMs(type);
+    if (autoHideMs > 0) {
+        statusHideTimer = setTimeout(() => {
+            if (isStatusInteracting(statusDiv)) {
+                statusHideTimer = setTimeout(() => hideStatus(), 1500);
+                return;
+            }
+            hideStatus();
+        }, autoHideMs);
+    }
 }
 
 function hideStatus() {
-    document.getElementById('status').style.display = 'none';
+    const statusDiv = document.getElementById('status');
+    if (!statusDiv) {
+        return;
+    }
+    if (statusHideTimer) {
+        clearTimeout(statusHideTimer);
+        statusHideTimer = null;
+    }
+    const msgEl = document.getElementById('statusMessage');
+    if (msgEl) {
+        msgEl.textContent = '';
+    }
+    statusDiv.style.display = 'none';
 }
 
 function updateHelpCounter() {
@@ -992,6 +1140,39 @@ function populateDictionarySelector() {
         // Adjust the letter input grid for the selected dictionary's word length
         adjustLetterInputGrid(defaultDict.wordLength);
     }
+
+    // Populate Bot Performance dictionary selector
+    const analysisSelect = document.getElementById('analysisDictionary');
+    if (analysisSelect) {
+        analysisSelect.innerHTML = '';
+        availableDictionaries.forEach(dict => {
+            if (!dict.available) {
+                return;
+            }
+            const option = document.createElement('option');
+            option.value = dict.id;
+            option.textContent = dict.name;
+            if (dict.description) {
+                option.title = dict.description;
+            }
+            analysisSelect.appendChild(option);
+        });
+
+        const analysisDefault = availableDictionaries.find(d => d.available && d.wordLength === 5) ||
+            availableDictionaries.find(d => d.available);
+        if (analysisDefault) {
+            analysisSelect.value = analysisDefault.id;
+        }
+    }
+
+    // Populate Bot Demo dictionary selector based on selected word length
+    if (document.getElementById('autoplayWordLength') && document.getElementById('autoplayDictionary')) {
+        filterAutoplayDictionaries();
+    }
+
+    if (currentView === 'dictionary') {
+        refreshDictionaryScreen();
+    }
 }
 
 function onDictionaryChange() {
@@ -1004,7 +1185,321 @@ function onDictionaryChange() {
         
         // Adjust the letter input grid for the new word length
         adjustLetterInputGrid(selectedDict.wordLength);
+
+        if (currentView === 'dictionary') {
+            refreshDictionaryScreen();
+        }
     }
+}
+
+// ===== DICTIONARY SCREEN =====
+
+let dictionaryScreenState = {
+    loading: false,
+    dictionaryId: null
+};
+
+function setDictionaryScreenPlaceholders(message) {
+    const nameEl = document.getElementById('dictionaryName');
+    const lengthEl = document.getElementById('dictionaryWordLength');
+    const countEl = document.getElementById('dictionaryWordCount');
+    const distEl = document.getElementById('dictionaryComplexityDistribution');
+    const freqEl = document.getElementById('dictionaryLetterFrequency');
+    const wordsEl = document.getElementById('dictionaryWords');
+
+    if (nameEl) {
+        nameEl.textContent = message || 'Select a dictionary from the menu above.';
+    }
+    if (lengthEl) {
+        lengthEl.textContent = '-';
+    }
+    if (countEl) {
+        countEl.textContent = '-';
+    }
+
+    const empty = '<p class="muted-center muted-small">No data loaded.</p>';
+    if (distEl) {
+        distEl.innerHTML = empty;
+    }
+    if (freqEl) {
+        freqEl.innerHTML = empty;
+    }
+    if (wordsEl) {
+        wordsEl.innerHTML = '<p class="muted-center muted-small">No dictionary selected.</p>';
+    }
+}
+
+function refreshDictionaryScreen() {
+    const selector = document.getElementById('dictionarySelector');
+    if (!selector || !availableDictionaries || availableDictionaries.length === 0) {
+        setDictionaryScreenPlaceholders('Loading dictionaries…');
+        return;
+    }
+
+    const dictionaryId = selector.value;
+    const selectedDict = availableDictionaries.find(d => d.id === dictionaryId);
+    if (!dictionaryId || !selectedDict || !selectedDict.available) {
+        setDictionaryScreenPlaceholders('Select a dictionary from the menu above.');
+        return;
+    }
+
+    if (dictionaryScreenState.loading && dictionaryScreenState.dictionaryId === dictionaryId) {
+        return;
+    }
+
+    dictionaryScreenState.loading = true;
+    dictionaryScreenState.dictionaryId = dictionaryId;
+    setDictionaryScreenPlaceholders(`Loading ${selectedDict.name}…`);
+
+    loadDictionaryScreenData(dictionaryId, selectedDict.name)
+        .catch(err => {
+            console.error('Dictionary screen load failed:', err);
+            setDictionaryScreenPlaceholders('Failed to load dictionary.');
+            showStatus('Failed to load dictionary: ' + err.message, 'error');
+        })
+        .finally(() => {
+            dictionaryScreenState.loading = false;
+        });
+}
+
+async function loadDictionaryScreenData(dictionaryId, dictionaryName) {
+    const response = await fetch(`${API_BASE}/dictionaries/${dictionaryId}`);
+    if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const data = await response.json();
+    const words = Array.isArray(data.words) ? data.words : [];
+    const wordLength = data.wordLength || (words[0] ? words[0].length : 0);
+
+    const nameEl = document.getElementById('dictionaryName');
+    const lengthEl = document.getElementById('dictionaryWordLength');
+    const countEl = document.getElementById('dictionaryWordCount');
+    if (nameEl) {
+        nameEl.textContent = dictionaryName || data.id || dictionaryId;
+    }
+    if (lengthEl) {
+        lengthEl.textContent = String(wordLength || '-');
+    }
+    if (countEl) {
+        countEl.textContent = String(words.length || 0);
+    }
+
+    renderDictionaryLetterFrequency(words, wordLength);
+    renderDictionaryComplexity(words, wordLength);
+    renderDictionaryWords(words, wordLength);
+}
+
+function renderDictionaryLetterFrequency(words, wordLength) {
+    const container = document.getElementById('dictionaryLetterFrequency');
+    if (!container) {
+        return;
+    }
+
+    if (!words || words.length === 0 || !wordLength) {
+        container.innerHTML = '<p class="muted-center muted-small">No data loaded.</p>';
+        return;
+    }
+
+    // countsByLetter[letter] = Array(wordLength).fill(count)
+    const countsByLetter = new Map();
+
+    for (const word of words) {
+        for (let i = 0; i < wordLength; i++) {
+            const letter = (word[i] || '').toUpperCase();
+            if (!letter) {
+                continue;
+            }
+            if (!countsByLetter.has(letter)) {
+                countsByLetter.set(letter, new Array(wordLength).fill(0));
+            }
+            countsByLetter.get(letter)[i] += 1;
+        }
+    }
+
+    const letters = Array.from(countsByLetter.keys()).sort();
+
+    // Precompute per-position maxima to drive a temperature-map intensity.
+    const maxByPos = new Array(wordLength).fill(0);
+    for (const letter of letters) {
+        const counts = countsByLetter.get(letter);
+        for (let i = 0; i < wordLength; i++) {
+            if (counts[i] > maxByPos[i]) {
+                maxByPos[i] = counts[i];
+            }
+        }
+    }
+
+    const headerCells = ['Letter'];
+    for (let i = 0; i < wordLength; i++) {
+        headerCells.push(`Pos ${i + 1}`);
+    }
+    headerCells.push('Total');
+
+    let html = '<table class="analysis-table">';
+    html += '<thead><tr>' + headerCells.map(h => `<th>${h}</th>`).join('') + '</tr></thead>';
+    html += '<tbody>';
+
+    for (const letter of letters) {
+        const counts = countsByLetter.get(letter);
+        const total = counts.reduce((sum, n) => sum + n, 0);
+        html += `<tr><td class="mono">${letter}</td>`;
+        for (let i = 0; i < wordLength; i++) {
+            const value = counts[i] || 0;
+            const max = maxByPos[i] || 0;
+            const ratio = max > 0 ? (value / max) : 0;
+            const heat = Math.round(ratio * 90);
+            html += `<td class="num heat-cell" style="--heat:${heat}%;" title="${value} occurrences at position ${i + 1}">${value}</td>`;
+        }
+        html += `<td class="num">${total}</td></tr>`;
+    }
+
+    html += '</tbody></table>';
+    container.innerHTML = html;
+}
+
+function computeOneAwayNeighbourCounts(words, wordLength) {
+    // Build pattern counts where one position is replaced by '.'
+    const patternCounts = new Map();
+
+    for (const word of words) {
+        for (let i = 0; i < wordLength; i++) {
+            const pattern = word.substring(0, i) + '.' + word.substring(i + 1);
+            patternCounts.set(pattern, (patternCounts.get(pattern) || 0) + 1);
+        }
+    }
+
+    const neighbourCounts = new Map();
+    for (const word of words) {
+        let total = 0;
+        for (let i = 0; i < wordLength; i++) {
+            const pattern = word.substring(0, i) + '.' + word.substring(i + 1);
+            total += Math.max(0, (patternCounts.get(pattern) || 0) - 1);
+        }
+        neighbourCounts.set(word, total);
+    }
+    return neighbourCounts;
+}
+
+function percentile(sortedNumbers, p) {
+    if (!sortedNumbers || sortedNumbers.length === 0) {
+        return 0;
+    }
+    const clamped = Math.max(0, Math.min(1, p));
+    const idx = Math.floor(clamped * (sortedNumbers.length - 1));
+    return sortedNumbers[idx];
+}
+
+function getComplexityBucket(score) {
+    if (score <= 2) {
+        return { key: 'very-easy', label: 'Very Easy', range: '0-2' };
+    }
+    if (score <= 5) {
+        return { key: 'easy', label: 'Easy', range: '3-5' };
+    }
+    if (score <= 8) {
+        return { key: 'medium', label: 'Medium', range: '6-8' };
+    }
+    if (score <= 11) {
+        return { key: 'hard', label: 'Hard', range: '9-11' };
+    }
+    return { key: 'very-hard', label: 'Very Hard', range: '12-15' };
+}
+
+function renderDictionaryComplexity(words, wordLength) {
+    const distEl = document.getElementById('dictionaryComplexityDistribution');
+    if (!distEl) {
+        return;
+    }
+    if (!words || words.length === 0 || !wordLength) {
+        distEl.innerHTML = '<p class="muted-center muted-small">No data loaded.</p>';
+        return;
+    }
+
+    // Complexity model: number of 1-letter neighbours (matches ComplexityAnalyser's "one-letter" idea)
+    const neighbourCounts = computeOneAwayNeighbourCounts(words, wordLength);
+    const counts = {
+        'very-easy': 0,
+        'easy': 0,
+        'medium': 0,
+        'hard': 0,
+        'very-hard': 0
+    };
+    for (const w of words) {
+        const score = neighbourCounts.get(w) || 0;
+        counts[getComplexityBucket(score).key]++;
+    }
+
+    const total = words.length;
+    const pct = (n) => (total > 0 ? Math.round((n / total) * 100) : 0);
+
+    distEl.innerHTML = `
+        <div class="dictionary-summary">
+            <div class="dictionary-summary-row">
+                <div class="dictionary-summary-label">Very Easy (0-2)</div>
+                <div class="dictionary-summary-value">${counts['very-easy']} (${pct(counts['very-easy'])}%)</div>
+            </div>
+            <div class="dictionary-summary-row">
+                <div class="dictionary-summary-label">Easy (3-5)</div>
+                <div class="dictionary-summary-value">${counts['easy']} (${pct(counts['easy'])}%)</div>
+            </div>
+            <div class="dictionary-summary-row">
+                <div class="dictionary-summary-label">Medium (6-8)</div>
+                <div class="dictionary-summary-value">${counts['medium']} (${pct(counts['medium'])}%)</div>
+            </div>
+            <div class="dictionary-summary-row">
+                <div class="dictionary-summary-label">Hard (9-11)</div>
+                <div class="dictionary-summary-value">${counts['hard']} (${pct(counts['hard'])}%)</div>
+            </div>
+            <div class="dictionary-summary-row">
+                <div class="dictionary-summary-label">Very Hard (12-15)</div>
+                <div class="dictionary-summary-value">${counts['very-hard']} (${pct(counts['very-hard'])}%)</div>
+            </div>
+            <p class="dictionary-muted" style="margin: 0;">
+                Complexity is approximated by 1-letter neighbour count.
+            </p>
+        </div>
+    `;
+
+    dictionaryScreenState._complexity = { neighbourCounts };
+}
+
+function renderDictionaryWords(words, wordLength) {
+    const container = document.getElementById('dictionaryWords');
+    if (!container) {
+        return;
+    }
+    if (!words || words.length === 0) {
+        container.innerHTML = '<p class="muted-center muted-small">No dictionary selected.</p>';
+        return;
+    }
+
+    const complexity = dictionaryScreenState._complexity;
+    const neighbourCounts = complexity?.neighbourCounts || new Map();
+
+    const wordInfos = words.map(w => {
+        const score = neighbourCounts.get(w) || 0;
+        const bucket = getComplexityBucket(score);
+        return { word: w, score, bucket };
+    });
+
+    // Most useful default ordering: show hardest first, then alpha.
+    wordInfos.sort((a, b) => (b.score - a.score) || a.word.localeCompare(b.word));
+
+    let html = '<table class="analysis-table">';
+    html += '<thead><tr><th>Word</th><th class="num">1-away</th><th>Complexity</th></tr></thead>';
+    html += '<tbody>';
+    for (const info of wordInfos) {
+        html += `
+            <tr>
+                <td class="mono">${info.word.toUpperCase()}</td>
+                <td class="num">${info.score}</td>
+                <td><span class="complexity-pill complexity-${info.bucket.key}">${info.bucket.label}</span></td>
+            </tr>
+        `;
+    }
+    html += '</tbody></table>';
+    container.innerHTML = html;
 }
 
 function adjustLetterInputGrid(wordLength) {
@@ -1017,25 +1512,18 @@ function adjustLetterInputGrid(wordLength) {
         input.className = 'letter-input';
         input.maxLength = 1;
         input.id = `letter${i}`;
-        
-        // Add the same event handlers as before
-        input.addEventListener('input', function(e) {
-            this.value = this.value.toUpperCase();
-            if (this.value && i < wordLength - 1) {
-                document.getElementById(`letter${i + 1}`).focus();
-            }
-        });
-        
-        input.addEventListener('keydown', function(e) {
-            if (e.key === 'Backspace' && !this.value && i > 0) {
-                document.getElementById(`letter${i - 1}`).focus();
-            } else if (e.key === 'Enter') {
-                makeGuess();
-            }
-        });
+        input.autocomplete = 'off';
+        input.spellcheck = false;
+        input.inputMode = 'text';
+        input.autocapitalize = 'characters';
+        input.setAttribute('autocorrect', 'off');
+        input.setAttribute('aria-label', `Letter ${i + 1} of ${wordLength}`);
         
         letterInputs.appendChild(input);
     }
+
+    // Attach the standard handlers (filled state, key filtering, Enter/backspace behavior)
+    setupLetterInputs();
     
     // Focus the first input
     if (wordLength > 0) {
@@ -1045,14 +1533,16 @@ function adjustLetterInputGrid(wordLength) {
 
 // Session Viewer Functions
 function showSessionViewer() {
-    document.getElementById('gameView').style.display = 'none';
-    document.getElementById('sessionViewer').style.display = 'block';
+    if (window.location.hash !== '#/session') {
+        window.location.hash = '#/session';
+    }
     renderSessionDetails();
 }
 
 function hideSessionViewer() {
-    document.getElementById('sessionViewer').style.display = 'none';
-    document.getElementById('gameView').style.display = 'grid';
+    if (window.location.hash !== '#/play') {
+        window.location.hash = '#/play';
+    }
 }
 
 function renderSessionDetails() {
@@ -1224,7 +1714,7 @@ function renderSessionDetails() {
 // Dictionary Viewer Functions
 async function toggleDictionaryViewer() {
     const viewer = document.getElementById('dictionaryViewer');
-    const isVisible = viewer.style.display !== 'none';
+    const isVisible = window.getComputedStyle(viewer).display !== 'none';
     const wordCount = document.getElementById('dictionaryWordCount').textContent;
     
     if (isVisible) {
@@ -1302,11 +1792,11 @@ let autoplayState = {
 };
 
 function showAutoplayModal() {
-    const modal = document.getElementById('autoplayModal');
-    modal.style.display = 'flex';
-    
-    // Set default word length to 5 and populate dictionaries
-    document.getElementById('autoplayWordLength').value = '5';
+    // Screen-based UI: keep user selections; ensure dictionaries are populated
+    const wordLengthEl = document.getElementById('autoplayWordLength');
+    if (wordLengthEl && !wordLengthEl.value) {
+        wordLengthEl.value = '5';
+    }
     filterAutoplayDictionaries();
 }
 
@@ -1340,8 +1830,7 @@ function filterAutoplayDictionaries() {
 }
 
 function hideAutoplayModal() {
-    const modal = document.getElementById('autoplayModal');
-    modal.style.display = 'none';
+    // Modal removed in Phase 2 (screen-based UI)
 }
 
 function toggleAutoplay() {
@@ -1349,8 +1838,9 @@ function toggleAutoplay() {
         // Stop autoplay
         stopAutoplay();
     } else {
-        // Show modal to start autoplay
+        // Ensure selectors are populated, then start
         showAutoplayModal();
+        startAutoplay();
     }
 }
 
@@ -1370,6 +1860,9 @@ function stopAutoplay() {
 
 function updateAutoplayButton(isRunning) {
     const autoplayBtn = document.getElementById('autoplayBtn');
+    if (!autoplayBtn) {
+        return;
+    }
     if (isRunning) {
         autoplayBtn.textContent = 'Stop Autoplay';
         autoplayBtn.classList.remove('btn-info');
@@ -1380,6 +1873,29 @@ function updateAutoplayButton(isRunning) {
         autoplayBtn.classList.remove('btn-danger');
         autoplayBtn.classList.add('btn-info');
         autoplayBtn.disabled = false;
+    }
+}
+
+function updateAutoplayProgress(text, percent) {
+    const progressText = document.getElementById('autoplayProgressText');
+    const progressBar = document.getElementById('autoplayProgressBar');
+    if (progressText) {
+        progressText.textContent = text;
+    }
+    if (progressBar) {
+        progressBar.value = Math.max(0, Math.min(100, percent));
+    }
+}
+
+function setBotDemoRunningUi(isRunning) {
+    const botDemoScreen = document.getElementById('screen-bot-demo');
+    if (botDemoScreen) {
+        botDemoScreen.classList.toggle('bot-demo-running', !!isRunning);
+    }
+
+    const setupPanel = document.getElementById('autoplaySetupPanel');
+    if (setupPanel && setupPanel.tagName === 'DETAILS' && isRunning) {
+        setupPanel.open = false;
     }
 }
 
@@ -1409,7 +1925,7 @@ async function startAutoplay() {
         }
     }
     
-    hideAutoplayModal();
+    // Screen-based UI: no modal to hide
     
     // Create new session
     try {
@@ -1426,10 +1942,20 @@ async function startAutoplay() {
         autoplayState.gamesCompleted = 0;
         autoplayState.strategy = strategy;
         
-        document.getElementById('dictionarySelector').disabled = true;
-        document.getElementById('guessBtn').disabled = true;
+        const globalDictSelector = document.getElementById('dictionarySelector');
+        if (globalDictSelector) {
+            globalDictSelector.disabled = true;
+        }
+        const guessBtn = document.getElementById('guessBtn');
+        if (guessBtn) {
+            guessBtn.disabled = true;
+        }
         
         updateAutoplayButton(true);
+
+        setBotDemoRunningUi(true);
+
+        updateAutoplayProgress(`Starting: 0/${gameCount} games`, 0);
         
         showStatus(`Starting autoplay: ${gameCount} ${wordLength}-letter games with ${strategy} strategy (${guessDelay}ms delay)`, 'success');
         
@@ -1437,9 +1963,19 @@ async function startAutoplay() {
         
         autoplayState.isRunning = false;
         autoplayState.shouldStop = false;
-        document.getElementById('dictionarySelector').disabled = false;
+        setBotDemoRunningUi(false);
+        if (globalDictSelector) {
+            globalDictSelector.disabled = false;
+        }
+        if (guessBtn) {
+            guessBtn.disabled = false;
+        }
         
         updateAutoplayButton(false);
+
+        const completed = autoplayState.gamesCompleted;
+        const pct = gameCount > 0 ? Math.round((completed / gameCount) * 100) : 0;
+        updateAutoplayProgress(`Completed: ${completed}/${gameCount} games`, pct);
         
         const statusMessage = autoplayState.gamesCompleted < gameCount 
             ? `Autoplay stopped after ${autoplayState.gamesCompleted} games. Displaying session statistics...`
@@ -1450,8 +1986,17 @@ async function startAutoplay() {
     } catch (error) {
         autoplayState.isRunning = false;
         autoplayState.shouldStop = false;
-        document.getElementById('dictionarySelector').disabled = false;
+        setBotDemoRunningUi(false);
+        const globalDictSelector = document.getElementById('dictionarySelector');
+        if (globalDictSelector) {
+            globalDictSelector.disabled = false;
+        }
+        const guessBtn = document.getElementById('guessBtn');
+        if (guessBtn) {
+            guessBtn.disabled = false;
+        }
         updateAutoplayButton(false);
+        updateAutoplayProgress('Failed', 0);
         showStatus('Autoplay failed: ' + error.message, 'error');
     }
 }
@@ -1463,8 +2008,10 @@ async function runAutoplayGames(dictionaryId, strategy, wordLength, guessDelay =
             console.log('Autoplay stop requested, finishing after current game');
             break;
         }
-        
+
         autoplayState.gamesCompleted = i;
+        const pct = autoplayState.gameCount > 0 ? Math.round((i / autoplayState.gameCount) * 100) : 0;
+        updateAutoplayProgress(`Running: ${i + 1}/${autoplayState.gameCount} games`, pct);
         
         try {
             // If no specific dictionary selected, find first available for word length
@@ -1535,6 +2082,10 @@ async function runAutoplayGames(dictionaryId, strategy, wordLength, guessDelay =
             showStatus(`${strategyName}, Game ${i + 1}/${autoplayState.gameCount}`, 'info');
             
             await playAutoplayGame(gameId, strategy, guessDelay);
+
+            autoplayState.gamesCompleted = i + 1;
+            const pctDone = autoplayState.gameCount > 0 ? Math.round(((i + 1) / autoplayState.gameCount) * 100) : 0;
+            updateAutoplayProgress(`Completed: ${i + 1}/${autoplayState.gameCount} games`, pctDone);
             
             try {
                 await fetch(`${API_BASE}/games/${gameId}`, {
@@ -1702,3 +2253,397 @@ async function playAutoplayGame(gameId, strategy, guessDelay = 1000) {
 
 // Initialize dictionaries on page load
 loadDictionaries();
+
+// ===== PLAYER ANALYSIS FUNCTIONALITY =====
+
+// Player analysis state
+const analysisState = {
+    running: false,
+    shouldStop: false,
+    completed: 0,
+    total: 0,
+    summaryData: [],
+    detailsData: []
+};
+
+function updateAnalysisProgress(text, percent) {
+    const progressText = document.getElementById('analysisProgressText');
+    const progressBar = document.getElementById('analysisProgressBar');
+    if (progressText) {
+        progressText.textContent = text;
+    }
+    if (progressBar) {
+        progressBar.value = Math.max(0, Math.min(100, percent));
+    }
+}
+
+function cancelPlayerAnalysis() {
+    if (!analysisState.running) {
+        return;
+    }
+    analysisState.shouldStop = true;
+    const cancelBtn = document.getElementById('cancelAnalysisBtn');
+    if (cancelBtn) {
+        cancelBtn.textContent = 'Cancelling...';
+        cancelBtn.disabled = true;
+    }
+    showStatus('Cancelling analysis after the current word completes...', 'info');
+}
+
+function setBotPerformanceRunningUi(isRunning) {
+    const performanceScreen = document.getElementById('screen-bot-performance');
+    if (performanceScreen) {
+        performanceScreen.classList.toggle('bot-performance-running', !!isRunning);
+    }
+
+    const setupPanel = document.getElementById('analysisSetupPanel');
+    if (setupPanel && setupPanel.tagName === 'DETAILS' && isRunning) {
+        setupPanel.open = false;
+    }
+}
+
+function showAnalysisModal() {
+    const dictionarySelect = document.getElementById('analysisDictionary');
+    dictionarySelect.innerHTML = '';
+    availableDictionaries.forEach(dict => {
+        if (dict.available) {
+            const option = document.createElement('option');
+            option.value = dict.id;
+            option.textContent = dict.name;
+            if (dict.wordLength === 5) { option.selected = true; }
+            dictionarySelect.appendChild(option);
+        }
+    });
+}
+
+function hideAnalysisModal() {
+    // Modal removed in Phase 2 (screen-based UI)
+}
+
+async function startPlayerAnalysis() {
+    const strategy = document.getElementById('analysisStrategy').value;
+    const dictionaryId = document.getElementById('analysisDictionary').value;
+    const guessDelay = parseInt(document.getElementById('analysisDelay').value) || 0;
+
+    const startBtn = document.getElementById('startAnalysisBtn');
+    const cancelBtn = document.getElementById('cancelAnalysisBtn');
+    if (startBtn) {
+        startBtn.disabled = true;
+    }
+    if (cancelBtn) {
+        cancelBtn.disabled = false;
+        cancelBtn.textContent = 'Cancel';
+    }
+    
+    // Get all words from the dictionary
+    try {
+        setBotPerformanceRunningUi(true);
+
+        const dictResponse = await fetch(`${API_BASE}/dictionaries/${dictionaryId}`);
+        if (!dictResponse.ok) throw new Error('Failed to load dictionary');
+        
+        const dictData = await dictResponse.json();
+        const allWords = dictData.words || [];
+        
+        analysisState.running = true;
+        analysisState.shouldStop = false;
+        analysisState.completed = 0;
+        analysisState.total = allWords.length;
+        analysisState.summaryData = [];
+        analysisState.detailsData = [];
+
+        updateAnalysisProgress(`Starting: 0/${allWords.length}`, 0);
+        
+        showStatus(`Starting Player Analysis: Testing ${allWords.length} words with ${strategy}`, 'info');
+        
+        // Run games for each word in dictionary
+        await runAnalysisGames(allWords, dictionaryId, strategy, dictData.wordLength, guessDelay);
+        
+        // Show results
+        displayFinalAnalysisResults();
+        
+    } catch (error) {
+        console.error('Player Analysis error:', error);
+        showStatus('Analysis failed: ' + error.message, 'error');
+        updateAnalysisProgress('Failed', 0);
+    } finally {
+        analysisState.running = false;
+        setBotPerformanceRunningUi(false);
+
+        if (startBtn) {
+            startBtn.disabled = false;
+        }
+        if (cancelBtn) {
+            cancelBtn.disabled = true;
+            cancelBtn.textContent = 'Cancel';
+        }
+    }
+}
+
+async function runAnalysisGames(targetWords, dictionaryId, strategy, wordLength, guessDelay) {
+    for (let i = 0; i < targetWords.length; i++) {
+        if (analysisState.shouldStop) {
+            showStatus(`Analysis cancelled at ${analysisState.completed}/${analysisState.total}`, 'warning');
+            break;
+        }
+
+        const targetWord = targetWords[i];
+        analysisState.completed = i + 1;
+
+        const pct = analysisState.total > 0 ? Math.round((analysisState.completed / analysisState.total) * 100) : 0;
+        updateAnalysisProgress(`Running: ${analysisState.completed}/${analysisState.total} ("${targetWord.toUpperCase()}")`, pct);
+        
+        try {
+            // Create game with specific target word
+            const createResponse = await fetch(`${API_BASE}/games`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ dictionaryId: dictionaryId, targetWord: targetWord })
+            });
+            
+            if (!createResponse.ok) throw new Error('Failed to create game');
+            
+            const gameData = await createResponse.json();
+            const gameId = gameData.gameId;
+            
+            // During analysis, do not update gameplay UI (board/history/analytics).
+            // Keep only status/progress updates.
+            
+            await fetch(`${API_BASE}/games/${gameId}/strategy`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ strategy: strategy })
+            });
+            
+            showStatus(`Analysis: ${i + 1}/${targetWords.length} - Testing "${targetWord.toUpperCase()}" with ${strategy}`, 'info');
+            
+            // Play the game
+            const gameResult = await playAnalysisGame(gameId, targetWord, strategy, gameData.maxAttempts || 6);
+            
+            // Store results
+            analysisState.summaryData.push(gameResult.summary);
+            analysisState.detailsData.push(...gameResult.details);
+            
+            // Clean up game session
+            try {
+                await fetch(`${API_BASE}/games/${gameId}`, { method: 'DELETE' });
+            } catch (e) {
+                console.warn('Failed to delete game session:', e);
+            }
+            
+            if (guessDelay > 0) {
+                await new Promise(resolve => setTimeout(resolve, guessDelay));
+            }
+            
+        } catch (error) {
+            console.error(`Error analyzing word "${targetWord}":`, error);
+            // Continue with next word
+        }
+    }
+}
+
+async function playAnalysisGame(gameId, targetWord, strategy, maxAttempts = 6) {
+    let attempt = 0;
+    let won = false;
+    let localGameEnded = false;
+    const details = [];
+    const guesses = [];
+    
+    while (!localGameEnded && attempt < maxAttempts) {
+        try {
+            const suggestionResponse = await fetch(`${API_BASE}/games/${gameId}/suggestion`);
+            if (!suggestionResponse.ok) {
+                console.error('Failed to get suggestion');
+                break;
+            }
+            
+            const suggestionData = await suggestionResponse.json();
+            const suggestedWord = suggestionData.suggestion;
+            
+            if (!suggestedWord) {
+                console.error('No suggestion returned');
+                break;
+            }
+            
+            const guessResponse = await fetch(`${API_BASE}/games/${gameId}/guess`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ word: suggestedWord.toLowerCase() })
+            });
+            
+            if (!guessResponse.ok) {
+                const errorData = await guessResponse.json();
+                console.error('Guess failed:', errorData.message);
+                break;
+            }
+            
+            const guessData = await guessResponse.json();
+            attempt = guessData.attemptNumber;
+
+            // Collect guess data (no UI updates during analysis)
+            guesses.push(suggestedWord.toUpperCase());
+            
+            // Store detail data
+            details.push({
+                iteration: analysisState.completed,
+                attempt: attempt,
+                targetWord: targetWord.toUpperCase(),
+                guess: suggestedWord.toUpperCase(),
+                remainingWords: guessData.remainingWordsCount || 0,
+                letterCount: suggestedWord.length,
+                winner: guessData.gameWon ? 'true' : 'false'
+            });
+            
+            if (guessData.gameWon) {
+                won = true;
+                localGameEnded = true;
+                break;
+            }
+            
+            if (guessData.gameOver) {
+                localGameEnded = true;
+                break;
+            }
+            
+        } catch (error) {
+            console.error('Error during guess:', error);
+            break;
+        }
+    }
+    
+    const guessesStr = guesses.join(',');
+    
+    return {
+        summary: {
+            iteration: analysisState.completed,
+            targetWord: targetWord.toUpperCase(),
+            algorithm: strategy,
+            attempts: attempt,
+            guesses: guessesStr,
+            result: won ? 'WON' : 'LOST'
+        },
+        details: details
+    };
+}
+
+function displayFinalAnalysisResults() {
+    // Calculate statistics
+    const totalGames = analysisState.summaryData.length;
+    const gamesWon = analysisState.summaryData.filter(g => g.result === 'WON').length;
+    const gamesLost = totalGames - gamesWon;
+    const winRate = totalGames > 0 ? (gamesWon * 100.0 / totalGames) : 0;
+    
+    const wonAttempts = analysisState.summaryData.filter(g => g.result === 'WON').map(g => g.attempts);
+    const minAttempts = wonAttempts.length > 0 ? Math.min(...wonAttempts) : null;
+    const maxAttempts = wonAttempts.length > 0 ? Math.max(...wonAttempts) : null;
+    const avgAttempts = wonAttempts.length > 0 ? wonAttempts.reduce((a, b) => a + b, 0) / wonAttempts.length : null;
+    
+    // Show results section
+    document.getElementById('analysisResults').style.display = 'block';
+    
+    // Build summary table
+    const winRateDisplay = winRate === 100 ? '100' : winRate.toFixed(2);
+    const avgDisplay = avgAttempts ? avgAttempts.toFixed(2) : 'N/A';
+    
+    const summaryHTML = `
+        <table class="analysis-table">
+            <thead>
+                <tr>
+                    <th>Metric</th>
+                    <th class="num">Value</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr><td>Total Games</td><td class="num">${totalGames}</td></tr>
+                <tr><td>Games Won</td><td class="num">${gamesWon}</td></tr>
+                <tr><td>Games Lost</td><td class="num">${gamesLost}</td></tr>
+                <tr><td>Win Rate</td><td class="num">${winRateDisplay}%</td></tr>
+                <tr><td>Min Attempts (Won)</td><td class="num">${minAttempts||'N/A'}</td></tr>
+                <tr><td>Avg Attempts (Won)</td><td class="num">${avgDisplay}</td></tr>
+                <tr><td>Max Attempts (Won)</td><td class="num">${maxAttempts||'N/A'}</td></tr>
+            </tbody>
+        </table>
+    `;
+    document.getElementById('analysisSummary').innerHTML = summaryHTML;
+    
+    // Build details table
+    let detailsHTML = `
+        <table class="analysis-table">
+            <thead>
+                <tr>
+                    <th>Iteration</th>
+                    <th>Target</th>
+                    <th class="num">Attempts</th>
+                    <th>Result</th>
+                </tr>
+            </thead>
+            <tbody>
+    `;
+    
+    analysisState.summaryData.forEach((game, idx) => {
+        const resultText = game.result === 'WON' ? '✓ WON' : '✗ LOST';
+        const resultClass = game.result === 'WON' ? 'won' : 'lost';
+        detailsHTML += `
+            <tr>
+                <td>${game.iteration}</td>
+                <td class="mono">${game.targetWord.toUpperCase()}</td>
+                <td class="num">${game.attempts}</td>
+                <td><span class="analysis-pill ${resultClass}">${resultText}</span></td>
+            </tr>
+        `;
+    });
+    
+    detailsHTML += '</tbody></table>';
+    document.getElementById('analysisDetails').innerHTML = detailsHTML;
+    
+    showStatus(`Analysis complete! ${totalGames} games tested with ${winRateDisplay}% win rate`, 'success');
+
+    updateAnalysisProgress(`Completed: ${totalGames}/${analysisState.total}`, 100);
+    
+    // Scroll to results
+    document.getElementById('analysisResults').scrollIntoView({ behavior: 'smooth' });
+}
+
+function hideAnalysisResults() {
+    document.getElementById('analysisResults').style.display = 'none';
+}
+
+function downloadAnalysisSummary() {
+    if (analysisState.summaryData.length === 0) {
+        showStatus('No analysis data to download', 'error');
+        return;
+    }
+    
+    let csv = 'Iteration,TargetWord,Algorithm,Attempts,Guesses,Result\n';
+    analysisState.summaryData.forEach(game => {
+        csv += `${game.iteration},${game.targetWord},${game.algorithm},${game.attempts},"${game.guesses}",${game.result}\n`;
+    });
+    
+    downloadCSV(csv, 'player-analysis-summary.csv');
+}
+
+function downloadAnalysisDetails() {
+    if (analysisState.detailsData.length === 0) {
+        showStatus('No analysis details to download', 'error');
+        return;
+    }
+    
+    let csv = 'Iteration,Attempt,TargetWord,Guess,RemainingWords,LetterCount,Winner\n';
+    analysisState.detailsData.forEach(detail => {
+        csv += `${detail.iteration},${detail.attempt},${detail.targetWord},${detail.guess},${detail.remainingWords},${detail.letterCount},${detail.winner}\n`;
+    });
+    
+    downloadCSV(csv, 'player-analysis-details.csv');
+}
+
+function downloadCSV(content, filename) {
+    const blob = new Blob([content], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', filename);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+}

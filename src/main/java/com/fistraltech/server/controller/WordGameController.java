@@ -34,7 +34,54 @@ import com.fistraltech.util.Config;
 import com.fistraltech.util.ConfigManager;
 
 /**
- * REST Controller for the WordAI game API
+ * REST controller for the WordAI HTTP API.
+ *
+ * <p><strong>Base path</strong>: {@code /api/wordai}
+ *
+ * <p><strong>Primary resources</strong>
+ * <ul>
+ *   <li><strong>Games</strong>: create/delete sessions, make guesses, get suggestions</li>
+ *   <li><strong>Dictionaries</strong>: list dictionary options and (optionally) fetch full word lists</li>
+ * </ul>
+ *
+ * <p><strong>Typical flow</strong>
+ * <ol>
+ *   <li>Create a game: {@code POST /games}</li>
+ *   <li>Make guesses: {@code POST /games/{gameId}/guess}</li>
+ *   <li>Request suggestions: {@code GET /games/{gameId}/suggestion}</li>
+ *   <li>Clean up: {@code DELETE /games/{gameId}}</li>
+ * </ol>
+ *
+ * <p><strong>Example: create game</strong>
+ * <pre>{@code
+ * POST /api/wordai/games
+ * Content-Type: application/json
+ *
+ * {
+ *   "dictionaryId": "5",
+ *   "wordLength": 5,
+ *   "targetWord": null
+ * }
+ * }</pre>
+ *
+ * <p><strong>Example: make guess</strong>
+ * <pre>{@code
+ * POST /api/wordai/games/{gameId}/guess
+ * Content-Type: application/json
+ *
+ * { "word": "CRANE" }
+ * }</pre>
+ *
+ * <p><strong>Error shape</strong> (most endpoints)
+ * <pre>{@code
+ * {
+ *   "error": "Invalid request",
+ *   "message": "Word is required"
+ * }
+ * }</pre>
+ *
+ * @author Fistral Technologies
+ * @see com.fistraltech.server.WordGameService
  */
 @RestController
 @RequestMapping("/api/wordai")
@@ -73,6 +120,26 @@ public class WordGameController {
         } catch (Exception e) {
             logger.log(Level.SEVERE, "Error getting dictionaries: {0}", e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+    
+    /**
+     * Get dictionary words
+     * GET /api/wordai/dictionaries/{dictionaryId}
+     */
+    @GetMapping("/dictionaries/{dictionaryId}")
+    public ResponseEntity<Map<String, Object>> getDictionary(@PathVariable String dictionaryId) {
+        try {
+            Dictionary dictionary = gameService.loadDictionary(dictionaryId);
+            Map<String, Object> response = new HashMap<>();
+            response.put("id", dictionaryId);
+            response.put("wordLength", dictionary.getWordLength());
+            response.put("wordCount", dictionary.getWordCount());
+            response.put("words", new ArrayList<>(dictionary.getMasterSetOfWords()));
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            logger.log(Level.SEVERE, "Error loading dictionary: {0}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
         }
     }
     
@@ -386,5 +453,63 @@ public class WordGameController {
             error.put("message", "Failed to set strategy");
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
         }
+    }
+    
+    /**
+     * Run full dictionary analysis with specified algorithm
+     * POST /api/wordai/analysis
+     */
+    @PostMapping("/analysis")
+    public ResponseEntity<?> runAnalysis(@RequestBody com.fistraltech.server.dto.AnalysisRequest request) {
+        try {
+            logger.info("Starting analysis with algorithm: " + request.getAlgorithm() + 
+                       ", dictionary: " + request.getDictionaryId());
+            
+            com.fistraltech.server.dto.AnalysisResponse response = 
+                gameService.runAnalysis(request.getAlgorithm(), request.getDictionaryId(), request.getMaxGames());
+            
+            logger.info("Analysis completed: " + response.getTotalGames() + " games, " + 
+                       response.getWinRate() + "% win rate");
+            
+            return ResponseEntity.ok(response);
+            
+        } catch (Exception e) {
+            logger.log(Level.SEVERE, "Error running analysis: {0}", e.getMessage());
+            e.printStackTrace();
+            Map<String, String> error = new HashMap<>();
+            error.put("error", "Analysis failed");
+            error.put("message", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
+        }
+    }
+    
+    /**
+     * Get available selection algorithms
+     * GET /api/wordai/algorithms
+     */
+    @GetMapping("/algorithms")
+    public ResponseEntity<List<Map<String, String>>> getAlgorithms() {
+        List<Map<String, String>> algorithms = new ArrayList<>();
+        
+        algorithms.add(createAlgorithmInfo("RANDOM", "Random Selection", 
+            "Selects words randomly from valid options"));
+        algorithms.add(createAlgorithmInfo("ENTROPY", "Maximum Entropy", 
+            "Chooses words that maximize information gain"));
+        algorithms.add(createAlgorithmInfo("MOST_COMMON_LETTERS", "Most Common Letters", 
+            "Selects words with most frequently occurring letters"));
+        algorithms.add(createAlgorithmInfo("MINIMISE_COLUMN_LENGTHS", "Minimise Column Lengths", 
+            "Reduces possible letters at each position"));
+        algorithms.add(createAlgorithmInfo("DICTIONARY_REDUCTION", "Dictionary Reduction", 
+            "Maximizes expected reduction in remaining possibilities"));
+        
+        return ResponseEntity.ok(algorithms);
+    }
+    
+    private Map<String, String> createAlgorithmInfo(String id, String name, String description) {
+        Map<String, String> info = new HashMap<>();
+        info.put("id", id);
+        info.put("name", name);
+        info.put("description", description);
+        return info;
     }
 }

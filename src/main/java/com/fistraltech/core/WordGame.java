@@ -95,6 +95,7 @@ public class WordGame {
         return guess(targetWord, word);
     }
 
+    /** Used to get a Reponse without recording it as a guess or checking max attempts */
     public Response evaluate(String word) throws InvalidWordException {
         return ResponseHelper.evaluate(targetWord, word);
     }

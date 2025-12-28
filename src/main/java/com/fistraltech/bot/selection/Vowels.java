@@ -6,22 +6,23 @@ import com.fistraltech.core.Response;
 import java.util.ArrayList;
 import java.util.List;
 
-/** Human experience suggests that identifying the vowels that are in or not in the word as early as possible is
- * beneficial to a successful outcome. Testing for all 5 vowels in the first two gueses is therefore proposed as an
- * optimal strategy.
+/**
+ * Experimental selection algorithm that prioritizes early vowel coverage.
  *
- * In this selection strategy:
- * FIRST GUESS
- * 1) The first word is selected at random from those containing 3 vowels.
- * SECOND GUESS
- * 1) If the choice matches no vowels, a word is selected randomly from the words that contain the remaining two vowels
- * 2) If the choice matches one vowel, select from the words that contain the matched vowel, plus the two others.  If no
- * word exists with all three vowels, try to match one additional vowel.
- * 3) If the choice matches two vowel, proceed to random selection
- * THIRD GUESS
- * By the third guess, you should either have matched at least two vowels or begin looking to try any vowel that has not
- * been tried along with 'y'.
- * */
+ * <p><strong>Current implementation</strong>:
+ * <ul>
+ *   <li><strong>First guess:</strong> randomly choose 3 vowels, filter the dictionary to words containing all three,
+ *       then select a random word from that subset.</li>
+ *   <li><strong>Subsequent guesses:</strong> currently fall back to random selection.</li>
+ * </ul>
+ *
+ * <p>The class contains fields intended for richer vowel-tracking heuristics, but they are not yet used.
+ * The Javadoc reflects the behavior as implemented (not the original design notes).
+ *
+ * <p><strong>Thread safety</strong>: not thread-safe; use one instance per game.
+ *
+ * @author Fistral Technologies
+ */
 
 public class Vowels extends SelectionAlgo {
     private int counter = 0;

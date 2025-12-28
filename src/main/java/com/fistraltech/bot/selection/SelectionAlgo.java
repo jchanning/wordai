@@ -149,4 +149,13 @@ public abstract class SelectionAlgo {
      */
     abstract String selectWord(Response lastResponse, Dictionary dictionary);
 
+    /**
+     * Resets the algorithm state for a new game.
+     * Clears the filter and resets the updated dictionary.
+     */
+    public void reset() {
+        filter.clear();
+        updatedDictionary = dictionary;
+    }
+
 }

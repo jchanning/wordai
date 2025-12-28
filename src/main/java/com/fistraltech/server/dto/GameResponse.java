@@ -6,7 +6,39 @@ import java.util.stream.Collectors;
 import com.fistraltech.core.Response;
 
 /**
- * Data Transfer Object for game responses
+ * Response DTO returned after a guess is applied.
+ *
+ * <p><strong>Endpoint</strong>: {@code POST /api/wordai/games/{gameId}/guess}
+ *
+ * <p><strong>Example (simplified)</strong>
+ * <pre>{@code
+ * {
+ *   "gameId": "...",
+ *   "gameWon": false,
+ *   "gameOver": false,
+ *   "attemptNumber": 1,
+ *   "maxAttempts": 6,
+ *   "guessedWord": "CRANE",
+ *   "results": [
+ *     {"letter":"C","status":"R"},
+ *     {"letter":"R","status":"A"},
+ *     {"letter":"A","status":"G"},
+ *     {"letter":"N","status":"R"},
+ *     {"letter":"E","status":"R"}
+ *   ],
+ *   "remainingWordsCount": 128,
+ *   "message": "Keep guessing!"
+ * }
+ * }</pre>
+ *
+ * <p><strong>Status codes</strong>
+ * <ul>
+ *   <li>{@code G} = correct letter in correct position (green)</li>
+ *   <li>{@code A} = correct letter in wrong position (amber)</li>
+ *   <li>{@code R} = letter not present (red)</li>
+ * </ul>
+ *
+ * @author Fistral Technologies
  */
 public class GameResponse {
     private String gameId;
@@ -117,11 +149,11 @@ public class GameResponse {
     }
     
     /**
-     * Represents the result for a single letter in a guess
+     * DTO representing the result for a single letter in a guess.
      */
     public static class LetterResult {
         private char letter;
-        private char status; // 'G' = Green (correct position), 'A' = Amber (wrong position), 'R' = Red (not in word)
+        private char status; // 'G' = correct position, 'A' = present elsewhere, 'R' = absent
         
         public LetterResult() {}
         

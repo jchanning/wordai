@@ -5,13 +5,24 @@ import com.fistraltech.core.Response;
 
 import java.util.Objects;
 
-/** It is a commonly held view that there is a "best" starting word for the Wordle game.  This is clearly false as the
- * best starting word is always the correct answer.  This Selection strategy fixes the first word and then randomly
- * selects from the remaining valid words enabling the "best" starting word theory to be tested.
- *  *
- * In this strategy, the same word is used as the first guess in each game.  A first word with high coverage of the
- * vowels appears to produce good outcomes.
- * */
+/**
+ * Selection algorithm that forces a fixed opening guess and then falls back to random selection.
+ *
+ * <p>This algorithm exists to test the hypothesis that there is a "best" first word for Wordle-like games.
+ * The first guess is always {@code firstWord}. All subsequent guesses are selected at random from the
+ * remaining valid candidates.
+ *
+ * <p><strong>Usage</strong>
+ * <pre>{@code
+ * Dictionary dictionary = ...;
+ * SelectionAlgo algo = new SelectFixedFirstWord(dictionary, "AROSE");
+ * String guess1 = algo.selectWord(new Response("")); // returns AROSE
+ * }</pre>
+ *
+ * <p><strong>Thread safety</strong>: not thread-safe; use one instance per game.
+ *
+ * @author Fistral Technologies
+ */
 
 public class SelectFixedFirstWord extends SelectionAlgo{
 

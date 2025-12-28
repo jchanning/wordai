@@ -42,26 +42,29 @@ All enhanced class documentation now includes:
 
 ### Bot Selection Package (`com.fistraltech.bot.selection`)
 ✅ **SelectionAlgo** - Template method pattern, strategy comparison
-🔲 **SelectRandom** - Needs enhancement
-🔲 **SelectMostCommonLetters** - Needs enhancement
-🔲 **SelectMaximumEntropy** - Needs enhancement
-🔲 **SelectFixedFirstWord** - Needs enhancement
-🔲 **Vowels** - Needs enhancement
+✅ **SelectRandom** - Random baseline strategy documentation
+✅ **SelectMostCommonLetters** - Frequency-based strategy documentation
+✅ **SelectMaximumEntropy** - Entropy-based strategy documentation
+✅ **SelectFixedFirstWord** - Fixed opener strategy documentation
+✅ **Vowels** - Experimental vowel-coverage strategy documentation
 
 ### Server Package (`com.fistraltech.server`)
-🔲 **WordGameService** - Needs review
-🔲 **HomeController** - Needs review
-🔲 **WordGameController** - Needs review
+✅ **WordGameService** - Service lifecycle, threading, and API integration docs
+✅ **HomeController** - SPA/static UI forwarding docs
+✅ **WordGameController** - REST API endpoints and JSON examples
 
 ### Server Model Package (`com.fistraltech.server.model`)
-🔲 **GameSession** - Needs review
+✅ **GameSession** - Session lifecycle and strategy docs
 
 ### Server DTO Package (`com.fistraltech.server.dto`)
-🔲 **CreateGameRequest** - Needs review
-🔲 **CreateGameResponse** - Needs review
-🔲 **GuessRequest** - Needs review
-🔲 **GameResponse** - Needs review
-🔲 **DictionaryOption** - Needs review
+✅ **CreateGameRequest** - JSON examples and field semantics
+✅ **CreateGameResponse** - JSON examples and dictionary metrics notes
+✅ **GuessRequest** - JSON examples and usage notes
+✅ **GameResponse** - Status-code explanations and example payload
+✅ **DictionaryOption** - Dictionary listing payload examples
+✅ **AnalysisRequest** - JSON examples for server-side analysis
+✅ **AnalysisResponse** - Analysis summary/shape notes
+✅ **AnalysisGameResult** - Per-game analysis result notes
 
 ### Core Package (`com.fistraltech.core`)
 🔲 **ResponseHelper** - Helper class for game response evaluation
@@ -99,14 +102,14 @@ All enhanced class documentation now includes:
 ### Priority 1 (Core Functionality)
 1. ✅ Complete core package documentation
 2. ✅ Complete bot package documentation
-3. 🔲 Complete selection algorithm subclasses
+3. ✅ Complete selection algorithm subclasses
 4. 🔲 Review and enhance Dictionary class
 
 ### Priority 2 (Server/API Layer)
-5. 🔲 Document WordGameService (main service class)
-6. 🔲 Document REST controllers
-7. 🔲 Document DTO classes with JSON examples
-8. 🔲 Document GameSession lifecycle
+5. ✅ Document WordGameService (main service class)
+6. ✅ Document REST controllers
+7. ✅ Document DTO classes with JSON examples
+8. ✅ Document GameSession lifecycle
 
 ### Priority 3 (Supporting Components)
 9. 🔲 Document configuration utilities
@@ -150,8 +153,8 @@ All enhanced class documentation now includes:
 - [x] Core game engine documented
 - [x] Bot system documented
 - [x] Filter logic documented
-- [ ] All selection algorithms documented
-- [ ] Server/API layer documented
+- [x] All selection algorithms documented
+- [x] Server/API layer documented
 - [ ] Configuration system documented
 - [ ] Analysis tools documented
 - [ ] Package-info.java files added
@@ -164,5 +167,5 @@ All enhanced class documentation now includes:
 The project now has professional-grade documentation for all core components and bot logic. The remaining work focuses on the server layer (Spring Boot REST API), utility classes, and analysis tools. The current documentation provides excellent clarity for understanding the game engine and bot algorithms, which are the primary intellectual value of the project.
 
 ---
-*Last Updated: November 2, 2025*
+*Last Updated: December 28, 2025*
 *Documentation Standard: Java SE 21 Javadoc Conventions*

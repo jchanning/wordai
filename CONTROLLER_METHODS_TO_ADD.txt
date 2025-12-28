@@ -1,0 +1,59 @@
+// ADD THESE METHODS TO WordGameController.java BEFORE THE FINAL CLOSING BRACE
+
+    /**
+     * Run full dictionary analysis with specified algorithm
+     * POST /api/wordai/analysis
+     */
+    @PostMapping("/analysis")
+    public ResponseEntity<?> runAnalysis(@RequestBody com.fistraltech.server.dto.AnalysisRequest request) {
+        try {
+            logger.info("Starting analysis with algorithm: " + request.getAlgorithm() + 
+                       ", dictionary: " + request.getDictionaryId());
+            
+            com.fistraltech.server.dto.AnalysisResponse response = 
+                gameService.runAnalysis(request.getAlgorithm(), request.getDictionaryId(), request.getMaxGames());
+            
+            logger.info("Analysis completed: " + response.getTotalGames() + " games, " + 
+                       response.getWinRate() + "% win rate");
+            
+            return ResponseEntity.ok(response);
+            
+        } catch (Exception e) {
+            logger.log(Level.SEVERE, "Error running analysis: {0}", e.getMessage());
+            e.printStackTrace();
+            Map<String, String> error = new HashMap<>();
+            error.put("error", "Analysis failed");
+            error.put("message", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
+        }
+    }
+    
+    /**
+     * Get available selection algorithms
+     * GET /api/wordai/algorithms
+     */
+    @GetMapping("/algorithms")
+    public ResponseEntity<List<Map<String, String>>> getAlgorithms() {
+        List<Map<String, String>> algorithms = new ArrayList<>();
+        
+        algorithms.add(createAlgorithmInfo("RANDOM", "Random Selection", 
+            "Selects words randomly from valid options"));
+        algorithms.add(createAlgorithmInfo("ENTROPY", "Maximum Entropy", 
+            "Chooses words that maximize information gain"));
+        algorithms.add(createAlgorithmInfo("MOST_COMMON_LETTERS", "Most Common Letters", 
+            "Selects words with most frequently occurring letters"));
+        algorithms.add(createAlgorithmInfo("MINIMISE_COLUMN_LENGTHS", "Minimise Column Lengths", 
+            "Reduces possible letters at each position"));
+        algorithms.add(createAlgorithmInfo("DICTIONARY_REDUCTION", "Dictionary Reduction", 
+            "Maximizes expected reduction in remaining possibilities"));
+        
+        return ResponseEntity.ok(algorithms);
+    }
+    
+    private Map<String, String> createAlgorithmInfo(String id, String name, String description) {
+        Map<String, String> info = new HashMap<>();
+        info.put("id", id);
+        info.put("name", name);
+        info.put("description", description);
+        return info;
+    }

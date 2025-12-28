@@ -243,4 +243,15 @@ public class Filter {
 
         return d;
     }
-}
+    
+    /**
+     * Clears all filter constraints to reset for a new game.
+     * Resets all position filters and clears the mustContain set.
+     */
+    public void clear() {
+        filterArray.clear();
+        for(int i = 0; i < wordLength; ++i){
+            filterArray.add(new FilterCharacters());
+        }
+        mustContain.clear();
+    }}

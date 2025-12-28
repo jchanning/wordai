@@ -7,89 +7,52 @@
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
     <title>WordAI Game - Web Interface</title>
+    <link rel="icon" href="data:,">
     <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
     <div class="header-bar">
-        <div>
-            <h1 class="header-title">WordAI Game</h1>
-            <div class="header-actions">
-                <div id="status" class="status" style="display:none;"></div>
+        <div class="app-header">
+            <div class="app-header-left">
+                <h1 class="header-title">WordAI</h1>
+                <nav class="app-nav" aria-label="Application Modes">
+                    <a class="nav-link" href="#/play" data-nav="play">Play</a>
+                    <a class="nav-link" href="#/bot-demo" data-nav="bot-demo">Bot Demo</a>
+                    <a class="nav-link" href="#/bot-performance" data-nav="bot-performance">Bot Performance</a>
+                    <a class="nav-link" href="#/dictionary" data-nav="dictionary">Dictionary</a>
+                    <a class="nav-link" href="#/admin" data-nav="admin">Admin</a>
+                </nav>
+            </div>
+            <div class="app-header-right">
+                <div id="status" class="status" style="display:none;" role="status" aria-live="polite" aria-atomic="true">
+                    <span id="statusMessage" class="status-message"></span>
+                    <button type="button" id="statusDismiss" class="status-dismiss" aria-label="Dismiss status" onclick="hideStatus()">×</button>
+                </div>
                 <select id="dictionarySelector" class="dictionary-selector" onchange="onDictionaryChange()">
                     <option value="">Loading dictionaries...</option>
                 </select>
-                <button class="btn btn-success" onclick="newGame()">New Game</button>
-                <button id="autoplayBtn" class="btn btn-info" onclick="toggleAutoplay()">Autoplay Games</button>
-                <button class="btn btn-secondary" onclick="checkHealth()">Server Status</button>
-                <button class="btn btn-danger" onclick="newSession()">New Session</button>
-                <button class="btn btn-secondary" onclick="showSessionViewer()">View Session</button>
             </div>
         </div>
     </div>
-    
-    
-    <!-- Autoplay Modal (hidden by default) -->
-    <div id="autoplayModal" style="display: none;" class="modal-overlay">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2>Autoplay Games</h2>
-                <button class="modal-close-btn" onclick="hideAutoplayModal()">×</button>
-            </div>
-            <div class="modal-body">
-                <div class="form-group">
-                    <label for="autoplayGameCount">Number of Games:</label>
-                    <input type="number" id="autoplayGameCount" min="1" max="1000" value="100" class="form-input">
+
+    <main class="app-main">
+        <!-- Screen: Interactive Play -->
+        <section id="screen-play" class="screen" hidden>
+            <div class="screen-toolbar">
+                <div class="screen-toolbar-left">
+                    <h2 class="screen-title">Interactive Play</h2>
                 </div>
-                <div class="form-group">
-                    <label for="autoplayWordLength">Word Length:</label>
-                    <select id="autoplayWordLength" class="form-input" onchange="filterAutoplayDictionaries()">
-                        <option value="4">4 Letters</option>
-                        <option value="5" selected>5 Letters</option>
-                        <option value="6">6 Letters</option>
-                        <option value="7">7 Letters</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label for="autoplayStrategy">Strategy:</label>
-                    <select id="autoplayStrategy" class="form-input">
-                        <option value="RANDOM">Random Selection</option>
-                        <option value="ENTROPY" selected>Maximum Entropy</option>
-                        <option value="MOST_COMMON_LETTERS">Most Common Letters</option>
-                        <option value="MINIMISE_COLUMN_LENGTHS">Minimise Column Lengths</option>
-                        <option value="DICTIONARY_REDUCTION">Dictionary Reduction</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label for="autoplayDelay">Delay Between Guesses (ms):</label>
-                    <input type="number" id="autoplayDelay" min="0" max="5000" step="100" value="1000" class="form-input">
-                    <small style="color: var(--text-secondary); font-size: 0.9em;">0 = No delay (fastest), 1000 = 1 second</small>
-                </div>
-                <div class="form-group">
-                    <label for="autoplayDictionary">Dictionary:</label>
-                    <select id="autoplayDictionary" class="form-input">
-                        <option value="">Use first available</option>
-                    </select>
+                <div class="screen-toolbar-right">
+                    <button class="btn btn-success" onclick="newGame()">New Game</button>
+                    <button class="btn btn-danger" onclick="newSession()">New Session</button>
+                    <button class="btn btn-secondary" onclick="showSessionViewer()">View Session</button>
                 </div>
             </div>
-            <div class="modal-footer">
-                <button class="btn btn-secondary" onclick="hideAutoplayModal()">Cancel</button>
-                <button class="btn btn-success" onclick="startAutoplay()">Start Autoplay</button>
-            </div>
-        </div>
-    </div>
-    
-    <!-- Session Viewer (hidden by default) -->
-    <div id="sessionViewer" style="display: none;" class="session-viewer-panel">
-        <div class="session-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; background: var(--bg-secondary); padding: 20px; border-radius: 12px;">
-            <h2>Session Analytics</h2>
-            <button class="btn btn-secondary" onclick="hideSessionViewer()">← Back to Game</button>
-        </div>
-        <div id="sessionContent" style="background: var(--bg-secondary); padding: 20px; border-radius: 12px;"></div>
-    </div>
-    
-    <div class="main-layout" id="gameView">
+
+            <div id="playGameHost">
+            <div class="main-layout" id="gameView">
         <!-- Left Column: Game History -->
-        <div class="history-panel">
+        <div class="history-panel panel play-panel">
             <h3>Session Stats</h3>
             <div class="win-rate-stat">
                 <div class="win-rate-label">Win Rate</div>
@@ -125,18 +88,18 @@
             </div>
             
             <h3>Guess Distribution</h3>
-            <div id="attemptsDistribution" style="padding: var(--padding-md); background: var(--bg-primary); border-radius: 0.5rem;">
-                <p style="text-align: center; color: var(--text-secondary); font-size: 0.85em;">No games played yet</p>
+            <div id="attemptsDistribution" class="surface-box surface-box-md">
+                <p class="muted-center muted-small">No games played yet</p>
             </div>
             
             <h3>Recent Games</h3>
             <div class="game-history" id="game-history">
-                <p class="empty-history-msg" style="text-align: center; color: var(--text-secondary); padding: 20px;">No games played yet</p>
+                <p class="empty-history-msg muted-center">No games played yet</p>
             </div>
         </div>
         
         <!-- Middle Column: Game Board -->
-        <div class="game-container">
+        <div class="game-container panel play-panel">
             <h3>Game</h3>
             
             <div class="game-info">
@@ -155,17 +118,17 @@
         
         <!-- Right Column: Assistant & Analytics -->
         <!-- Game Assistant Panel -->
-        <div class="assistant-panel">
+        <div class="assistant-panel panel play-panel">
             <h3>Game Assistant</h3>
             
             <div class="assistant-content">
-                <p style="margin: 0; color: var(--text-secondary);">Get AI-powered assistance!</p>
+                <p class="muted-text">Get AI-powered assistance!</p>
             </div>
             
             <div class="hint-section">
-                <div class="hint-label" style="margin-bottom: 10px;">Strategy</div>
+                <div class="hint-label hint-label-spaced">Strategy</div>
                 <div class="hint-value">
-                    <select id="strategySelector" onchange="changeStrategy()" style="width: 100%; margin-bottom: 12px;">
+                    <select id="strategySelector" class="form-input select-full select-spaced" onchange="changeStrategy()">
                         <option value="RANDOM">Random Selection</option>
                         <option value="ENTROPY">Maximum Entropy</option>
                         <option value="MOST_COMMON_LETTERS">Most Common Letters</option>
@@ -173,32 +136,32 @@
                         <option value="DICTIONARY_REDUCTION">Dictionary Reduction</option>
                     </select>
                     
-                    <div class="suggestion-controls" style="display: flex; gap: 10px; margin-bottom: 12px;">
-                        <button id="getSuggestionBtn" class="btn btn-success" onclick="getSuggestion()" style="flex: 1;">
+                    <div class="suggestion-controls">
+                        <button id="getSuggestionBtn" class="btn btn-success suggestion-btn" onclick="getSuggestion()">
                             Get Suggestion
                         </button>
-                        <div id="helpCounter" style="padding: 0.6rem; background: var(--bg-primary); border-radius: 0.5rem; font-weight: 700; color: var(--text-primary); display: flex; align-items: center;">
+                        <div id="helpCounter" class="help-counter">
                             3/3
                         </div>
                     </div>
                     
-                    <div id="suggestedWord" style="padding: 16px; background: var(--bg-primary); border-radius: 8px; font-size: 1.4em; font-weight: 700; text-align: center; color: var(--accent-primary); min-height: 50px; margin-bottom: 12px; border: 2px solid var(--border-color); display: flex; align-items: center; justify-content: center;">
+                    <div id="suggestedWord" class="suggested-word-box">
                     </div>
                     
-                    <div id="strategyTips" style="padding: 12px; background: var(--bg-primary); border-radius: 8px; font-size: 0.9em; line-height: 1.5; color: var(--text-secondary);">
+                    <div id="strategyTips" class="strategy-tips-box">
                         <strong>Random:</strong> Selects words randomly from valid options. Simple but effective!
                     </div>
                 </div>
             </div>
             
             <div class="hint-section">
-                <div class="hint-label" style="margin-bottom: 10px;">Dictionary Viewer</div>
+                <div class="hint-label hint-label-spaced">Dictionary Viewer</div>
                 <div class="hint-value">
-                    <button id="viewDictionaryBtn" class="btn btn-secondary" onclick="toggleDictionaryViewer()" style="width: 100%; margin-bottom: 12px;">
+                    <button id="viewDictionaryBtn" class="btn btn-secondary btn-full btn-spaced" onclick="toggleDictionaryViewer()">
                         View Words (<span id="dictionaryWordCount">0</span>)
                     </button>
-                    <div id="dictionaryViewer" style="display: none; max-height: 400px; overflow-y: auto; padding: 12px; background: var(--bg-primary); border-radius: 8px; font-size: 0.85em; line-height: 1.8;">
-                        <div id="dictionaryWordList" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); gap: 8px;">
+                    <div id="dictionaryViewer" class="dictionary-viewer">
+                        <div id="dictionaryWordList" class="dictionary-word-grid">
                         </div>
                     </div>
                 </div>
@@ -206,12 +169,12 @@
             
         </div>
         
-        <div class="info-panel">
+        <div class="info-panel panel play-panel">
             <h3>Game Analytics</h3>
             
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--padding-lg); flex: 1; overflow: hidden;">
+            <div class="analytics-grid">
                 <!-- Left Column -->
-                <div style="display: flex; flex-direction: column; gap: var(--padding-sm); overflow-y: auto;">
+                <div class="analytics-col analytics-col-sm">
                     <div class="info-section">
                         <div class="info-label">Total Dictionary Words:</div>
                         <div class="info-value" id="totalWords">2315</div>
@@ -244,24 +207,24 @@
                 </div>
                 
                 <!-- Right Column -->
-                <div style="display: flex; flex-direction: column; gap: var(--padding-md); overflow-y: auto;">
+                <div class="analytics-col analytics-col-md">
                     <div class="analytics-section">
-                        <h4 style="margin: 0 0 10px 0; font-size: 1em; font-weight: 600; color: var(--text-primary); border-bottom: 2px solid var(--border-color); padding-bottom: var(--padding-xs); text-transform: uppercase; letter-spacing: var(--letter-spacing-wide);">Most Common Letters</h4>
-                        <div id="mostFrequentTable" style="background: var(--bg-primary); border-radius: 6px; padding: 10px;">
+                        <h4 class="analytics-section-title">Most Common Letters</h4>
+                        <div id="mostFrequentTable" class="analytics-box">
                             <!-- Table will be dynamically generated here -->
                         </div>
                     </div>
                     
                     <div class="analytics-section">
-                        <h4 style="margin: 0 0 10px 0; font-size: 1em; font-weight: 600; color: var(--text-primary); border-bottom: 2px solid var(--border-color); padding-bottom: var(--padding-xs); text-transform: uppercase; letter-spacing: var(--letter-spacing-wide);">Total Letters by Position</h4>
-                        <div id="columnLengthsChart" style="display: flex; align-items: flex-end; gap: 4px; height: 180px; padding: 10px 10px 20px 10px; background: var(--bg-primary); border-radius: 6px; width: 100%; box-sizing: border-box;">
+                        <h4 class="analytics-section-title">Total Letters by Position</h4>
+                        <div id="columnLengthsChart" class="bar-chart-box">
                             <!-- Bar chart will be dynamically generated here -->
                         </div>
                     </div>
                     
                     <div class="analytics-section">
-                        <h4 style="margin: 0 0 10px 0; font-size: 1em; font-weight: 600; color: var(--text-primary); border-bottom: 2px solid var(--border-color); padding-bottom: var(--padding-xs); text-transform: uppercase; letter-spacing: var(--letter-spacing-wide);">Letters by Position</h4>
-                        <div id="occurrenceTable" style="background: var(--bg-primary); border-radius: 6px; padding: 10px;">
+                        <h4 class="analytics-section-title">Letters by Position</h4>
+                        <div id="occurrenceTable" class="analytics-box">
                             <!-- Table will be dynamically generated here -->
                         </div>
                     </div>
@@ -269,7 +232,233 @@
             </div>
         </div>
     </div>
+            </div>
 
-    <script src="js/game.js?v=8"></script>
+        </section>
+
+        <!-- Screen: Session Analytics -->
+        <section id="screen-session" class="screen" hidden>
+            <div class="screen-toolbar">
+                <div class="screen-toolbar-left">
+                    <h2 class="screen-title">Session Analytics</h2>
+                </div>
+                <div class="screen-toolbar-right">
+                    <button class="btn btn-secondary" onclick="hideSessionViewer()">← Back to Game</button>
+                </div>
+            </div>
+            <div id="sessionViewer" class="session-viewer-panel" style="display:block;">
+                <div id="sessionContent" style="background: var(--bg-secondary); padding: 20px; border-radius: 12px;"></div>
+            </div>
+        </section>
+
+        <!-- Screen: Bot Demo (Autoplay) -->
+        <section id="screen-bot-demo" class="screen" hidden>
+            <div class="screen-toolbar">
+                <div class="screen-toolbar-left">
+                    <h2 class="screen-title">Bot Demo</h2>
+                    <div class="screen-subtitle">Watch an algorithm play automatically.</div>
+                </div>
+                <div class="screen-toolbar-middle bot-demo-toolbar-progress">
+                    <div class="progress-row">
+                        <div id="autoplayProgressText" class="progress-text" role="status" aria-live="polite" aria-atomic="true">Not running</div>
+                        <progress id="autoplayProgressBar" value="0" max="100" class="progress-bar" aria-label="Autoplay progress" aria-describedby="autoplayProgressText"></progress>
+                    </div>
+                </div>
+                <div class="screen-toolbar-right">
+                    <button id="autoplayBtn" class="btn btn-info" onclick="toggleAutoplay()" aria-controls="autoplayProgressBar botDemoGameHost autoplaySetupPanel">Autoplay Games</button>
+                </div>
+            </div>
+
+            <details class="panel bot-demo-setup" id="autoplaySetupPanel" open>
+                <summary class="bot-demo-setup-summary">Setup</summary>
+                <div class="form-grid bot-demo-setup-grid">
+                    <div class="form-group">
+                        <label for="autoplayGameCount">Number of Games</label>
+                        <input type="number" id="autoplayGameCount" min="1" max="1000" value="100" class="form-input">
+                    </div>
+                    <div class="form-group">
+                        <label for="autoplayWordLength">Word Length</label>
+                        <select id="autoplayWordLength" class="form-input" onchange="filterAutoplayDictionaries()">
+                            <option value="4">4 Letters</option>
+                            <option value="5" selected>5 Letters</option>
+                            <option value="6">6 Letters</option>
+                            <option value="7">7 Letters</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="autoplayStrategy">Strategy</label>
+                        <select id="autoplayStrategy" class="form-input">
+                            <option value="RANDOM">Random Selection</option>
+                            <option value="ENTROPY" selected>Maximum Entropy</option>
+                            <option value="MOST_COMMON_LETTERS">Most Common Letters</option>
+                            <option value="MINIMISE_COLUMN_LENGTHS">Minimise Column Lengths</option>
+                            <option value="DICTIONARY_REDUCTION">Dictionary Reduction</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="autoplayDelay">Delay Between Guesses (ms)</label>
+                        <input type="number" id="autoplayDelay" min="0" max="5000" step="100" value="1000" class="form-input">
+                    </div>
+                    <div class="form-group bot-demo-setup-wide">
+                        <label for="autoplayDictionary">Dictionary</label>
+                        <select id="autoplayDictionary" class="form-input">
+                            <option value="">Use first available</option>
+                        </select>
+                    </div>
+                </div>
+            </details>
+
+            <div id="botDemoGameHost" class="bot-demo-game-host"></div>
+        </section>
+
+        <!-- Screen: Bot Performance (Player Analysis) -->
+        <section id="screen-bot-performance" class="screen" hidden>
+            <div class="screen-toolbar">
+                <div class="screen-toolbar-left">
+                    <h2 class="screen-title">Bot Performance</h2>
+                    <div class="screen-subtitle">Systematically test performance across a dictionary.</div>
+                </div>
+                <div class="screen-toolbar-right">
+                    <button id="startAnalysisBtn" class="btn btn-success" onclick="startPlayerAnalysis()" aria-controls="analysisProgressBar analysisResults analysisSetupPanel">Start Analysis</button>
+                    <button id="cancelAnalysisBtn" class="btn btn-danger" onclick="cancelPlayerAnalysis()" aria-controls="analysisProgressBar" disabled>Cancel</button>
+                </div>
+            </div>
+
+            <div class="panel bot-performance-progress">
+                <h3>Progress</h3>
+                <div class="progress-row">
+                    <div id="analysisProgressText" class="progress-text" role="status" aria-live="polite" aria-atomic="true">Not running</div>
+                    <progress id="analysisProgressBar" value="0" max="100" class="progress-bar" aria-label="Analysis progress" aria-describedby="analysisProgressText analysisProgressHint"></progress>
+                </div>
+                <div class="hint" id="analysisProgressHint">Cancel stops after the current word completes.</div>
+            </div>
+
+            <details class="panel bot-performance-setup" id="analysisSetupPanel" open>
+                <summary class="bot-performance-setup-summary">Setup</summary>
+                <div class="form-grid bot-performance-setup-grid">
+                    <div class="form-group">
+                        <label for="analysisStrategy">Selection Algorithm</label>
+                        <select id="analysisStrategy" class="form-input">
+                            <option value="RANDOM">Random Selection</option>
+                            <option value="ENTROPY" selected>Maximum Entropy</option>
+                            <option value="MOST_COMMON_LETTERS">Most Common Letters</option>
+                            <option value="MINIMISE_COLUMN_LENGTHS">Minimise Column Lengths</option>
+                            <option value="DICTIONARY_REDUCTION">Dictionary Reduction</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="analysisDictionary">Dictionary</label>
+                        <select id="analysisDictionary" class="form-input">
+                            <option value="">Loading dictionaries...</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="analysisDelay">Delay between games (ms)</label>
+                        <input type="number" id="analysisDelay" min="0" max="5000" step="100" value="0" class="form-input">
+                    </div>
+                </div>
+            </details>
+
+            <!-- Player Analysis Results Section (hidden by default) -->
+            <div id="analysisResults" class="analysis-results" style="display: none;">
+                <div class="analysis-results-header">
+                    <h2 class="analysis-results-title">Player Analysis Results</h2>
+                    <button class="btn btn-secondary" onclick="hideAnalysisResults()">Close</button>
+                </div>
+
+                <div class="panel analysis-results-panel">
+                    <h3>Summary Statistics</h3>
+                    <div id="analysisSummary"></div>
+                    <button class="btn btn-success analysis-download-btn" onclick="downloadAnalysisSummary()">Download Summary CSV</button>
+                </div>
+
+                <div class="panel analysis-results-panel">
+                    <h3>Detailed Results</h3>
+                    <div id="analysisDetails" class="analysis-details-scroll"></div>
+                    <button class="btn btn-success analysis-download-btn" onclick="downloadAnalysisDetails()">Download Details CSV</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Screen: Dictionary Analysis (placeholder) -->
+        <section id="screen-dictionary" class="screen" hidden>
+            <div class="screen-toolbar">
+                <div class="screen-toolbar-left">
+                    <h2 class="screen-title">Dictionary</h2>
+                    <div class="screen-subtitle">Explore word lists, letter frequency by position, and word complexity.</div>
+                </div>
+            </div>
+
+            <div class="dictionary-grid">
+                <div class="dictionary-col dictionary-col-left">
+                    <div class="panel dictionary-panel" aria-live="polite" aria-atomic="true">
+                        <h3>Summary</h3>
+                        <div id="dictionarySummary" class="dictionary-summary">
+                            <div class="dictionary-summary-row">
+                                <div class="dictionary-summary-label">Dictionary</div>
+                                <div class="dictionary-summary-value" id="dictionaryName">Select a dictionary from the menu above.</div>
+                            </div>
+                            <div class="dictionary-summary-row">
+                                <div class="dictionary-summary-label">Word length</div>
+                                <div class="dictionary-summary-value" id="dictionaryWordLength">-</div>
+                            </div>
+                            <div class="dictionary-summary-row">
+                                <div class="dictionary-summary-label">Word count</div>
+                                <div class="dictionary-summary-value" id="dictionaryWordCount">-</div>
+                            </div>
+                            <div class="dictionary-summary-row">
+                                <div class="dictionary-summary-label">Complexity model</div>
+                                <div class="dictionary-summary-value" id="dictionaryComplexityModel">Neighbour density (1–3 edits)</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="panel dictionary-panel">
+                        <h3>Complexity Distribution</h3>
+                        <p class="dictionary-muted" id="dictionaryComplexityHint">
+                            Words with many near-neighbours (differing by 1–3 characters) tend to be harder to pin down.
+                        </p>
+                        <div id="dictionaryComplexityDistribution" class="dictionary-distribution">
+                            <p class="muted-center muted-small">No data loaded.</p>
+                        </div>
+                    </div>
+
+                    <div class="panel dictionary-panel dictionary-panel-grow">
+                        <h3>Letter Frequency by Position</h3>
+                        <div class="dictionary-freq-scroll" id="dictionaryLetterFrequency">
+                            <p class="muted-center muted-small">No data loaded.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="dictionary-col dictionary-col-right">
+                    <div class="panel dictionary-panel dictionary-panel-grow">
+                        <h3>Words</h3>
+                        <div class="dictionary-words-scroll" id="dictionaryWords">
+                            <p class="muted-center muted-small">No dictionary selected.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Screen: Admin (placeholder) -->
+        <section id="screen-admin" class="screen" hidden>
+            <div class="screen-toolbar">
+                <div class="screen-toolbar-left">
+                    <h2 class="screen-title">Admin</h2>
+                    <div class="screen-subtitle">Not yet implemented.</div>
+                </div>
+                <div class="screen-toolbar-right">
+                    <button class="btn btn-secondary" onclick="checkHealth()">Server Status</button>
+                </div>
+            </div>
+            <div class="panel placeholder-panel">
+                <h3>Coming soon</h3>
+                <p class="placeholder-text">This screen will manage configuration, users, and server session monitoring.</p>
+            </div>
+        </section>
+    </main>
+    <script src="js/game.js?v=15"></script>
 </body>
 </html>

@@ -1,7 +1,23 @@
 package com.fistraltech.server.dto;
 
 /**
- * Data Transfer Object for game creation requests
+ * Request DTO for creating a new game session.
+ *
+ * <p><strong>Endpoint</strong>: {@code POST /api/wordai/games}
+ *
+ * <p><strong>Example</strong>
+ * <pre>{@code
+ * {
+ *   "dictionaryId": "5",
+ *   "wordLength": 5,
+ *   "targetWord": "arose"
+ * }
+ * }</pre>
+ *
+ * <p>All fields are optional. If {@code targetWord} is omitted, a random target is chosen.
+ * If {@code dictionaryId} is provided, it takes precedence over {@code wordLength}.
+ *
+ * @author Fistral Technologies
  */
 public class CreateGameRequest {
     private String targetWord; // Optional - if not provided, a random word will be selected
