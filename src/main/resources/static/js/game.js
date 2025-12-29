@@ -1455,9 +1455,6 @@ function renderDictionaryComplexity(words, wordLength) {
                 <div class="dictionary-summary-label">Very Hard (12-15)</div>
                 <div class="dictionary-summary-value">${counts['very-hard']} (${pct(counts['very-hard'])}%)</div>
             </div>
-            <p class="dictionary-muted" style="margin: 0;">
-                Complexity is approximated by 1-letter neighbour count.
-            </p>
         </div>
     `;
 
@@ -1500,6 +1497,27 @@ function renderDictionaryWords(words, wordLength) {
     }
     html += '</tbody></table>';
     container.innerHTML = html;
+
+    // After rendering, match right column height to left column height
+    matchDictionaryColumnHeights();
+}
+
+function matchDictionaryColumnHeights() {
+    const leftPanel = document.querySelector('.dictionary-col-left .dictionary-panel');
+    const rightCol = document.querySelector('.dictionary-col-right');
+    
+    if (!leftPanel || !rightCol) {
+        return;
+    }
+
+    // Reset right column height first
+    rightCol.style.height = '';
+    
+    // Get natural height of left panel (Letter Frequency panel)
+    const leftPanelHeight = leftPanel.offsetHeight;
+    
+    // Set right column to match the panel height (not the column height)
+    rightCol.style.height = `${leftPanelHeight}px`;
 }
 
 function adjustLetterInputGrid(wordLength) {
