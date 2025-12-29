@@ -43,6 +43,16 @@
                     <h2 class="screen-title">Interactive Play</h2>
                 </div>
                 <div class="screen-toolbar-right">
+                    <select id="strategySelector" class="form-input" style="width: auto; max-width: 200px; margin-right: 8px;" onchange="changeStrategy()">
+                        <option value="RANDOM">Random Selection</option>
+                        <option value="ENTROPY">Maximum Entropy</option>
+                        <option value="MOST_COMMON_LETTERS">Most Common Letters</option>
+                        <option value="MINIMISE_COLUMN_LENGTHS">Minimise Column Lengths</option>
+                        <option value="DICTIONARY_REDUCTION">Dictionary Reduction</option>
+                    </select>
+                    <button id="getSuggestionBtn" class="btn btn-info" style="margin-right: 8px;" onclick="getSuggestion()">
+                        Get Suggestion <span id="helpCounter" class="help-counter-inline">3/3</span>
+                    </button>
                     <button class="btn btn-success" onclick="newGame()">New Game</button>
                     <button class="btn btn-danger" onclick="newSession()">New Session</button>
                     <button class="btn btn-secondary" onclick="showSessionViewer()">View Session</button>
@@ -116,64 +126,12 @@
             <div class="guess-history" id="guessHistory"></div>
         </div>
         
-        <!-- Right Column: Assistant & Analytics -->
-        <!-- Game Assistant Panel -->
-        <div class="assistant-panel panel play-panel">
-            <h3>Game Assistant</h3>
-            
-            <div class="assistant-content">
-                <p class="muted-text">Get AI-powered assistance!</p>
-            </div>
-            
-            <div class="hint-section">
-                <div class="hint-label hint-label-spaced">Strategy</div>
-                <div class="hint-value">
-                    <select id="strategySelector" class="form-input select-full select-spaced" onchange="changeStrategy()">
-                        <option value="RANDOM">Random Selection</option>
-                        <option value="ENTROPY">Maximum Entropy</option>
-                        <option value="MOST_COMMON_LETTERS">Most Common Letters</option>
-                        <option value="MINIMISE_COLUMN_LENGTHS">Minimise Column Lengths</option>
-                        <option value="DICTIONARY_REDUCTION">Dictionary Reduction</option>
-                    </select>
-                    
-                    <div class="suggestion-controls">
-                        <button id="getSuggestionBtn" class="btn btn-success suggestion-btn" onclick="getSuggestion()">
-                            Get Suggestion
-                        </button>
-                        <div id="helpCounter" class="help-counter">
-                            3/3
-                        </div>
-                    </div>
-                    
-                    <div id="suggestedWord" class="suggested-word-box">
-                    </div>
-                    
-                    <div id="strategyTips" class="strategy-tips-box">
-                        <strong>Random:</strong> Selects words randomly from valid options. Simple but effective!
-                    </div>
-                </div>
-            </div>
-            
-            <div class="hint-section">
-                <div class="hint-label hint-label-spaced">Dictionary Viewer</div>
-                <div class="hint-value">
-                    <button id="viewDictionaryBtn" class="btn btn-secondary btn-full btn-spaced" onclick="toggleDictionaryViewer()">
-                        View Words (<span id="dictionaryWordCount">0</span>)
-                    </button>
-                    <div id="dictionaryViewer" class="dictionary-viewer">
-                        <div id="dictionaryWordList" class="dictionary-word-grid">
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-        </div>
-        
+        <!-- Right Column: Analytics -->
         <div class="info-panel panel play-panel">
             <h3>Game Analytics</h3>
             
             <div class="analytics-grid">
-                <!-- Left Column -->
+                <!-- Left Column: Stats -->
                 <div class="analytics-col analytics-col-sm">
                     <div class="info-section">
                         <div class="info-label">Total Dictionary Words:</div>
@@ -206,15 +164,8 @@
                     </div>
                 </div>
                 
-                <!-- Right Column -->
+                <!-- Middle Column: Charts -->
                 <div class="analytics-col analytics-col-md">
-                    <div class="analytics-section">
-                        <h4 class="analytics-section-title">Most Common Letters</h4>
-                        <div id="mostFrequentTable" class="analytics-box">
-                            <!-- Table will be dynamically generated here -->
-                        </div>
-                    </div>
-                    
                     <div class="analytics-section">
                         <h4 class="analytics-section-title">Total Letters by Position</h4>
                         <div id="columnLengthsChart" class="bar-chart-box">
@@ -222,6 +173,16 @@
                         </div>
                     </div>
                     
+                    <div class="analytics-section">
+                        <h4 class="analytics-section-title">Most Common Letters</h4>
+                        <div id="mostFrequentTable" class="analytics-box">
+                            <!-- Table will be dynamically generated here -->
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Right Column: Letters by Position -->
+                <div class="analytics-col analytics-col-lg">
                     <div class="analytics-section">
                         <h4 class="analytics-section-title">Letters by Position</h4>
                         <div id="occurrenceTable" class="analytics-box">

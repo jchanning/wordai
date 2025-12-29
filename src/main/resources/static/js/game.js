@@ -327,22 +327,6 @@ async function newGame() {
         helpUsedCount = 0;
         updateHelpCounter();
         
-        // Clear suggested word from previous game
-        document.getElementById('suggestedWord').textContent = '';
-        
-        // Reset dictionary viewer (after analytics are initialized)
-        const dictionaryViewer = document.getElementById('dictionaryViewer');
-        if (dictionaryViewer) {
-            dictionaryViewer.style.display = 'none';
-            document.getElementById('dictionaryWordList').innerHTML = '';
-        }
-        const viewDictionaryBtn = document.getElementById('viewDictionaryBtn');
-        if (viewDictionaryBtn) {
-            const wordCountElement = document.getElementById('dictionaryWordCount');
-            const count = wordCountElement ? wordCountElement.textContent : '0';
-            viewDictionaryBtn.innerHTML = `View Words (<span id="dictionaryWordCount">${count}</span>)`;
-        }
-        
         // Reset current game guesses
         currentGameGuesses = [];
         
@@ -513,12 +497,6 @@ function initializeAnalytics(dictionaryMetrics) {
     document.getElementById('eliminatedWords').textContent = '0';
     document.getElementById('reductionPercent').textContent = '0%';
     
-    // Initialize dictionary word count for viewer
-    const wordCountElement = document.getElementById('dictionaryWordCount');
-    if (wordCountElement) {
-        wordCountElement.textContent = totalWords;
-    }
-    
     // Populate dictionary metrics from server response
     document.getElementById('uniqueLetters').textContent = dictionaryMetrics.uniqueCharacters || '26';
     document.getElementById('letterCount').textContent = dictionaryMetrics.letterCount || '-';
@@ -566,12 +544,6 @@ function updateAnalytics(guessedWord, remainingCount, dictionaryMetrics) {
     document.getElementById('remainingWords').textContent = remainingCount;
     document.getElementById('eliminatedWords').textContent = eliminated;
     document.getElementById('reductionPercent').textContent = reductionPercent + '%';
-    
-    // Update dictionary word count for viewer (if element exists)
-    const wordCountElement = document.getElementById('dictionaryWordCount');
-    if (wordCountElement) {
-        wordCountElement.textContent = remainingCount;
-    }
     
     // Update dictionary metrics if available
     if (dictionaryMetrics) {
@@ -1006,8 +978,7 @@ async function changeStrategy() {
         });
 
         if (response.ok) {
-            updateStrategyTips(strategy);
-            showStatus(`Strategy changed to ${strategy}`, 'success');
+            showStatus(`Strategy changed to ${getStrategyDisplayName(strategy)}`, 'success');
         } else {
             showStatus('Failed to change strategy', 'error');
         }
@@ -1042,10 +1013,16 @@ async function getSuggestion() {
             helpUsedCount++;
             updateHelpCounter();
             
-            document.getElementById('suggestedWord').textContent = data.suggestion.toUpperCase();
-            showStatus(`Suggestion: ${data.suggestion.toUpperCase()} (${data.strategy})`, 'success');
+            // Auto-populate the suggestion into the game grid
+            const suggestion = data.suggestion.toUpperCase();
+            const inputs = document.querySelectorAll('.letter-input');
+            for (let i = 0; i < suggestion.length && i < inputs.length; i++) {
+                inputs[i].value = suggestion[i];
+                inputs[i].classList.add('filled');
+            }
+            
+            showStatus(`Suggestion populated: ${suggestion} (${data.strategy})`, 'success');
         } else if (response.ok && !data.suggestion) {
-            document.getElementById('suggestedWord').textContent = 'No words available';
             showStatus('No valid words remaining', 'error');
         } else {
             showStatus('Failed to get suggestion', 'error');
@@ -1069,22 +1046,6 @@ function getStrategyDisplayName(strategy) {
             return 'Dictionary Reduction';
         default:
             return strategy;
-    }
-}
-
-function updateStrategyTips(strategy) {
-    const tipsDiv = document.getElementById('strategyTips');
-    
-    if (strategy === 'RANDOM') {
-        tipsDiv.innerHTML = '<strong>Random:</strong> Selects words randomly from valid options. Simple but effective!';
-    } else if (strategy === 'ENTROPY') {
-        tipsDiv.innerHTML = '<strong>Maximum Entropy:</strong> Chooses words that maximize information gain. Uses statistical analysis to find the most informative guess.';
-    } else if (strategy === 'MOST_COMMON_LETTERS') {
-        tipsDiv.innerHTML = '<strong>Most Common Letters:</strong> Selects words containing the most frequently occurring letters in the remaining word pool. Prioritizes common letter patterns.';
-    } else if (strategy === 'MINIMISE_COLUMN_LENGTHS') {
-        tipsDiv.innerHTML = '<strong>Minimise Column Lengths:</strong> Selects guesses that most effectively reduce the number of possible letters at each position. Directly minimizes positional entropy for maximum constraint.';
-    } else if (strategy === 'DICTIONARY_REDUCTION') {
-        tipsDiv.innerHTML = '<strong>Dictionary Reduction:</strong> Selects the word that maximally reduces the dictionary size. Optimizes for the greatest expected reduction in remaining possibilities.';
     }
 }
 
@@ -1727,75 +1688,6 @@ function renderSessionDetails() {
     });
 
     contentDiv.innerHTML = html;
-}
-
-// Dictionary Viewer Functions
-async function toggleDictionaryViewer() {
-    const viewer = document.getElementById('dictionaryViewer');
-    const isVisible = window.getComputedStyle(viewer).display !== 'none';
-    const wordCount = document.getElementById('dictionaryWordCount').textContent;
-    
-    if (isVisible) {
-        viewer.style.display = 'none';
-        document.getElementById('viewDictionaryBtn').innerHTML = `View Words (<span id="dictionaryWordCount">${wordCount}</span>)`;
-    } else {
-        await loadDictionaryWords();
-        viewer.style.display = 'block';
-        document.getElementById('viewDictionaryBtn').innerHTML = `Hide Words (<span id="dictionaryWordCount">${wordCount}</span>)`;
-    }
-}
-
-async function loadDictionaryWords() {
-    if (!currentGameId) {
-        showStatus('No active game', 'error');
-        return;
-    }
-    
-    try {
-        const response = await fetch(`${API_BASE}/games/${currentGameId}/words`);
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        
-        const data = await response.json();
-        displayDictionaryWords(data.words);
-        document.getElementById('dictionaryWordCount').textContent = data.count;
-    } catch (error) {
-        console.error('Failed to load dictionary words:', error);
-        showStatus('Failed to load dictionary words: ' + error.message, 'error');
-    }
-}
-
-function displayDictionaryWords(words) {
-    const listDiv = document.getElementById('dictionaryWordList');
-    listDiv.innerHTML = '';
-    
-    if (words.length === 0) {
-        listDiv.innerHTML = '<div style=\"grid-column: 1/-1; text-align: center; color: var(--text-secondary); padding: 20px;\">No valid words remaining</div>';
-        return;
-    }
-    
-    words.forEach(word => {
-        const wordSpan = document.createElement('span');
-        wordSpan.textContent = word.toUpperCase();
-        wordSpan.style.cssText = 'padding: 6px; background: var(--bg-secondary); border-radius: 4px; text-align: center; font-weight: 600; cursor: pointer; transition: all 0.2s;';
-        wordSpan.onmouseover = function() {
-            this.style.background = 'var(--accent-primary)';
-            this.style.color = 'white';
-        };
-        wordSpan.onmouseout = function() {
-            this.style.background = 'var(--bg-secondary)';
-            this.style.color = '';
-        };
-        wordSpan.onclick = function() {
-            // Copy word to clipboard
-            navigator.clipboard.writeText(word.toUpperCase()).then(() => {
-                showStatus(`Copied ${word.toUpperCase()} to clipboard`, 'success');
-                setTimeout(hideStatus, 2000);
-            });
-        };
-        listDiv.appendChild(wordSpan);
-    });
 }
 
 // ===== AUTOPLAY FUNCTIONALITY =====
