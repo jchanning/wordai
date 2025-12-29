@@ -707,7 +707,7 @@ summary:focus-visible {
 /* --- Layout --- */
 .main-layout {
     display: grid;
-    grid-template-columns: minmax(240px, 1fr) minmax(340px, 1.35fr) minmax(400px, 2fr);
+    grid-template-columns: minmax(240px, 1fr) minmax(420px, 1.65fr) minmax(400px, 2fr);
     grid-template-areas: "history game analytics";
     gap: var(--padding-lg);
     width: 100%;
