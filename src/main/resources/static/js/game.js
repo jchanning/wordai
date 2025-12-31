@@ -7,9 +7,11 @@ let currentDictionarySize = 2315; // Track the current dictionary's total word c
 let helpUsedCount = 0; // Track how many times help has been used in this game
 const MAX_HELP_COUNT = 3; // Maximum number of help requests allowed per game
 let currentGameGuesses = []; // Track all guesses with their responses and metrics for current game
+let currentUser = null; // Track logged-in user
 
 // Initialize page
 window.addEventListener('DOMContentLoaded', function() {
+    checkAuthentication();
     initRouter();
 
     // Create initial letter inputs with default word length
@@ -20,6 +22,59 @@ window.addEventListener('DOMContentLoaded', function() {
     updateStats();
     updateHelpCounter();
 });
+
+async function checkAuthentication() {
+    try {
+        const response = await fetch('/api/auth/user');
+        if (response.ok) {
+            currentUser = await response.json();
+            displayUserInfo();
+        } else {
+            // Not authenticated, user can play anonymously
+            currentUser = null;
+            showGuestOptions();
+        }
+    } catch (error) {
+        // Not authenticated, user can play anonymously
+        console.log('Playing as guest');
+        currentUser = null;
+        showGuestOptions();
+    }
+}
+
+function displayUserInfo() {
+    if (currentUser) {
+        const userNameElement = document.getElementById('userName');
+        const userInfoElement = document.getElementById('userInfo');
+        const signInLink = document.getElementById('signInLink');
+        
+        if (userNameElement && userInfoElement) {
+            userNameElement.textContent = currentUser.fullName || currentUser.username || currentUser.email;
+            userInfoElement.style.display = 'flex';
+        }
+        
+        if (signInLink) {
+            signInLink.style.display = 'none';
+        }
+    }
+}
+
+function showGuestOptions() {
+    const userInfoElement = document.getElementById('userInfo');
+    const signInLink = document.getElementById('signInLink');
+    
+    if (userInfoElement) {
+        userInfoElement.style.display = 'none';
+    }
+    
+    if (signInLink) {
+        signInLink.style.display = 'inline-flex';
+    }
+}
+
+function logout() {
+    window.location.href = '/api/auth/logout';
+}
 
 function initRouter() {
     window.addEventListener('hashchange', onRouteChange);
@@ -777,7 +832,7 @@ function getGameStats() {
 }
 
 function saveGameResult(targetWord, attempts, won) {
-    // Save to limited history (for display)
+    // Save to history (all games for export, only display last 5)
     const history = getGameHistory();
     history.unshift({
         targetWord: targetWord,
@@ -789,10 +844,7 @@ function saveGameResult(targetWord, attempts, won) {
         dictionarySize: currentDictionarySize
     });
     
-    // Keep only last 10 games in history (for display)
-    if (history.length > 10) {
-        history.length = 10;
-    }
+    // Store ALL games (no limit) - needed for full CSV export
     sessionStorage.setItem('gameHistory', JSON.stringify(history));
     
     // Update cumulative stats (not limited)
@@ -850,6 +902,61 @@ function updateHistoryDisplay() {
     
     tableHtml += `</tbody></table>`;
     historyContainer.innerHTML = tableHtml;
+}
+
+function exportSessionGamesToCSV() {
+    const history = getGameHistory();
+    
+    if (history.length === 0) {
+        showStatus('No games to export', 'error');
+        return;
+    }
+    
+    // CSV header
+    let csv = 'Game#,Target Word,Word Length,Dictionary Size,Result,Attempts,Timestamp,Guesses\n';
+    
+    // Add each game (reverse to show oldest first in export)
+    const orderedHistory = [...history].reverse();
+    orderedHistory.forEach((game, index) => {
+        const gameNum = index + 1;
+        const targetWord = game.targetWord.toUpperCase();
+        const wordLength = game.wordLength || targetWord.length;
+        const dictionarySize = game.dictionarySize || 'N/A';
+        const result = game.won ? 'WON' : 'LOST';
+        const attempts = game.attempts;
+        const timestamp = game.timestamp ? new Date(game.timestamp).toLocaleString() : 'N/A';
+        
+        // Format guesses as comma-separated uppercase words
+        let guessesStr = '';
+        if (game.guesses && game.guesses.length > 0) {
+            guessesStr = game.guesses.map(g => g.guess ? g.guess.toUpperCase() : '').join('; ');
+        }
+        
+        // Escape fields that might contain commas
+        const escapedTimestamp = `"${timestamp}"`;
+        const escapedGuesses = `"${guessesStr}"`;
+        
+        csv += `${gameNum},${targetWord},${wordLength},${dictionarySize},${result},${attempts},${escapedTimestamp},${escapedGuesses}\n`;
+    });
+    
+    // Create blob and download
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    
+    const now = new Date();
+    const dateStr = now.toISOString().slice(0, 10);
+    const timeStr = now.toTimeString().slice(0, 8).replace(/:/g, '-');
+    const filename = `wordai-session-${dateStr}_${timeStr}.csv`;
+    
+    link.setAttribute('href', url);
+    link.setAttribute('download', filename);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    showStatus(`Exported ${history.length} game${history.length !== 1 ? 's' : ''} to ${filename}`, 'success');
 }
 
 function updateAttemptsDistribution() {
@@ -1251,6 +1358,12 @@ async function loadDictionaryScreenData(dictionaryId, dictionaryName) {
     renderDictionaryWords(words, wordLength);
 }
 
+// State for letter frequency table sorting
+const letterFreqSortState = {
+    column: null,
+    ascending: true
+};
+
 function renderDictionaryLetterFrequency(words, wordLength) {
     const container = document.getElementById('dictionaryLetterFrequency');
     if (!container) {
@@ -1278,7 +1391,12 @@ function renderDictionaryLetterFrequency(words, wordLength) {
         }
     }
 
-    const letters = Array.from(countsByLetter.keys()).sort();
+    let letters = Array.from(countsByLetter.keys()).sort();
+
+    // Apply sorting if a column is selected
+    if (letterFreqSortState.column !== null) {
+        letters = sortLetterFrequencyData(letters, countsByLetter, wordLength, letterFreqSortState.column, letterFreqSortState.ascending);
+    }
 
     // Precompute per-position maxima to drive a temperature-map intensity.
     const maxByPos = new Array(wordLength).fill(0);
@@ -1298,7 +1416,14 @@ function renderDictionaryLetterFrequency(words, wordLength) {
     headerCells.push('Total');
 
     let html = '<table class="analysis-table">';
-    html += '<thead><tr>' + headerCells.map(h => `<th>${h}</th>`).join('') + '</tr></thead>';
+    html += '<thead><tr>';
+    // Add clickable headers with sort indicators
+    headerCells.forEach((h, idx) => {
+        const sortClass = letterFreqSortState.column === idx ? (letterFreqSortState.ascending ? 'sort-asc' : 'sort-desc') : '';
+        const sortIndicator = letterFreqSortState.column === idx ? (letterFreqSortState.ascending ? ' ▲' : ' ▼') : '';
+        html += `<th class="sortable ${sortClass}" onclick="sortLetterFrequency(${idx})" style="cursor: pointer;" title="Click to sort">${h}${sortIndicator}</th>`;
+    });
+    html += '</tr></thead>';
     html += '<tbody>';
 
     for (const letter of letters) {
@@ -1317,6 +1442,58 @@ function renderDictionaryLetterFrequency(words, wordLength) {
 
     html += '</tbody></table>';
     container.innerHTML = html;
+}
+
+function sortLetterFrequencyData(letters, countsByLetter, wordLength, column, ascending) {
+    const sorted = [...letters];
+    
+    sorted.sort((a, b) => {
+        let valA, valB;
+        
+        if (column === 0) {
+            // Sort by letter (column 0)
+            valA = a;
+            valB = b;
+            const comparison = valA.localeCompare(valB);
+            return ascending ? comparison : -comparison;
+        } else if (column === wordLength + 1) {
+            // Sort by total (last column)
+            const countsA = countsByLetter.get(a);
+            const countsB = countsByLetter.get(b);
+            valA = countsA.reduce((sum, n) => sum + n, 0);
+            valB = countsB.reduce((sum, n) => sum + n, 0);
+        } else {
+            // Sort by position (columns 1 to wordLength)
+            const posIndex = column - 1;
+            const countsA = countsByLetter.get(a);
+            const countsB = countsByLetter.get(b);
+            valA = countsA[posIndex] || 0;
+            valB = countsB[posIndex] || 0;
+        }
+        
+        // Numeric comparison for position and total columns
+        if (typeof valA === 'number' && typeof valB === 'number') {
+            return ascending ? valA - valB : valB - valA;
+        }
+        
+        return 0;
+    });
+    
+    return sorted;
+}
+
+function sortLetterFrequency(columnIndex) {
+    // Toggle sort direction if clicking the same column
+    if (letterFreqSortState.column === columnIndex) {
+        letterFreqSortState.ascending = !letterFreqSortState.ascending;
+    } else {
+        // New column: default to descending for numeric columns, ascending for letter column
+        letterFreqSortState.column = columnIndex;
+        letterFreqSortState.ascending = columnIndex === 0; // Ascending for letter, descending for numbers
+    }
+    
+    // Re-render the dictionary screen to apply the sort
+    refreshDictionaryScreen();
 }
 
 function computeOneAwayNeighbourCounts(words, wordLength) {
@@ -1394,33 +1571,56 @@ function renderDictionaryComplexity(words, wordLength) {
     const total = words.length;
     const pct = (n) => (total > 0 ? Math.round((n / total) * 100) : 0);
 
-    distEl.innerHTML = `
-        <div class="dictionary-summary">
-            <div class="dictionary-summary-row">
-                <div class="dictionary-summary-label">Very Easy (0-2)</div>
-                <div class="dictionary-summary-value">${counts['very-easy']} (${pct(counts['very-easy'])}%)</div>
+    // Create bar chart
+    const maxCount = Math.max(counts['very-easy'], counts['easy'], counts['medium'], counts['hard'], counts['very-hard']);
+    const chartHeight = 140;
+    
+    const complexityLevels = [
+        { key: 'very-easy', label: 'Very Easy', range: '0-2', color: '#22c55e' },
+        { key: 'easy', label: 'Easy', range: '3-5', color: '#84cc16' },
+        { key: 'medium', label: 'Medium', range: '6-8', color: '#eab308' },
+        { key: 'hard', label: 'Hard', range: '9-11', color: '#f97316' },
+        { key: 'very-hard', label: 'Very Hard', range: '12-15', color: '#ef4444' }
+    ];
+
+    let chartHTML = '<div class="complexity-bar-chart">';
+    
+    for (const level of complexityLevels) {
+        const count = counts[level.key];
+        const heightPercent = maxCount > 0 ? (count / maxCount) * 100 : 0;
+        const barHeight = (heightPercent / 100) * chartHeight;
+        
+        chartHTML += `
+            <div class="complexity-bar-container">
+                <div class="complexity-bar-wrapper" style="height: ${chartHeight}px;">
+                    <div class="complexity-bar" style="
+                        height: ${barHeight}px;
+                        background: linear-gradient(180deg, ${level.color} 0%, ${level.color}dd 100%);
+                    " title="${level.label}: ${count} words (${pct(count)}%)"></div>
+                </div>
+                <div class="complexity-bar-count">${count}</div>
+                <div class="complexity-bar-percent">${pct(count)}%</div>
+                <div class="complexity-bar-label">${level.label}</div>
+                <div class="complexity-bar-range">${level.range}</div>
             </div>
-            <div class="dictionary-summary-row">
-                <div class="dictionary-summary-label">Easy (3-5)</div>
-                <div class="dictionary-summary-value">${counts['easy']} (${pct(counts['easy'])}%)</div>
-            </div>
-            <div class="dictionary-summary-row">
-                <div class="dictionary-summary-label">Medium (6-8)</div>
-                <div class="dictionary-summary-value">${counts['medium']} (${pct(counts['medium'])}%)</div>
-            </div>
-            <div class="dictionary-summary-row">
-                <div class="dictionary-summary-label">Hard (9-11)</div>
-                <div class="dictionary-summary-value">${counts['hard']} (${pct(counts['hard'])}%)</div>
-            </div>
-            <div class="dictionary-summary-row">
-                <div class="dictionary-summary-label">Very Hard (12-15)</div>
-                <div class="dictionary-summary-value">${counts['very-hard']} (${pct(counts['very-hard'])}%)</div>
-            </div>
-        </div>
-    `;
+        `;
+    }
+    
+    chartHTML += '</div>';
+
+    distEl.innerHTML = chartHTML;
 
     dictionaryScreenState._complexity = { neighbourCounts };
 }
+
+// State for dictionary words table sorting and filtering
+const dictionaryWordsState = {
+    sortColumn: 1, // Default: sort by 1-away (complexity score)
+    sortAscending: false, // Default: descending (hardest first)
+    searchTerm: '',
+    allWords: [],
+    wordLength: 0
+};
 
 function renderDictionaryWords(words, wordLength) {
     const container = document.getElementById('dictionaryWords');
@@ -1432,35 +1632,114 @@ function renderDictionaryWords(words, wordLength) {
         return;
     }
 
+    // Store words for filtering/sorting
+    dictionaryWordsState.allWords = words;
+    dictionaryWordsState.wordLength = wordLength;
+
     const complexity = dictionaryScreenState._complexity;
     const neighbourCounts = complexity?.neighbourCounts || new Map();
 
-    const wordInfos = words.map(w => {
+    let wordInfos = words.map(w => {
         const score = neighbourCounts.get(w) || 0;
         const bucket = getComplexityBucket(score);
         return { word: w, score, bucket };
     });
 
-    // Most useful default ordering: show hardest first, then alpha.
-    wordInfos.sort((a, b) => (b.score - a.score) || a.word.localeCompare(b.word));
+    // Apply search filter
+    const searchTerm = dictionaryWordsState.searchTerm.toLowerCase().trim();
+    if (searchTerm) {
+        wordInfos = wordInfos.filter(info => info.word.toLowerCase().includes(searchTerm));
+    }
 
+    // Apply sorting
+    wordInfos = sortDictionaryWordsData(wordInfos, dictionaryWordsState.sortColumn, dictionaryWordsState.sortAscending);
+
+    const headers = ['Word', '1-away', 'Complexity'];
     let html = '<table class="analysis-table">';
-    html += '<thead><tr><th>Word</th><th class="num">1-away</th><th>Complexity</th></tr></thead>';
+    html += '<thead><tr>';
+    headers.forEach((h, idx) => {
+        const sortClass = dictionaryWordsState.sortColumn === idx ? (dictionaryWordsState.sortAscending ? 'sort-asc' : 'sort-desc') : '';
+        const sortIndicator = dictionaryWordsState.sortColumn === idx ? (dictionaryWordsState.sortAscending ? ' ▲' : ' ▼') : '';
+        const thClass = idx === 1 ? 'num' : '';
+        html += `<th class="sortable ${sortClass} ${thClass}" onclick="sortDictionaryWords(${idx})" style="cursor: pointer;" title="Click to sort">${h}${sortIndicator}</th>`;
+    });
+    html += '</tr></thead>';
     html += '<tbody>';
-    for (const info of wordInfos) {
-        html += `
-            <tr>
-                <td class="mono">${info.word.toUpperCase()}</td>
-                <td class="num">${info.score}</td>
-                <td><span class="complexity-pill complexity-${info.bucket.key}">${info.bucket.label}</span></td>
-            </tr>
-        `;
+    
+    if (wordInfos.length === 0) {
+        html += '<tr><td colspan="3" class="muted-center" style="padding: 20px;">No words match your search</td></tr>';
+    } else {
+        for (const info of wordInfos) {
+            html += `
+                <tr>
+                    <td class="mono">${info.word.toUpperCase()}</td>
+                    <td class="num">${info.score}</td>
+                    <td><span class="complexity-pill complexity-${info.bucket.key}">${info.bucket.label}</span></td>
+                </tr>
+            `;
+        }
     }
     html += '</tbody></table>';
     container.innerHTML = html;
 
     // After rendering, match right column height to left column height
     matchDictionaryColumnHeights();
+}
+
+function sortDictionaryWordsData(wordInfos, column, ascending) {
+    const sorted = [...wordInfos];
+    
+    sorted.sort((a, b) => {
+        let valA, valB;
+        
+        if (column === 0) {
+            // Sort by Word
+            valA = a.word;
+            valB = b.word;
+            const comparison = valA.localeCompare(valB);
+            return ascending ? comparison : -comparison;
+        } else if (column === 1) {
+            // Sort by 1-away score
+            valA = a.score;
+            valB = b.score;
+        } else if (column === 2) {
+            // Sort by Complexity bucket
+            const complexityOrder = { 'very-easy': 0, 'easy': 1, 'medium': 2, 'hard': 3, 'very-hard': 4 };
+            valA = complexityOrder[a.bucket.key] || 0;
+            valB = complexityOrder[b.bucket.key] || 0;
+        }
+        
+        // Numeric comparison
+        if (typeof valA === 'number' && typeof valB === 'number') {
+            return ascending ? valA - valB : valB - valA;
+        }
+        
+        return 0;
+    });
+    
+    return sorted;
+}
+
+function sortDictionaryWords(columnIndex) {
+    // Toggle sort direction if clicking the same column
+    if (dictionaryWordsState.sortColumn === columnIndex) {
+        dictionaryWordsState.sortAscending = !dictionaryWordsState.sortAscending;
+    } else {
+        // New column: default to descending for numeric columns, ascending for word column
+        dictionaryWordsState.sortColumn = columnIndex;
+        dictionaryWordsState.sortAscending = columnIndex === 0; // Ascending for word, descending for numbers
+    }
+    
+    // Re-render with current words
+    renderDictionaryWords(dictionaryWordsState.allWords, dictionaryWordsState.wordLength);
+}
+
+function filterDictionaryWords() {
+    const searchInput = document.getElementById('dictionaryWordsSearch');
+    if (searchInput) {
+        dictionaryWordsState.searchTerm = searchInput.value;
+        renderDictionaryWords(dictionaryWordsState.allWords, dictionaryWordsState.wordLength);
+    }
 }
 
 function matchDictionaryColumnHeights() {

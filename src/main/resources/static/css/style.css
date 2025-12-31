@@ -88,6 +88,36 @@ body {
     flex-wrap: wrap;
 }
 
+.user-info {
+    display: flex;
+    align-items: center;
+    gap: var(--padding-sm);
+    padding: var(--padding-xs) var(--padding-md);
+    background: var(--bg-secondary);
+    border-radius: 6px;
+    border: 1px solid var(--border-color);
+}
+
+.nav-link-signin {
+    color: var(--success) !important;
+}
+
+.nav-link-signin:hover {
+    color: #16a34a !important;
+    background: rgba(51, 65, 85, 0.45);
+}
+
+.user-name {
+    color: var(--text-primary);
+    font-weight: 500;
+    font-size: 0.875rem;
+}
+
+.btn-sm {
+    padding: 0.375rem 0.75rem;
+    font-size: 0.813rem;
+}
+
 .app-nav {
     display: flex;
     gap: var(--padding-xs);
@@ -362,6 +392,18 @@ body {
     flex-direction: column;
 }
 
+.dictionary-words-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: var(--padding-md);
+    margin-bottom: var(--padding-sm);
+}
+
+.dictionary-words-header h3 {
+    margin: 0;
+}
+
 .dictionary-summary {
     display: flex;
     flex-direction: column;
@@ -438,6 +480,71 @@ body {
     border-radius: 0.5rem;
     padding: var(--padding-md);
     min-height: 72px;
+}
+
+.complexity-bar-chart {
+    display: flex;
+    align-items: flex-end;
+    gap: 8px;
+    padding: 10px;
+    background: var(--bg-primary);
+    border-radius: 6px;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.complexity-bar-container {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+}
+
+.complexity-bar-wrapper {
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    width: 100%;
+}
+
+.complexity-bar {
+    width: 100%;
+    border-radius: 4px 4px 0 0;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    cursor: pointer;
+}
+
+.complexity-bar:hover {
+    opacity: 0.85;
+    transform: translateY(-2px);
+}
+
+.complexity-bar-count {
+    font-size: 0.95em;
+    font-weight: 800;
+    color: var(--text-primary);
+}
+
+.complexity-bar-percent {
+    font-size: 0.75em;
+    font-weight: 600;
+    color: var(--text-secondary);
+}
+
+.complexity-bar-label {
+    font-size: 0.7em;
+    color: var(--text-secondary);
+    font-weight: 600;
+    text-align: center;
+    word-break: break-word;
+}
+
+.complexity-bar-range {
+    font-size: 0.65em;
+    color: var(--text-tertiary);
+    font-weight: 500;
 }
 
 .dictionary-freq-scroll {
@@ -626,6 +733,22 @@ summary:focus-visible {
     text-align: left;
     background: var(--bg-primary);
     border-bottom: 2px solid var(--border-color);
+}
+
+.analysis-table th.sortable {
+    user-select: none;
+    transition: background-color 0.2s, color 0.2s;
+}
+
+.analysis-table th.sortable:hover {
+    background: var(--bg-secondary);
+    color: var(--accent-primary);
+}
+
+.analysis-table th.sort-asc,
+.analysis-table th.sort-desc {
+    color: var(--accent-primary);
+    background: var(--bg-secondary);
 }
 
 .analysis-table td {

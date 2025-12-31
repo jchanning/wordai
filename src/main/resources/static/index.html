@@ -17,13 +17,18 @@
                 <h1 class="header-title">WordAI</h1>
                 <nav class="app-nav" aria-label="Application Modes">
                     <a class="nav-link" href="#/play" data-nav="play">Play</a>
-                    <a class="nav-link" href="#/bot-demo" data-nav="bot-demo">Bot Demo</a>
-                    <a class="nav-link" href="#/bot-performance" data-nav="bot-performance">Bot Performance</a>
+                    <a class="nav-link" href="#/bot-demo" data-nav="bot-demo">Auto</a>
+                    <a class="nav-link" href="#/bot-performance" data-nav="bot-performance">Analyse</a>
                     <a class="nav-link" href="#/dictionary" data-nav="dictionary">Dictionary</a>
                     <a class="nav-link" href="#/admin" data-nav="admin">Admin</a>
+                    <a class="nav-link nav-link-signin" id="signInLink" href="/login.html" style="display: none;">Sign In</a>
                 </nav>
             </div>
             <div class="app-header-right">
+                <div class="user-info" id="userInfo" style="display: none;">
+                    <span class="user-name" id="userName"></span>
+                    <button class="btn btn-secondary btn-sm" onclick="logout()">Logout</button>
+                </div>
                 <div id="status" class="status" style="display:none;" role="status" aria-live="polite" aria-atomic="true">
                     <span id="statusMessage" class="status-message"></span>
                     <button type="button" id="statusDismiss" class="status-dismiss" aria-label="Dismiss status" onclick="hideStatus()">×</button>
@@ -102,7 +107,10 @@
                 <p class="muted-center muted-small">No games played yet</p>
             </div>
             
-            <h3>Recent Games</h3>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                <h3 style="margin: 0;">Recent Games</h3>
+                <button class="btn btn-success" style="font-size: 0.75em; padding: 4px 10px;" onclick="exportSessionGamesToCSV()" title="Export all session games to CSV">Export CSV</button>
+            </div>
             <div class="game-history" id="game-history">
                 <p class="empty-history-msg muted-center">No games played yet</p>
             </div>
@@ -216,7 +224,7 @@
         <section id="screen-bot-demo" class="screen" hidden>
             <div class="screen-toolbar">
                 <div class="screen-toolbar-left">
-                    <h2 class="screen-title">Bot Demo</h2>
+                    <h2 class="screen-title">Auto</h2>
                     <div class="screen-subtitle">Watch an algorithm play automatically.</div>
                 </div>
                 <div class="screen-toolbar-middle bot-demo-toolbar-progress">
@@ -276,7 +284,7 @@
         <section id="screen-bot-performance" class="screen" hidden>
             <div class="screen-toolbar">
                 <div class="screen-toolbar-left">
-                    <h2 class="screen-title">Bot Performance</h2>
+                    <h2 class="screen-title">Analyse</h2>
                     <div class="screen-subtitle">Systematically test performance across a dictionary.</div>
                 </div>
                 <div class="screen-toolbar-right">
@@ -370,7 +378,10 @@
                     </div>
 
                     <div class="panel dictionary-panel dictionary-panel-grow">
-                        <h3>Words</h3>
+                        <div class="dictionary-words-header">
+                            <h3>Words</h3>
+                            <input type="text" id="dictionaryWordsSearch" class="form-input" placeholder="Search words..." oninput="filterDictionaryWords()" style="max-width: 250px;">
+                        </div>
                         <div class="dictionary-words-scroll" id="dictionaryWords">
                             <p class="muted-center muted-small">No dictionary selected.</p>
                         </div>
