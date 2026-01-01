@@ -1,0 +1,650 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WordAI User Guide</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            line-height: 1.6;
+            color: #f8fafc;
+            background: #0f172a;
+            margin: 0;
+            padding: 2rem;
+            max-width: 900px;
+            margin: 0 auto;
+        }
+        
+        h1 {
+            color: #3b82f6;
+            border-bottom: 2px solid #334155;
+            padding-bottom: 0.5rem;
+            margin-top: 0;
+        }
+        
+        h2 {
+            color: #22c55e;
+            margin-top: 2rem;
+            border-bottom: 1px solid #334155;
+            padding-bottom: 0.3rem;
+        }
+        
+        h3 {
+            color: #94a3b8;
+            margin-top: 1.5rem;
+        }
+        
+        a {
+            color: #3b82f6;
+            text-decoration: none;
+        }
+        
+        a:hover {
+            text-decoration: underline;
+        }
+        
+        code {
+            background: #1e293b;
+            padding: 0.2rem 0.4rem;
+            border-radius: 4px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.9em;
+            color: #22c55e;
+        }
+        
+        pre {
+            background: #1e293b;
+            padding: 1rem;
+            border-radius: 8px;
+            overflow-x: auto;
+            border: 1px solid #334155;
+        }
+        
+        pre code {
+            background: none;
+            padding: 0;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1rem 0;
+            background: #1e293b;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        
+        th, td {
+            padding: 0.75rem;
+            text-align: left;
+            border-bottom: 1px solid #334155;
+        }
+        
+        th {
+            background: #334155;
+            color: #22c55e;
+            font-weight: 600;
+        }
+        
+        tr:last-child td {
+            border-bottom: none;
+        }
+        
+        ul, ol {
+            padding-left: 1.5rem;
+        }
+        
+        li {
+            margin: 0.5rem 0;
+        }
+        
+        .toc {
+            background: #1e293b;
+            padding: 1.5rem;
+            border-radius: 8px;
+            margin: 1rem 0 2rem 0;
+            border: 1px solid #334155;
+        }
+        
+        .toc ul {
+            list-style: none;
+            padding-left: 0;
+        }
+        
+        .toc li {
+            margin: 0.3rem 0;
+        }
+        
+        .tip {
+            background: #1e293b;
+            border-left: 4px solid #22c55e;
+            padding: 1rem;
+            margin: 1rem 0;
+            border-radius: 4px;
+        }
+        
+        .warning {
+            background: #1e293b;
+            border-left: 4px solid #eab308;
+            padding: 1rem;
+            margin: 1rem 0;
+            border-radius: 4px;
+        }
+        
+        .code-label {
+            color: #94a3b8;
+            font-size: 0.875rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        strong {
+            color: #22c55e;
+        }
+        
+        hr {
+            border: none;
+            border-top: 1px solid #334155;
+            margin: 2rem 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>📚 WordAI User Guide</h1>
+    
+    <p>Welcome to <strong>WordAI</strong> - A sophisticated Wordle-like game with advanced bot analysis and dictionary exploration tools.</p>
+    
+    <div class="toc">
+        <h3 style="margin-top: 0;">Table of Contents</h3>
+        <ul>
+            <li><a href="#quick-start">Quick Start</a></li>
+            <li><a href="#game-modes">Game Modes</a></li>
+            <li><a href="#authentication">Authentication</a></li>
+            <li><a href="#how-to-play">How to Play</a></li>
+            <li><a href="#bot-analysis">Bot Analysis</a></li>
+            <li><a href="#dictionary">Dictionary Explorer</a></li>
+            <li><a href="#feedback">Understanding Game Feedback</a></li>
+            <li><a href="#tips">Tips & Strategies</a></li>
+        </ul>
+    </div>
+    
+    <hr>
+    
+    <h2 id="quick-start">⚡ Quick Start</h2>
+    
+    <ol>
+        <li><strong>Access the Application</strong>: Navigate to <code>http://localhost:8080</code> (or your deployed URL)</li>
+        <li><strong>Start Playing</strong>: The app opens in Play mode - start guessing immediately!</li>
+        <li><strong>Optional Login</strong>: Click the green "Sign In" link in the menu to create an account and track your games</li>
+    </ol>
+    
+    <hr>
+    
+    <h2 id="game-modes">🎮 Game Modes</h2>
+    
+    <p>WordAI offers five distinct modes accessible from the navigation menu:</p>
+    
+    <h3>🎯 Play Mode</h3>
+    <p>Interactive Wordle game where you guess the hidden word.</p>
+    <ul>
+        <li>6 attempts to guess a 5-letter word</li>
+        <li>Color-coded feedback after each guess</li>
+        <li>Real-time dictionary validation</li>
+        <li>Strategy selection (Random, Letter Frequency, etc.)</li>
+    </ul>
+    
+    <h3>🤖 Auto Mode (Bot Demo)</h3>
+    <p>Watch an AI bot play the game automatically.</p>
+    <ul>
+        <li>Select a bot strategy from the dropdown</li>
+        <li>Choose number of games to simulate</li>
+        <li>Watch step-by-step gameplay</li>
+        <li>View success rate and statistics</li>
+    </ul>
+    
+    <h3>📊 Analyse Mode (Bot Performance)</h3>
+    <p>Comprehensive analysis of bot performance across multiple games.</p>
+    <ul>
+        <li>Run 100s or 1000s of simulated games</li>
+        <li>Compare different strategies</li>
+        <li>View win rates, average guesses, and failure rates</li>
+        <li>Analyze performance patterns</li>
+        <li>Export results to CSV</li>
+    </ul>
+    
+    <h3>📚 Dictionary Mode</h3>
+    <p>Explore and analyze word dictionaries.</p>
+    <ul>
+        <li>View all valid words for different lengths (4-7 letters)</li>
+        <li>Sort by word, frequency, or column statistics</li>
+        <li>Search and filter words</li>
+        <li>Export dictionary data to CSV</li>
+        <li>View letter position statistics with interactive bar charts</li>
+    </ul>
+    
+    <h3>⚙️ Admin Mode</h3>
+    <p>Administrative functions (placeholder for future features).</p>
+    
+    <hr>
+    
+    <h2 id="authentication">🔐 Authentication</h2>
+    
+    <div class="tip">
+        <strong>Login is optional!</strong> You can play as a guest or create an account to track your games.
+    </div>
+    
+    <h3>Playing as a Guest</h3>
+    <ul>
+        <li>Full access to all game modes</li>
+        <li>Games are not saved to your profile</li>
+        <li>No registration required</li>
+    </ul>
+    
+    <h3>Creating an Account</h3>
+    <ol>
+        <li>Click the green <strong>"Sign In"</strong> link in the menu</li>
+        <li>Click <strong>"Sign up"</strong> on the login page</li>
+        <li>Fill in your details:
+            <ul>
+                <li>Email address</li>
+                <li>Username</li>
+                <li>Full name</li>
+                <li>Password (minimum 6 characters)</li>
+            </ul>
+        </li>
+        <li>Click <strong>"Create Account"</strong></li>
+    </ol>
+    
+    <h3>Signing In</h3>
+    <ol>
+        <li>Click <strong>"Sign In"</strong> in the menu</li>
+        <li>Enter your username/email and password</li>
+        <li>Click <strong>"Sign In"</strong></li>
+    </ol>
+    
+    <p>Once logged in:</p>
+    <ul>
+        <li>Your name appears in the top right corner</li>
+        <li>Games can be tracked to your account (future feature)</li>
+        <li>Click <strong>"Logout"</strong> to sign out</li>
+    </ul>
+    
+    <hr>
+    
+    <h2 id="how-to-play">🎯 How to Play</h2>
+    
+    <h3>Basic Gameplay</h3>
+    
+    <ol>
+        <li><strong>Start a Game</strong>
+            <ul>
+                <li>Navigate to Play mode</li>
+                <li>A random 5-letter target word is selected</li>
+                <li>You have 6 attempts to guess it</li>
+            </ul>
+        </li>
+        <li><strong>Make a Guess</strong>
+            <ul>
+                <li>Type a 5-letter word in the input field</li>
+                <li>Click <strong>"Submit Guess"</strong> or press Enter</li>
+                <li>Only valid dictionary words are accepted</li>
+            </ul>
+        </li>
+        <li><strong>Read the Feedback</strong>
+            <ul>
+                <li><strong style="color: #538d4e;">Green (G)</strong>: Letter is correct and in the right position</li>
+                <li><strong style="color: #b59f3b;">Yellow/Amber (A)</strong>: Letter is in the word but wrong position</li>
+                <li><strong style="color: #64748b;">Gray/Red (R)</strong>: Letter is not in the word</li>
+                <li><strong style="color: #ef4444;">X</strong>: Letter appears more times than it exists in the target</li>
+            </ul>
+        </li>
+        <li><strong>Win or Lose</strong>
+            <ul>
+                <li>Win: Guess the word within 6 attempts</li>
+                <li>Lose: Use all 6 attempts without finding the word</li>
+                <li>The target word is revealed after the game ends</li>
+            </ul>
+        </li>
+    </ol>
+    
+    <h3>Strategy Selection</h3>
+    <p>Choose how the bot (or your hints) should suggest words:</p>
+    <ul>
+        <li><strong>Random</strong>: Randomly select from valid words</li>
+        <li><strong>Letter Frequency</strong>: Prioritize common letters</li>
+        <li><strong>Fixed First Word</strong>: Always start with "SLATE" or configured word</li>
+        <li><strong>Maximize Entropy</strong>: Choose words that maximize information gain</li>
+        <li><strong>Minimize Max Entropy</strong>: Risk-averse entropy approach</li>
+    </ul>
+    
+    <h3>Game Controls</h3>
+    <ul>
+        <li><strong>New Game</strong>: Start a fresh game with a new target word</li>
+        <li><strong>Give Up</strong>: Reveal the target word and end the current game</li>
+        <li><strong>Change Strategy</strong>: Switch bot strategy mid-game (Play mode)</li>
+    </ul>
+    
+    <hr>
+    
+    <h2 id="bot-analysis">🤖 Bot Analysis</h2>
+    
+    <h3>Running Auto Mode (Bot Demo)</h3>
+    <ol>
+        <li>Navigate to <strong>Auto</strong> mode</li>
+        <li>Select a <strong>Strategy</strong> from the dropdown</li>
+        <li>Choose <strong>Number of Games</strong> (1, 10, or 100)</li>
+        <li>Click <strong>"Start Auto-Play"</strong></li>
+        <li>Watch the bot play in real-time</li>
+    </ol>
+    
+    <p><strong>What You'll See:</strong></p>
+    <ul>
+        <li>Each guess the bot makes</li>
+        <li>Color-coded feedback for each guess</li>
+        <li>Win/loss outcome</li>
+        <li>Statistics: Games played, wins, losses, success rate</li>
+        <li>Full game history with all guesses</li>
+    </ul>
+    
+    <h3>Running Performance Analysis</h3>
+    <ol>
+        <li>Navigate to <strong>Analyse</strong> mode</li>
+        <li>Select a <strong>Strategy</strong> to test</li>
+        <li>Choose <strong>Number of Games</strong> (100, 500, 1000, 5000)</li>
+        <li>Click <strong>"Run Analysis"</strong></li>
+    </ol>
+    
+    <p><strong>Analysis Results Include:</strong></p>
+    <ul>
+        <li>Total games simulated</li>
+        <li>Win rate (%)</li>
+        <li>Average guesses per successful game</li>
+        <li>Failure rate (games requiring >6 guesses)</li>
+        <li>Detailed statistics table</li>
+        <li>Option to export results to CSV</li>
+    </ul>
+    
+    <h3>Comparing Strategies</h3>
+    <p>Run analysis for multiple strategies to compare:</p>
+    <ul>
+        <li>Which strategy has the highest win rate?</li>
+        <li>Which finds the answer fastest on average?</li>
+        <li>Which has the lowest failure rate?</li>
+    </ul>
+    
+    <hr>
+    
+    <h2 id="dictionary">📖 Dictionary Explorer</h2>
+    
+    <h3>Viewing Words</h3>
+    <ol>
+        <li>Navigate to <strong>Dictionary</strong> mode</li>
+        <li>Select word length (4, 5, 6, or 7 letters) from dropdown</li>
+        <li>Browse the complete list of valid words</li>
+    </ol>
+    
+    <h3>Sorting & Filtering</h3>
+    
+    <p><strong>Sort Options:</strong></p>
+    <ul>
+        <li>Click column headers to sort</li>
+        <li>Sort by: Word, Position 1-7 letters, Frequency</li>
+        <li>Click again to reverse sort order</li>
+    </ul>
+    
+    <p><strong>Search:</strong></p>
+    <ul>
+        <li>Use the search box to filter words</li>
+        <li>Searches across all columns</li>
+        <li>Real-time filtering as you type</li>
+    </ul>
+    
+    <p><strong>Clear:</strong></p>
+    <ul>
+        <li>Click <strong>"Clear"</strong> to reset search and view all words</li>
+    </ul>
+    
+    <h3>Understanding Statistics</h3>
+    
+    <p><strong>Frequency Column:</strong></p>
+    <ul>
+        <li>Shows how often letters appear in that position</li>
+        <li>Higher numbers = more common letter patterns</li>
+    </ul>
+    
+    <p><strong>Position Columns:</strong></p>
+    <ul>
+        <li>Each column shows which letters appear in that position</li>
+        <li>Helps identify common starting letters, endings, etc.</li>
+    </ul>
+    
+    <h3>Exporting Data</h3>
+    <ul>
+        <li>Click <strong>"Export to CSV"</strong> to download the current dictionary</li>
+        <li>Includes all words and statistics</li>
+        <li>Opens in Excel, Google Sheets, or any CSV viewer</li>
+    </ul>
+    
+    <h3>Viewing Visualizations</h3>
+    <ul>
+        <li>Click <strong>"Show Charts"</strong> to see letter frequency bar charts</li>
+        <li>Visual representation of letter distribution by position</li>
+        <li>Helps identify optimal starting words</li>
+        <li>Click <strong>"Hide Charts"</strong> to collapse</li>
+    </ul>
+    
+    <hr>
+    
+    <h2 id="feedback">🎨 Understanding Game Feedback</h2>
+    
+    <h3>Response Codes</h3>
+    <p>Each letter in your guess receives a code:</p>
+    
+    <table>
+        <thead>
+            <tr>
+                <th>Code</th>
+                <th>Color</th>
+                <th>Meaning</th>
+                <th>Example</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><strong>G</strong></td>
+                <td style="color: #538d4e;">Green</td>
+                <td>Correct letter, correct position</td>
+                <td>Target: SLATE, Guess: <strong>S</strong>TONE → S=<strong>G</strong></td>
+            </tr>
+            <tr>
+                <td><strong>A</strong></td>
+                <td style="color: #b59f3b;">Yellow/Amber</td>
+                <td>Correct letter, wrong position</td>
+                <td>Target: SLATE, Guess: P<strong>A</strong>RTS → A=<strong>A</strong></td>
+            </tr>
+            <tr>
+                <td><strong>R</strong></td>
+                <td style="color: #64748b;">Gray/Red</td>
+                <td>Letter not in target word</td>
+                <td>Target: SLATE, Guess: PROU<strong>D</strong> → D=<strong>R</strong></td>
+            </tr>
+            <tr>
+                <td><strong>X</strong></td>
+                <td style="color: #ef4444;">Red</td>
+                <td>Letter exists but used too many times</td>
+                <td>Target: SLATE, Guess: A<strong>LL</strong>OW → Second L=<strong>X</strong></td>
+            </tr>
+        </tbody>
+    </table>
+    
+    <h3>Complex Scenarios</h3>
+    
+    <p><strong>Duplicate Letters:</strong></p>
+    <ul>
+        <li>If target has 1 'E' and you guess 2 'E's:
+            <ul>
+                <li>First 'E' gets G (if correct position) or A (if wrong position)</li>
+                <li>Second 'E' gets X (excess)</li>
+            </ul>
+        </li>
+    </ul>
+    
+    <div class="tip">
+        <strong>Example:</strong><br>
+        Target: <strong>STALE</strong> (one E)<br>
+        Guess: <strong>STEEL</strong> (two E's)<br>
+        Result: S=G, T=G, first E=A, second E=X, L=A
+    </div>
+    
+    <hr>
+    
+    <h2 id="tips">💡 Tips & Strategies</h2>
+    
+    <h3>For Players</h3>
+    
+    <ol>
+        <li><strong>Start with Common Letters</strong>
+            <ul>
+                <li>Use words with E, A, R, O, T, I</li>
+                <li>Example starting words: STARE, AROSE, LATER, IRATE</li>
+            </ul>
+        </li>
+        <li><strong>Maximize Information</strong>
+            <ul>
+                <li>Use all unique letters in early guesses</li>
+                <li>Avoid repeating letters until you must</li>
+            </ul>
+        </li>
+        <li><strong>Use Position Information</strong>
+            <ul>
+                <li>Pay attention to yellow/amber letters</li>
+                <li>Try them in different positions</li>
+            </ul>
+        </li>
+        <li><strong>Eliminate Strategically</strong>
+            <ul>
+                <li>Gray letters are out - never use them again</li>
+                <li>Focus on remaining possibilities</li>
+            </ul>
+        </li>
+        <li><strong>Think About Patterns</strong>
+            <ul>
+                <li>Common endings: -ED, -ER, -LY, -ING</li>
+                <li>Common starts: ST-, CH-, TH-, PR-</li>
+            </ul>
+        </li>
+    </ol>
+    
+    <h3>For Bot Analysis</h3>
+    
+    <ol>
+        <li><strong>Test Multiple Strategies</strong>
+            <ul>
+                <li>No single strategy wins every game</li>
+                <li>Compare results across 1000+ games for accuracy</li>
+            </ul>
+        </li>
+        <li><strong>Understand Entropy</strong>
+            <ul>
+                <li>Maximize Entropy finds optimal guesses</li>
+                <li>Balances information gain with risk</li>
+            </ul>
+        </li>
+        <li><strong>Sample Size Matters</strong>
+            <ul>
+                <li>Run 1000+ games for reliable statistics</li>
+                <li>100 games can have high variance</li>
+            </ul>
+        </li>
+    </ol>
+    
+    <hr>
+    
+    <h2>⌨️ Keyboard Shortcuts</h2>
+    
+    <ul>
+        <li><strong>Enter</strong>: Submit guess (in input field)</li>
+        <li><strong>ESC</strong>: Clear current input</li>
+        <li><strong>Tab</strong>: Navigate between controls</li>
+    </ul>
+    
+    <hr>
+    
+    <h2>🔧 Troubleshooting</h2>
+    
+    <h3>"Invalid word" Error</h3>
+    <ul>
+        <li>Word not in dictionary</li>
+        <li>Check spelling</li>
+        <li>Try a common 5-letter word</li>
+    </ul>
+    
+    <h3>Login Issues</h3>
+    <ul>
+        <li>Ensure username/email and password are correct</li>
+        <li>Password must be at least 6 characters</li>
+        <li>Contact admin if you forgot your password</li>
+    </ul>
+    
+    <h3>Game Not Starting</h3>
+    <ul>
+        <li>Refresh the page</li>
+        <li>Check browser console for errors</li>
+        <li>Ensure JavaScript is enabled</li>
+    </ul>
+    
+    <h3>CSV Export Not Working</h3>
+    <ul>
+        <li>Check browser download settings</li>
+        <li>Try a different browser</li>
+        <li>Ensure popup blockers aren't interfering</li>
+    </ul>
+    
+    <hr>
+    
+    <h2>🔒 Data & Privacy</h2>
+    
+    <h3>Guest Users</h3>
+    <ul>
+        <li>No data is stored or tracked</li>
+        <li>Games exist only in current session</li>
+    </ul>
+    
+    <h3>Registered Users</h3>
+    <ul>
+        <li>Account information stored securely</li>
+        <li>Passwords encrypted with BCrypt</li>
+        <li>Game history tracking (future feature)</li>
+        <li>No data shared with third parties</li>
+    </ul>
+    
+    <h3>Local Data</h3>
+    <ul>
+        <li>H2 database stored in <code>./data/wordai</code></li>
+        <li>For development/testing purposes</li>
+        <li>Can be deleted to reset all users</li>
+    </ul>
+    
+    <hr>
+    
+    <h2>ℹ️ Version Information</h2>
+    
+    <ul>
+        <li><strong>Current Version</strong>: 1.0-SNAPSHOT</li>
+        <li><strong>Java</strong>: 21</li>
+        <li><strong>Spring Boot</strong>: 3.4.0</li>
+        <li><strong>Database</strong>: H2 (development)</li>
+    </ul>
+    
+    <hr>
+    
+    <div style="text-align: center; padding: 2rem 0; color: #64748b;">
+        <p><strong>Happy Word Guessing! 🎮📊</strong></p>
+        <p style="font-size: 0.875rem;">WordAI is inspired by the popular Wordle game, enhanced with AI analysis and educational tools.</p>
+    </div>
+</body>
+</html>
