@@ -30,7 +30,7 @@ public class SecurityConfig {
                 .ignoringRequestMatchers("/api/**", "/h2-console/**")
             )
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/", "/index.html", "/login.html", "/register", 
+                .requestMatchers("/", "/index.html", "/login.html", "/help.html", "/register", 
                                "/api/auth/register", "/api/auth/login", "/api/auth/check",
                                "/api/game/**", "/api/dictionary/**",
                                "/css/**", "/js/**", "/h2-console/**", "/error", "/static/**").permitAll()

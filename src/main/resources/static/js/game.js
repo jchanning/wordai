@@ -90,7 +90,7 @@ function onRouteChange() {
 
 function setView(view) {
     currentView = view;
-    const viewIds = ['play', 'session', 'bot-demo', 'bot-performance', 'dictionary', 'admin'];
+    const viewIds = ['play', 'session', 'bot-demo', 'bot-performance', 'dictionary', 'admin', 'help'];
     viewIds.forEach(v => {
         const section = document.getElementById(`screen-${v}`);
         if (section) {
@@ -119,6 +119,10 @@ function setView(view) {
     if (view === 'dictionary') {
         refreshDictionaryScreen();
     }
+    
+    if (view === 'help') {
+        loadHelpContent();
+    }
 }
 
 function ensureGameViewHost(view) {
@@ -137,6 +141,69 @@ function ensureGameViewHost(view) {
     if (gameView.parentElement !== targetHost) {
         targetHost.appendChild(gameView);
     }
+}
+
+async function loadHelpContent() {
+    const helpContent = document.getElementById('helpContent');
+    if (!helpContent) {
+        return;
+    }
+    
+    // Check if content is already loaded
+    if (helpContent.dataset.loaded === 'true') {
+        return;
+    }
+    
+    helpContent.innerHTML = '<p style="color: #22c55e;">Fetching help content...</p>';
+    
+    try {
+        const response = await fetch('/help.html');
+        if (!response.ok) {
+            throw new Error('Failed to load help content');
+        }
+        const html = await response.text();
+        
+        // Extract the content from inside the help-content div
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(html, 'text/html');
+        const helpDiv = doc.querySelector('.help-content');
+        
+        if (helpDiv) {
+            // Get just the inner HTML of the help-content div
+            helpContent.innerHTML = helpDiv.innerHTML;
+        } else {
+            // Fallback to body content if help-content div not found
+            helpContent.innerHTML = doc.body.innerHTML;
+        }
+        
+        // Setup anchor link handlers to scroll within the help content
+        setupHelpAnchorLinks(helpContent);
+        
+        helpContent.dataset.loaded = 'true';
+    } catch (error) {
+        console.error('Error loading help content:', error);
+        helpContent.innerHTML = '<p style="color: #ef4444;">Error loading help content: ' + error.message + '<br>Please try the "Open in New Tab" button.</p>';
+    }
+}
+
+function setupHelpAnchorLinks(container) {
+    // Find all anchor links that start with #
+    const anchorLinks = container.querySelectorAll('a[href^="#"]');
+    
+    anchorLinks.forEach(link => {
+        link.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            const targetId = link.getAttribute('href').substring(1);
+            const targetElement = container.querySelector('#' + targetId);
+            
+            if (targetElement) {
+                // Scroll the target element into view smoothly
+                targetElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+        });
+    });
 }
 
 function setupLetterInputs() {
