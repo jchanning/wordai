@@ -26,37 +26,38 @@ Welcome to **WordAI** - A sophisticated Wordle-like game with advanced bot analy
 
 WordAI offers five distinct modes accessible from the navigation menu:
 
-### 🎮 Play Mode
-Interactive Wordle game where you guess the hidden word.
-- 6 attempts to guess a 5-letter word
+### Play Mode
+Interactive word game where you have to guess the hidden word.
+- Select the word length: 4, 5, 6 or 7 letters.
+- 6 attempts to guess the word
 - Color-coded feedback after each guess
 - Real-time dictionary validation
-- Strategy selection (Random, Letter Frequency, etc.)
+- Get assistance by getting a suggestion based on one of the algorithmic strategies (Random, Letter Frequency, etc.)
 
-### 🤖 Auto Mode (Bot Demo)
+### Auto Mode (Bot Demo)
 Watch an AI bot play the game automatically.
 - Select a bot strategy from the dropdown
 - Choose number of games to simulate
 - Watch step-by-step gameplay
 - View success rate and statistics
 
-### 📊 Analyse Mode (Bot Performance)
-Comprehensive analysis of bot performance across multiple games.
-- Run 100s or 1000s of simulated games
-- Compare different strategies
+### Analyse Mode (Bot Performance)
+Comprehensive analysis of bot performance across the entire dictionary of letters.
+- Run simulated games covering the full dicitonary
+- Compare the performance of different strategies with dictionaries of 4, 5, 6 or 7 letter words
 - View win rates, average guesses, and failure rates
 - Analyze performance patterns
 - Export results to CSV
 
-### 📚 Dictionary Mode
+### Dictionary Mode
 Explore and analyze word dictionaries.
 - View all valid words for different lengths (4-7 letters)
 - Sort by word, frequency, or column statistics
 - Search and filter words
 - Export dictionary data to CSV
-- View letter position statistics with interactive bar charts
+- View letter position statistics with interactive bar charts to assist with your guessing strategy
 
-### ⚙️ Admin Mode
+### Admin Mode
 Administrative functions (placeholder for future features).
 
 ---
@@ -101,19 +102,18 @@ Google and Apple Sign-In are available but require configuration (see [AUTHENTIC
 
 1. **Start a Game**
    - Navigate to Play mode
-   - A random 5-letter target word is selected
+   - A random target word is selected
    - You have 6 attempts to guess it
 
 2. **Make a Guess**
-   - Type a 5-letter word in the input field
+   - Type a word in the input field
    - Click **"Submit Guess"** or press Enter
    - Only valid dictionary words are accepted
 
 3. **Read the Feedback**
-   - **Green (G)**: Letter is correct and in the right position
-   - **Yellow/Amber (A)**: Letter is in the word but wrong position
-   - **Gray/Red (R)**: Letter is not in the word
-   - **X**: Letter appears more times than it exists in the target
+   - **Green**: Letter is correct and in the right position
+   - **Yellow**: Letter is in the word but wrong position
+   - **Gray**: Letter is not in the word or the letter appears more times than in the target
 
 4. **Win or Lose**
    - Win: Guess the word within 6 attempts
@@ -124,10 +124,10 @@ Google and Apple Sign-In are available but require configuration (see [AUTHENTIC
 
 Choose how the bot (or your hints) should suggest words:
 - **Random**: Randomly select from valid words
-- **Letter Frequency**: Prioritize common letters
-- **Fixed First Word**: Always start with "SLATE" or configured word
 - **Maximize Entropy**: Choose words that maximize information gain
-- **Minimize Max Entropy**: Risk-averse entropy approach
+- **Most Common Letters**: Prioritizes choosing words randomly from a subset of words with the most common letters
+- **Minimize Column Length**: Strategy that aims to minimise the number of remaining choices for each column after the guess
+- **Dictionary Reduction**: Works in a similar way to Maximise Entropy, the objective function identifies the word that would filter the dictionary to the smallest size.
 
 ### Game Controls
 

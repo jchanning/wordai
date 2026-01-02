@@ -28,7 +28,7 @@
     
     <hr>
     
-    <h2 id="quick-start">⚡ Quick Start</h2>
+    <h2 id="quick-start">Quick Start</h2>
     
     <ol>
         <li><strong>Access the Application</strong>: Navigate to <code>http://localhost:8080</code> (or your deployed URL)</li>
@@ -43,12 +43,13 @@
     <p>WordAI offers five distinct modes accessible from the navigation menu:</p>
     
     <h3>Play Mode</h3>
-    <p>Interactive Wordle game where you guess the hidden word.</p>
+    <p>Interactive word game where you have to guess the hidden word.</p>
     <ul>
-        <li>6 attempts to guess a 5-letter word</li>
+        <li>Select the word length: 4, 5, 6 or 7 letters</li>
+        <li>6 attempts to guess the word</li>
         <li>Color-coded feedback after each guess</li>
         <li>Real-time dictionary validation</li>
-        <li>Strategy selection (Random, Letter Frequency, etc.)</li>
+        <li>Get assistance by getting a suggestion based on one of the algorithmic strategies (Random, Letter Frequency, etc.)</li>
     </ul>
     
     <h3>Auto Mode (Bot Demo)</h3>
@@ -61,10 +62,10 @@
     </ul>
     
     <h3>Analyse Mode (Bot Performance)</h3>
-    <p>Comprehensive analysis of bot performance across multiple games.</p>
+    <p>Comprehensive analysis of bot performance across the entire dictionary of letters.</p>
     <ul>
-        <li>Run 100s or 1000s of simulated games</li>
-        <li>Compare different strategies</li>
+        <li>Run simulated games covering the full dictionary</li>
+        <li>Compare the performance of different strategies with dictionaries of 4, 5, 6 or 7 letter words</li>
         <li>View win rates, average guesses, and failure rates</li>
         <li>Analyze performance patterns</li>
         <li>Export results to CSV</li>
@@ -77,10 +78,10 @@
         <li>Sort by word, frequency, or column statistics</li>
         <li>Search and filter words</li>
         <li>Export dictionary data to CSV</li>
-        <li>View letter position statistics with interactive bar charts</li>
+        <li>View letter position statistics with interactive bar charts to assist with your guessing strategy</li>
     </ul>
     
-    <h3>⚙️ Admin Mode</h3>
+    <h3>Admin Mode</h3>
     <p>Administrative functions (placeholder for future features).</p>
     
     <hr>
@@ -126,6 +127,9 @@
         <li>Games can be tracked to your account (future feature)</li>
         <li>Click <strong>"Logout"</strong> to sign out</li>
     </ul>
+
+    <h3>OAuth Options</h3>
+    <p>Google and Apple Sign-In are available but require configuration (see <a href="AUTHENTICATION_SETUP.md" target="_blank">AUTHENTICATION_SETUP.md</a>).</p>
     
     <hr>
     
@@ -137,23 +141,22 @@
         <li><strong>Start a Game</strong>
             <ul>
                 <li>Navigate to Play mode</li>
-                <li>A random 5-letter target word is selected</li>
+                <li>A random target word is selected</li>
                 <li>You have 6 attempts to guess it</li>
             </ul>
         </li>
         <li><strong>Make a Guess</strong>
             <ul>
-                <li>Type a 5-letter word in the input field</li>
+                <li>Type a word in the input field</li>
                 <li>Click <strong>"Submit Guess"</strong> or press Enter</li>
                 <li>Only valid dictionary words are accepted</li>
             </ul>
         </li>
         <li><strong>Read the Feedback</strong>
             <ul>
-                <li><strong style="color: #538d4e;">Green (G)</strong>: Letter is correct and in the right position</li>
-                <li><strong style="color: #b59f3b;">Yellow/Amber (A)</strong>: Letter is in the word but wrong position</li>
-                <li><strong style="color: #64748b;">Gray/Red (R)</strong>: Letter is not in the word</li>
-                <li><strong style="color: #ef4444;">X</strong>: Letter appears more times than it exists in the target</li>
+                <li><strong style="color: #538d4e;">Green</strong>: Letter is correct and in the right position</li>
+                <li><strong style="color: #b59f3b;">Yellow</strong>: Letter is in the word but wrong position</li>
+                <li><strong style="color: #64748b;">Gray</strong>: Letter is not in the word or the letter appears more times than in the target</li>
             </ul>
         </li>
         <li><strong>Win or Lose</strong>
@@ -169,10 +172,10 @@
     <p>Choose how the bot (or your hints) should suggest words:</p>
     <ul>
         <li><strong>Random</strong>: Randomly select from valid words</li>
-        <li><strong>Letter Frequency</strong>: Prioritize common letters</li>
-        <li><strong>Fixed First Word</strong>: Always start with "SLATE" or configured word</li>
         <li><strong>Maximize Entropy</strong>: Choose words that maximize information gain</li>
-        <li><strong>Minimize Max Entropy</strong>: Risk-averse entropy approach</li>
+        <li><strong>Most Common Letters</strong>: Prioritizes choosing words randomly from a subset of words with the most common letters</li>
+        <li><strong>Minimize Column Length</strong>: Strategy that aims to minimise the number of remaining choices for each column after the guess</li>
+        <li><strong>Dictionary Reduction</strong>: Works in a similar way to Maximise Entropy, the objective function identifies the word that would filter the dictionary to the smallest size</li>
     </ul>
     
     <h3>Game Controls</h3>
@@ -232,7 +235,7 @@
     
     <hr>
     
-    <h2 id="dictionary">📖 Dictionary Explorer</h2>
+    <h2 id="dictionary">Dictionary Explorer</h2>
     
     <h3>Viewing Words</h3>
     <ol>
@@ -328,7 +331,7 @@
             </tr>
             <tr>
                 <td><strong>X</strong></td>
-                <td style="color: #ef4444;">Red</td>
+                <td>Depends</td>
                 <td>Letter exists but used too many times</td>
                 <td>Target: SLATE, Guess: A<strong>LL</strong>OW → Second L=<strong>X</strong></td>
             </tr>
@@ -418,7 +421,7 @@
     
     <hr>
     
-    <h2>⌨️ Keyboard Shortcuts</h2>
+    <h2>Keyboard Shortcuts</h2>
     
     <ul>
         <li><strong>Enter</strong>: Submit guess (in input field)</li>
@@ -460,7 +463,7 @@
     
     <hr>
     
-    <h2>🔒 Data & Privacy</h2>
+    <h2>Data & Privacy</h2>
     
     <h3>Guest Users</h3>
     <ul>
@@ -485,7 +488,32 @@
     
     <hr>
     
-    <h2>ℹ️ Version Information</h2>
+    <h2>Advanced Features</h2>
+    
+    <h3>Dictionary Customization</h3>
+    <p>Dictionaries can be configured in <code>application.properties</code>:</p>
+    <pre><code>wordai.dictionary.4letter=path/to/4_letter_words.txt
+wordai.dictionary.5letter=path/to/5_letter_words.txt
+wordai.dictionary.6letter=path/to/6_letter_words.txt
+wordai.dictionary.7letter=path/to/7_letter_words.txt</code></pre>
+    
+    <h3>Strategy Configuration</h3>
+    <p>Fixed-first-word strategy can be customized by modifying the bot strategy class.</p>
+    
+    <hr>
+    
+    <h2>Getting Help</h2>
+    
+    <ul>
+        <li><strong>Issues</strong>: Check the console for error messages</li>
+        <li><strong>Questions</strong>: Refer to code comments and documentation</li>
+        <li><strong>Bugs</strong>: Report via GitHub issues</li>
+        <li><strong>Features</strong>: Suggestions welcome!</li>
+    </ul>
+    
+    <hr>
+    
+    <h2>Version Information</h2>
     
     <ul>
         <li><strong>Current Version</strong>: 1.0-SNAPSHOT</li>
@@ -498,7 +526,7 @@
     
     <div style="text-align: center; padding: 2rem 0; color: #64748b;">
         <p><strong>Happy Word Guessing!</strong></p>
-        <p style="font-size: 0.875rem;">WordAI is inspired by the popular Wordle game, enhanced with AI analysis and educational tools.</p>
+        <p style="font-size: 0.875rem;">WordAI is inspired by the popular Wordle game, enhanced with AI analysis and educational tools for studying word-guessing strategies.</p>
     </div>
 </div>
 </body>
