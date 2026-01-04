@@ -760,7 +760,7 @@ function updateOccurrenceTable(occurrenceData) {
     
     // Get number of positions from first entry
     const firstKey = Object.keys(occurrenceData)[0];
-    const numPositions = occurrenceData[firstKey] ? occurrenceData[firstKey].length : 0;
+    const numPositions = occurrenceData[firstKey] ? occurrenceData[firstKey].length : 5;
     
     // Create header row
     const thead = document.createElement('thead');
@@ -783,24 +783,27 @@ function updateOccurrenceTable(occurrenceData) {
     thead.appendChild(headerRow);
     table.appendChild(thead);
     
-    // Create body
+    // Create body - iterate through ALL letters a-z (not just what's in occurrenceData)
     const tbody = document.createElement('tbody');
     
-    // Sort letters a-z
-    const letters = Object.keys(occurrenceData).sort();
+    // All 26 letters
+    const allLetters = 'abcdefghijklmnopqrstuvwxyz'.split('');
     
-    letters.forEach((letter, idx) => {
+    allLetters.forEach((letter, idx) => {
         const row = document.createElement('tr');
         row.style.cssText = `border-bottom: 1px solid rgba(255,255,255,0.1); ${idx % 2 === 1 ? 'background: rgba(255,255,255,0.02);' : ''}`;
+        
+        // Get counts for this letter (if not in data, all positions are 0 = eliminated)
+        const counts = occurrenceData[letter] || Array(numPositions).fill(0);
+        const isEliminated = counts.every(count => count === 0);
         
         // Letter cell - centered with reduced padding
         const letterCell = document.createElement('td');
         letterCell.textContent = letter.toUpperCase();
-        letterCell.style.cssText = 'padding: 6px 4px; font-weight: bold; text-align: center; color: var(--text-primary);';
+        letterCell.style.cssText = `padding: 6px 4px; font-weight: bold; text-align: center; ${isEliminated ? 'color: var(--text-secondary); opacity: 0.4; text-decoration: line-through;' : 'color: var(--text-primary);'}`;
         row.appendChild(letterCell);
         
         // Position count cells
-        const counts = occurrenceData[letter] || [];
         const maxCount = Math.max(...counts);
         
         for (let i = 0; i < numPositions; i++) {
@@ -808,14 +811,20 @@ function updateOccurrenceTable(occurrenceData) {
             const count = counts[i] || 0;
             countCell.textContent = count;
             
-            // Highlight cells with higher counts
+            // Highlight cells with higher counts, or grey out if eliminated at this position
             let bgColor = '';
-            if (count > 0 && maxCount > 0) {
+            let textStyle = '';
+            
+            if (count === 0) {
+                // Greyed out for eliminated positions
+                textStyle = 'color: var(--text-secondary); opacity: 0.3; text-decoration: line-through;';
+            } else if (maxCount > 0) {
                 const intensity = count / maxCount;
                 bgColor = `background: rgba(106, 170, 100, ${intensity * 0.3});`;
+                textStyle = 'color: var(--text-primary); font-weight: 500;';
             }
             
-            countCell.style.cssText = `padding: 6px 4px; text-align: center; ${count > 0 ? 'color: var(--text-primary); font-weight: 500;' : 'color: var(--text-secondary);'} ${bgColor}`;
+            countCell.style.cssText = `padding: 6px 4px; text-align: center; ${textStyle} ${bgColor}`;
             row.appendChild(countCell);
         }
         

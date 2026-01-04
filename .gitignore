@@ -48,6 +48,20 @@ out/
 .project
 .classpath
 
+# Deployment secrets (DO NOT COMMIT)
+deployment/deployment-config.ps1
+*.key
+*.pem
+*.ppk
+
+# SSH keys
+.ssh/
+
+# Environment files
+.env
+.env.local
+.env.production
+
 # Eclipse
 *.pydevproject
 .metadata

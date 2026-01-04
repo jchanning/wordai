@@ -1,0 +1,17 @@
+[Unit]
+Description=WordAI Spring Boot Application
+After=network.target
+
+[Service]
+Type=simple
+User=opc
+WorkingDirectory=/home/opc/wordai-app
+ExecStart=/usr/bin/java -Xmx768m -Dspring.profiles.active=prod -jar /home/opc/wordai-app/wordai-1.0-SNAPSHOT.jar
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=wordai
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
