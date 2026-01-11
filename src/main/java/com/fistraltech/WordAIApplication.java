@@ -5,7 +5,10 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 /**
  * Spring Boot application entry point for the WordAI web server.
- * This enables the WordAI game to be played via REST API endpoints.
+ * 
+ * <p>This enables the WordAI game to be played via REST API endpoints.
+ * Dictionary caching and entropy pre-computation are handled by 
+ * {@link com.fistraltech.server.DictionaryService} during Spring initialization.
  */
 @SpringBootApplication
 public class WordAIApplication {

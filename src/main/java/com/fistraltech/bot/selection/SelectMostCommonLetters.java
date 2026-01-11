@@ -9,7 +9,8 @@ import com.fistraltech.core.Dictionary;
 import com.fistraltech.core.Response;
 
 /**
- * Selection algorithm that biases guesses toward high-frequency letters in the remaining candidate set.
+ * This algorithm is a refineement of the random selection algorithm that biases guesses toward words containing high-frequency letters. 
+ * It applies a filter to dictionary based on three most common letters before randomly selecting a word.
  *
  * <p>The algorithm computes overall letter frequencies for the current dictionary and then filters the dictionary
  * to words that contain the top N most frequent letters. A word is then selected at random from this subset.
@@ -37,6 +38,7 @@ public class SelectMostCommonLetters extends SelectionAlgo {
     }
 
     /**
+     * Filters the selection dictionary 
      * Selects a candidate word using the most common letters in the current dictionary.
      *
      * <p>Note: {@code lastResponse} is not used directly; the {@link SelectionAlgo} base class has already

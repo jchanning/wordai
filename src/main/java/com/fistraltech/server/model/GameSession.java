@@ -1,5 +1,8 @@
 package com.fistraltech.server.model;
 
+import java.util.logging.Logger;
+
+import com.fistraltech.analysis.WordEntropy;
 import com.fistraltech.bot.filter.Filter;
 import com.fistraltech.bot.selection.SelectMaximumDictionaryReduction;
 import com.fistraltech.bot.selection.SelectMaximumEntropy;
@@ -38,6 +41,8 @@ import com.fistraltech.util.Config;
  * @author Fistral Technologies
  */
 public class GameSession {
+    private static final Logger logger = Logger.getLogger(GameSession.class.getName());
+    
     private final String gameId;
     private final WordGame wordGame;
     private final Config config;
@@ -46,6 +51,9 @@ public class GameSession {
     private boolean gameEnded = false;
     // Only valid in auto-play mode. In user interactive mode, strategy is chosen per guess.
     private String selectedStrategy = "RANDOM"; // Default strategy
+    
+    // Cached WordEntropy from DictionaryService for fast entropy-based suggestions
+    private WordEntropy cachedWordEntropy;
     
     public GameSession(String gameId, WordGame wordGame, Config config, Dictionary dictionary) {
         this.gameId = gameId;
@@ -109,6 +117,16 @@ public class GameSession {
     }
     
     /**
+     * Sets the cached WordEntropy from DictionaryService.
+     * This enables fast entropy-based suggestions using pre-computed values.
+     * 
+     * @param wordEntropy the pre-computed WordEntropy instance
+     */
+    public void setCachedWordEntropy(WordEntropy wordEntropy) {
+        this.cachedWordEntropy = wordEntropy;
+    }
+    
+    /**
      * Gets the current filtered dictionary based on all guesses made so far.
      */
     public Dictionary getFilteredDictionary() {
@@ -117,6 +135,18 @@ public class GameSession {
     
     /**
      * Suggests a next word based on {@link #selectedStrategy}.
+     *
+     * <p>For ENTROPY, DICTIONARY_REDUCTION, and MINIMISE_COLUMN_LENGTHS strategies:
+     * <ul>
+     *   <li>First guess (unfiltered dictionary): uses pre-computed cached values</li>
+     *   <li>Subsequent guesses (filtered dictionary): recomputes values based on remaining words</li>
+     * </ul>
+     *
+     * <p><strong>Why recomputation is required:</strong> Entropy (and similar metrics) measures
+     * how a candidate word partitions the <em>current</em> dictionary into response buckets.
+     * When the dictionary changes (words are filtered out after each guess), the bucket
+     * distributions change, so the metric values must be recomputed. Cached values are only
+     * valid for the original unfiltered dictionary.
      *
      * @return a suggested word, or {@code null} if no valid words remain
      */
@@ -127,16 +157,45 @@ public class GameSession {
             return null;
         }
         
+        String strategyUpper = selectedStrategy.toUpperCase();
+        
+        // Cached values are only valid when the dictionary is unfiltered (first guess).
+        // After filtering, the dictionary composition changes, so entropy/reduction/column-length
+        // values must be recomputed - they depend on how the word partitions the CURRENT dictionary.
+        boolean isUnfilteredDictionary = filteredDictionary.getWordCount() == originalDictionary.getWordCount();
+        
+        if (cachedWordEntropy != null && isUnfilteredDictionary) {
+            switch (strategyUpper) {
+                case "ENTROPY":
+                case "MAXIMUM_ENTROPY":
+                    logger.fine(() -> "Using cached WordEntropy for first ENTROPY suggestion (full dict)");
+                    return cachedWordEntropy.getMaximumEntropyWord(filteredDictionary.getMasterSetOfWords());
+                    
+                case "DICTIONARY_REDUCTION":
+                    logger.fine(() -> "Using cached WordEntropy for first DICTIONARY_REDUCTION suggestion (full dict)");
+                    return cachedWordEntropy.getWordWithMaximumReduction(filteredDictionary.getMasterSetOfWords());
+                    
+                case "MINIMISE_COLUMN_LENGTHS":
+                    logger.fine(() -> "Using cached WordEntropy for first MINIMISE_COLUMN_LENGTHS suggestion (full dict)");
+                    return cachedWordEntropy.getWordWithMinimumColumnLength(filteredDictionary.getMasterSetOfWords());
+            }
+        }
+        
+        // Dictionary has been filtered - must recompute values based on remaining words.
+        // This is required for correctness: the metrics depend on the current dictionary.
         SelectionAlgo algo;
-        switch (selectedStrategy.toUpperCase()) {
+        switch (strategyUpper) {
             case "ENTROPY":
             case "MAXIMUM_ENTROPY":
+                logger.fine(() -> "Recomputing entropy for dictionary of " + filteredDictionary.getWordCount() + " words");
                 algo = new SelectMaximumEntropy(filteredDictionary);
                 break;
             case "MINIMISE_COLUMN_LENGTHS":
+                logger.fine(() -> "Recomputing column lengths for dictionary of " + filteredDictionary.getWordCount() + " words");
                 algo = new com.fistraltech.bot.selection.MinimiseColumnLengths(filteredDictionary);
                 break;
             case "DICTIONARY_REDUCTION":
+                logger.fine(() -> "Recomputing dictionary reduction for dictionary of " + filteredDictionary.getWordCount() + " words");
                 algo = new SelectMaximumDictionaryReduction(filteredDictionary);
                 break;
             case "RANDOM":

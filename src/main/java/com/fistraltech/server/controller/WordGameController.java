@@ -20,9 +20,11 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.fistraltech.analysis.WordEntropy;
 import com.fistraltech.core.Dictionary;
 import com.fistraltech.core.InvalidWordException;
 import com.fistraltech.core.Response;
+import com.fistraltech.server.DictionaryService;
 import com.fistraltech.server.WordGameService;
 import com.fistraltech.server.dto.CreateGameRequest;
 import com.fistraltech.server.dto.CreateGameResponse;
@@ -30,8 +32,6 @@ import com.fistraltech.server.dto.DictionaryOption;
 import com.fistraltech.server.dto.GameResponse;
 import com.fistraltech.server.dto.GuessRequest;
 import com.fistraltech.server.model.GameSession;
-import com.fistraltech.util.Config;
-import com.fistraltech.util.ConfigManager;
 
 /**
  * REST controller for the WordAI HTTP API.
@@ -114,8 +114,8 @@ public class WordGameController {
     @GetMapping("/dictionaries")
     public ResponseEntity<List<DictionaryOption>> getDictionaries() {
         try {
-            Config config = ConfigManager.getInstance().createGameConfig();
-            List<DictionaryOption> dictionaries = config.getAvailableDictionaries();
+            DictionaryService dictionaryService = gameService.getDictionaryService();
+            List<DictionaryOption> dictionaries = dictionaryService.getAvailableDictionaries();
             return ResponseEntity.ok(dictionaries);
         } catch (Exception e) {
             logger.log(Level.SEVERE, "Error getting dictionaries: {0}", e.getMessage());
@@ -124,18 +124,44 @@ public class WordGameController {
     }
     
     /**
-     * Get dictionary words
+     * Get dictionary words with entropy values
      * GET /api/wordai/dictionaries/{dictionaryId}
      */
     @GetMapping("/dictionaries/{dictionaryId}")
     public ResponseEntity<Map<String, Object>> getDictionary(@PathVariable String dictionaryId) {
         try {
-            Dictionary dictionary = gameService.loadDictionary(dictionaryId);
+            DictionaryService dictionaryService = gameService.getDictionaryService();
+            Dictionary dictionary = dictionaryService.getMasterDictionary(dictionaryId);
+            
+            if (dictionary == null) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+            }
+            
+            // Get pre-computed entropy values from DictionaryService
+            WordEntropy wordEntropy = dictionaryService.getWordEntropy(dictionaryId);
+            
+            logger.info("Dictionary ID: " + dictionaryId + ", Word Length: " + dictionary.getWordLength() + 
+                       ", WordEntropy found: " + (wordEntropy != null));
+            
             Map<String, Object> response = new HashMap<>();
             response.put("id", dictionaryId);
             response.put("wordLength", dictionary.getWordLength());
             response.put("wordCount", dictionary.getWordCount());
             response.put("words", new ArrayList<>(dictionary.getMasterSetOfWords()));
+            
+            // Add entropy values if available
+            if (wordEntropy != null) {
+                Map<String, Float> entropyMap = new HashMap<>();
+                for (String word : dictionary.getMasterSetOfWords()) {
+                    float entropy = wordEntropy.getEntropy(word);
+                    entropyMap.put(word, entropy);
+                }
+                logger.info("Added entropy values for " + entropyMap.size() + " words");
+                response.put("entropy", entropyMap);
+            } else {
+                logger.warning("WordEntropy is null for dictionary: " + dictionaryId);
+            }
+            
             return ResponseEntity.ok(response);
         } catch (Exception e) {
             logger.log(Level.SEVERE, "Error loading dictionary: {0}", e.getMessage());
@@ -383,6 +409,7 @@ public class WordGameController {
     @GetMapping("/games/{gameId}/suggestion")
     public ResponseEntity<?> getSuggestion(@PathVariable String gameId) {
         try {
+            long startTime = System.currentTimeMillis();
             GameSession session = gameService.getGameSession(gameId);
             
             if (session == null) {
@@ -393,6 +420,7 @@ public class WordGameController {
             }
             
             String suggestion = session.suggestWord();
+            long duration = System.currentTimeMillis() - startTime;
             
             Map<String, Object> response = new HashMap<>();
             response.put("gameId", gameId);
@@ -400,7 +428,9 @@ public class WordGameController {
             response.put("strategy", session.getSelectedStrategy());
             response.put("remainingWords", session.getRemainingWordsCount());
             
-            logger.info("Suggestion for game " + gameId + " using " + session.getSelectedStrategy() + " strategy: " + suggestion);
+            logger.info(String.format("Suggestion for game %s: '%s' using %s strategy (remaining=%d, %dms)", 
+                       gameId, suggestion, session.getSelectedStrategy(), 
+                       session.getRemainingWordsCount(), duration));
             return ResponseEntity.ok(response);
             
         } catch (Exception e) {

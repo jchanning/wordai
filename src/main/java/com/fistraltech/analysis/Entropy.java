@@ -13,6 +13,8 @@ import java.util.Set;
  * possible Target words.*/
 
 public class Entropy {
+    
+    // Map of EntropyKey (Guess+Response) to set of possible target words
     private final Map<EntropyKey, Set<String>> entries;
 
     public Entropy(){

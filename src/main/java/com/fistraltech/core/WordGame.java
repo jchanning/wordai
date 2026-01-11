@@ -77,10 +77,10 @@ public class WordGame {
 
     /** Choose a random word from the dictionary as the target word*/
     public void setRandomTargetWord() throws InvalidWordException {
-        String targetWord = gameWords.selectRandomWord();
+        String randomTargetWord = gameWords.selectRandomWord();
         Logger logger = Logger.getLogger(WordGame.class.getName());
-        logger.info("The target word is: " + targetWord);
-        setTargetWord(targetWord);
+        logger.info(() -> "The target word is: " + randomTargetWord);
+        setTargetWord(randomTargetWord);
     }
 
     public String getTargetWord() {

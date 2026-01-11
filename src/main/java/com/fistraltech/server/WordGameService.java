@@ -1,8 +1,6 @@
 package com.fistraltech.server;
 
-import java.io.IOException;
 import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Logger;
@@ -14,16 +12,14 @@ import com.fistraltech.core.Dictionary;
 import com.fistraltech.core.InvalidWordException;
 import com.fistraltech.core.Response;
 import com.fistraltech.core.WordGame;
-import com.fistraltech.core.WordSource;
 import com.fistraltech.server.model.GameSession;
 import com.fistraltech.util.Config;
-import com.fistraltech.util.ConfigManager;
 
 /**
  * Service layer for creating and managing WordAI game sessions.
  *
  * <p>This class is the core of the Spring Boot API implementation:
- * it owns the in-memory session map, creates {@link WordGame} instances, loads dictionaries,
+ * it owns the in-memory session map, creates {@link WordGame} instances,
  * applies guesses, and exposes a server-side full-dictionary analysis entry point.
  *
  * <p><strong>Conceptual model</strong>
@@ -33,6 +29,10 @@ import com.fistraltech.util.ConfigManager;
  *   <li>Each session owns its own {@link WordGame}, a {@link Filter}, and its dictionary/config context.</li>
  * </ul>
  *
+ * <p><strong>Performance:</strong> This service uses {@link DictionaryService} to obtain
+ * pre-cached dictionaries. Game creation is O(1) with no file I/O, as dictionaries
+ * are cloned from the cache rather than loaded from disk.
+ *
  * <p><strong>Thread safety</strong>
  * <ul>
  *   <li>The session map uses {@link java.util.concurrent.ConcurrentHashMap} for safe concurrent access.</li>
@@ -40,43 +40,28 @@ import com.fistraltech.util.ConfigManager;
  *       The REST API assumes a single caller at a time per {@code gameId}.</li>
  * </ul>
  *
- * <p><strong>Error handling</strong>: service methods throw {@link InvalidWordException} for invalid
- * input and {@link IOException} when dictionaries/config cannot be loaded.
- *
  * @author Fistral Technologies
  * @see com.fistraltech.server.controller.WordGameController
+ * @see DictionaryService
  */
 @Service
 public class WordGameService {
     private static final Logger logger = Logger.getLogger(WordGameService.class.getName());
     
     private final Map<String, GameSession> activeSessions = new ConcurrentHashMap<>();
-    private final Dictionary dictionary;
+    private final DictionaryService dictionaryService;
     private final Config config;
     
-    public WordGameService() throws IOException {
-        ConfigManager configManager = ConfigManager.getInstance();
-        this.config = configManager.createGameConfig();
-        
-        if (!configManager.validateConfiguration()) {
-            throw new IOException("Configuration validation failed");
-        }
-        
-        String fileName = config.getPathToDictionaryOfAllWords();
-        int wordLength = config.getWordLength();
-        this.dictionary = new Dictionary(wordLength);
-        
-        // Filter words to only include those with correct length
-        Set<String> allWords = WordSource.getWordsFromFile(fileName);
-        Set<String> validWords = allWords.stream()
-            .filter(word -> word.length() == wordLength)
-            .collect(java.util.stream.Collectors.toSet());
-            
-        logger.info("Loaded " + validWords.size() + " valid words of length " + wordLength + 
-                   " (filtered from " + allWords.size() + " total words)");
-        
-        this.dictionary.addWords(validWords);
-        logger.info("WordGameService initialized with dictionary: " + fileName);
+    /**
+     * Constructor with dependency injection of DictionaryService.
+     * 
+     * @param dictionaryService the dictionary service for cached dictionary access
+     */
+    public WordGameService(DictionaryService dictionaryService) {
+        logger.info("Initializing WordGameService...");
+        this.dictionaryService = dictionaryService;
+        this.config = dictionaryService.getConfig();
+        logger.info("WordGameService initialized with DictionaryService");
     }
     
     /**
@@ -85,8 +70,8 @@ public class WordGameService {
      * <p>If {@code dictionaryId} is provided, the dictionary path and word length are derived from
      * configuration. Otherwise the default dictionary and/or requested word length is used.
      *
-     * @param targetWord optional explicit target word (lower-cased before use). If {@code null}, a random
-     *                  target is chosen from the dictionary.
+     * @param targetWord optional explicit target word (lower-cased before use). 
+     * If {@code null}, a random target is chosen from the dictionary.
      * @param wordLength optional word length. Only used when {@code dictionaryId} is not supplied.
      * @param dictionaryId optional dictionary identifier from configuration.
      * @return the newly created session id.
@@ -95,58 +80,56 @@ public class WordGameService {
      */
     public String createGame(String targetWord, Integer wordLength, String dictionaryId) throws InvalidWordException {
         String gameId = UUID.randomUUID().toString();
+        logger.info(() -> "Creating new game session with ID: " + gameId);
         
-        // Determine dictionary path and word length
-        String dictionaryPath;
-        int actualWordLength;
+        // Determine which dictionary to use
+        String effectiveDictionaryId = (dictionaryId != null && !dictionaryId.isEmpty()) 
+            ? dictionaryId 
+            : "default";
         
-        if (dictionaryId != null && !dictionaryId.isEmpty()) {
-            // Use specified dictionary
-            dictionaryPath = config.getDictionaryPathById(dictionaryId);
-            if (dictionaryPath == null) {
-                logger.warning("Dictionary not found for ID: " + dictionaryId);
-                throw new InvalidWordException("Dictionary not found: " + dictionaryId);
-            }
-            actualWordLength = config.getWordLengthForDictionary(dictionaryId);
-        } else {
-            // Use default dictionary
-            dictionaryPath = config.getPathToDictionaryOfAllWords();
-            actualWordLength = wordLength != null ? wordLength : config.getWordLength();
+        // Get a cloned dictionary from the cache (no file I/O!)
+        Dictionary gameDictionary = dictionaryService.getDictionaryForGame(effectiveDictionaryId);
+        if (gameDictionary == null) {
+            logger.warning(() -> "Dictionary not found for ID: " + effectiveDictionaryId);
+            throw new InvalidWordException("Dictionary not found: " + effectiveDictionaryId);
         }
         
-        // Create dictionary for this word length
-        Dictionary gameDictionary = new Dictionary(actualWordLength);
-        try {
-            Set<String> allWords = WordSource.getWordsFromFile(dictionaryPath);
-            Set<String> validWords = allWords.stream()
-                .filter(word -> word.length() == actualWordLength)
-                .collect(java.util.stream.Collectors.toSet());
-            gameDictionary.addWords(validWords);
-            
-            logger.info("Loaded " + validWords.size() + " words for game from: " + dictionaryPath);
-        } catch (IOException e) {
-            logger.warning("Failed to load dictionary from " + dictionaryPath);
-            throw new InvalidWordException("Failed to create game with dictionary: " + dictionaryId);
-        }
+        int actualWordLength = gameDictionary.getWordLength();
+        logger.info(() -> "Using cached dictionary '" + effectiveDictionaryId + "' with " 
+                   + gameDictionary.getWordCount() + " words");
         
+        // Create game configuration
         Config gameConfig = new Config();
         gameConfig.setWordLength(actualWordLength);
         gameConfig.setMaxAttempts(config.getMaxAttempts());
-        gameConfig.setPathToDictionaryOfAllWords(dictionaryPath);
-        gameConfig.setPathToDictionaryOfGameWords(dictionaryPath);
+        
+        // Create the word game
         WordGame wordGame = new WordGame(gameDictionary, gameConfig);
         
         // Set target word
         if (targetWord != null) {
-            wordGame.setTargetWord(targetWord.toLowerCase());
+            String normalizedTarget = targetWord.toLowerCase();
+            if (!gameDictionary.contains(normalizedTarget)) {
+                throw new InvalidWordException("Target word not in dictionary: " + targetWord);
+            }
+            wordGame.setTargetWord(normalizedTarget);
         } else {
             wordGame.setRandomTargetWord();
         }
         
+        // Create and store session
         GameSession session = new GameSession(gameId, wordGame, gameConfig, gameDictionary);
+        
+        // Set cached WordEntropy for fast entropy-based suggestions
+        com.fistraltech.analysis.WordEntropy cachedEntropy = dictionaryService.getWordEntropy(effectiveDictionaryId);
+        if (cachedEntropy != null) {
+            session.setCachedWordEntropy(cachedEntropy);
+            logger.fine(() -> "Set cached WordEntropy for session " + gameId);
+        }
+        
         activeSessions.put(gameId, session);
         
-        logger.info("Created new game session: " + gameId);
+        logger.info(() -> "Created new game session: " + gameId);
         return gameId;
     }
     
@@ -161,37 +144,23 @@ public class WordGameService {
     }
     
     /**
-     * Loads a full dictionary by id.
+     * Loads a dictionary by id from the cache.
      *
-     * <p>This is used by API endpoints that need the raw word list (e.g. analysis) rather than a game session.
+     * <p>Returns the master (read-only) dictionary. For game sessions that need
+     * filtering, use {@link DictionaryService#getDictionaryForGame(String)} instead.
+     *
+     * @param dictionaryId the dictionary identifier
+     * @return the cached Dictionary
+     * @throws InvalidWordException if the dictionary is not found
      */
-    public Dictionary loadDictionary(String dictionaryId) throws IOException, InvalidWordException {
-        // Determine dictionary path and word length
-        String dictionaryPath;
-        int wordLength;
-        
-        if (dictionaryId != null && !dictionaryId.isEmpty()) {
-            // Use specified dictionary
-            dictionaryPath = config.getDictionaryPathById(dictionaryId);
-            if (dictionaryPath == null) {
-                throw new InvalidWordException("Dictionary not found: " + dictionaryId);
-            }
-            wordLength = config.getWordLengthForDictionary(dictionaryId);
-        } else {
-            // Use default dictionary
-            dictionaryPath = config.getPathToDictionaryOfAllWords();
-            wordLength = config.getWordLength();
+    public Dictionary loadDictionary(String dictionaryId) throws InvalidWordException {
+        String effectiveId = (dictionaryId != null && !dictionaryId.isEmpty()) ? dictionaryId : "default";
+        Dictionary dictionary = dictionaryService.getMasterDictionary(effectiveId);
+        if (dictionary == null) {
+            throw new InvalidWordException("Dictionary not found: " + effectiveId);
         }
-        
-        // Create and load dictionary
-        Dictionary dictionary = new Dictionary(wordLength);
-        Set<String> allWords = WordSource.getWordsFromFile(dictionaryPath);
-        Set<String> validWords = allWords.stream()
-            .filter(word -> word.length() == wordLength)
-            .collect(java.util.stream.Collectors.toSet());
-        dictionary.addWords(validWords);
-        
-        logger.info("Loaded dictionary with " + validWords.size() + " words from: " + dictionaryPath);
+        logger.info(() -> "Retrieved cached dictionary '" + effectiveId + "' with " 
+                   + dictionary.getWordCount() + " words");
         return dictionary;
     }
     
@@ -223,7 +192,7 @@ public class WordGameService {
         // Check if game should end
         if (response.getWinner() || session.isMaxAttemptsReached()) {
             session.setGameEnded(true);
-            logger.info("Game session ended: " + gameId + " (Winner: " + response.getWinner() + ")");
+            logger.info(() -> "Game session ended: " + gameId + " (Winner: " + response.getWinner() + ")");
         }
         
         return response;
@@ -244,15 +213,25 @@ public class WordGameService {
      */
     public void removeGameSession(String gameId) {
         activeSessions.remove(gameId);
-        logger.info("Removed game session: " + gameId);
+        logger.info(() -> "Removed game session: " + gameId);
     }
     
     /**
-     * Gets the number of active game sessions
+     * Gets the number of active game sessions.
+     * 
      * @return The number of active sessions
      */
     public int getActiveSessionCount() {
         return activeSessions.size();
+    }
+    
+    /**
+     * Gets the DictionaryService instance.
+     * 
+     * @return the dictionary service
+     */
+    public DictionaryService getDictionaryService() {
+        return dictionaryService;
     }
     
     /**
@@ -269,21 +248,16 @@ public class WordGameService {
     public com.fistraltech.server.dto.AnalysisResponse runAnalysis(
             String algorithm, String dictionaryId, Integer maxGames) throws Exception {
         
-        // Load dictionary
-        String dictionaryPath = config.getDictionaryPathById(dictionaryId != null ? dictionaryId : "default");
-        int wordLength = config.getWordLengthForDictionary(dictionaryId != null ? dictionaryId : "default");
+        String effectiveId = (dictionaryId != null && !dictionaryId.isEmpty()) ? dictionaryId : "default";
         
-        Dictionary analysisDictionary = new Dictionary(wordLength);
-        try {
-            Set<String> allWords = WordSource.getWordsFromFile(dictionaryPath);
-            Set<String> validWords = allWords.stream()
-                .filter(word -> word.length() == wordLength)
-                .collect(java.util.stream.Collectors.toSet());
-            analysisDictionary.addWords(validWords);
-            logger.info("Loaded " + validWords.size() + " words for analysis");
-        } catch (IOException e) {
-            throw new Exception("Failed to load dictionary for analysis: " + e.getMessage(), e);
+        // Get a cloned dictionary for analysis (so we don't affect the cache)
+        Dictionary analysisDictionary = dictionaryService.getDictionaryForGame(effectiveId);
+        if (analysisDictionary == null) {
+            throw new InvalidWordException("Dictionary not found for analysis: " + effectiveId);
         }
+        
+        logger.info(() -> "Running analysis with " + analysisDictionary.getWordCount() 
+                   + " words using algorithm: " + algorithm);
         
         // Create game and player with specified algorithm
         WordGame game = new WordGame(analysisDictionary, analysisDictionary, config);

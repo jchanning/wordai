@@ -199,10 +199,10 @@ public class PlayerAnalyser {
         List<Response> responses = rh.getHistory();
         List<Dictionary> dictionaries = dh.getHistory();
         
-        List<AnalysisGameResult.AnalysisGuess> guesses = new ArrayList<>();
+        List<AnalysisGameResult.GuessDetails> guesses = new ArrayList<>();
         
         for(int i = 0; i < dictionaries.size() && i < responses.size(); i++){
-            AnalysisGameResult.AnalysisGuess guess = new AnalysisGameResult.AnalysisGuess();
+            AnalysisGameResult.GuessDetails guess = new AnalysisGameResult.GuessDetails();
             guess.setAttemptNumber(i + 1);
             guess.setGuess(responses.get(i).getWord());
             guess.setResponse(responses.get(i).toString());

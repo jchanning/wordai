@@ -1,15 +1,17 @@
 package com.fistraltech.util;
 
-import com.fistraltech.server.dto.DictionaryOption;
-
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import com.fistraltech.server.dto.DictionaryOption;
 
 public class Config {
 
     private int wordLength;
     private int maxAttempts = 6;
+    private int minWordLength = 4;
+    private int maxWordLength = 7;
     private boolean hardMode;
     private boolean showHints;
     private String pathToDictionaryOfAllWords;
@@ -67,6 +69,22 @@ public class Config {
 
     public void setShowHints(boolean showHints) {
         this.showHints = showHints;
+    }
+    
+    public int getMinWordLength() {
+        return minWordLength;
+    }
+    
+    public void setMinWordLength(int minWordLength) {
+        this.minWordLength = minWordLength;
+    }
+    
+    public int getMaxWordLength() {
+        return maxWordLength;
+    }
+    
+    public void setMaxWordLength(int maxWordLength) {
+        this.maxWordLength = maxWordLength;
     }
     
     public String getOutputBasePath() {

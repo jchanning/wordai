@@ -97,8 +97,11 @@ public abstract class SelectionAlgo {
     private final Filter filter;
     // The dictionary of all words at the start of the game
     private final Dictionary dictionary;
-    // The dictionary of words that are still valide after filtering out words that do not match the last response
+
+    // The dictionary of words that remain valid after processing the responses and filtering out words that do not match the last response
     private Dictionary updatedDictionary;
+
+    // Name of the selection algorithm
     private String algoName;
 
     public SelectionAlgo(Dictionary dictionary) {
@@ -118,13 +121,21 @@ public abstract class SelectionAlgo {
         this.algoName = algoName;
     }
 
+    /**
+     * Selects the next word to be guessed based on the last response.
+     * This method applies the filter to update the dictionary before
+     * delegating to the subclass-specific selection logic.
+     *
+     * @param lastResponse the last response received
+     * @return the next word to be guessed
+     */
     public String selectWord(Response lastResponse){
         applyFilter(lastResponse);
         return selectWord(lastResponse, updatedDictionary);
     }
 
     /**
-     * Applies the filter to the last response and updates the dictionary.
+     * Updates the filter with the last response and applies the filter to the dictionary to get the words that remain valid.
      *
      * @param lastResponse the last response received
      */
@@ -133,7 +144,8 @@ public abstract class SelectionAlgo {
         if (Objects.equals(lastResponse.getWord(), "")) {
             updatedDictionary = dictionary;
         } else {
-            // Update the filter with the last response and apply it to the ORIGINAL dictionary
+            // Update the filter with the last response and apply it to the ORIGINAL dictionary - probably not optimal, needs to be 
+            // evaluated.
             // The filter accumulates all constraints from all responses
             filter.update(lastResponse);
             updatedDictionary = filter.apply(dictionary);

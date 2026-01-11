@@ -10,26 +10,36 @@ import com.fistraltech.core.Dictionary;
 import com.fistraltech.core.Response;
 
 /**
- * Selection strategy that minimises the expected sum of column lengths after a potential guess.
- * <p>
- * This strategy calculates, for each candidate word, the expected number of remaining possible
- * letter positions after guessing that word. It uses response buckets to group outcomes and
- * directly computes column statistics from the bucket contents, avoiding expensive filtering.
- * <p>
+ * This is a variation of the SelectMximunEntropy algorithm. The target function looks to 
+ * minimise the column length (i.e. number of  valid letter choices, across the positionse in
+ * the word) rather than maximise entropy. 
+ * 
+ * In many cases, a single column may have a very high number of remaining valid letters, which 
+ * can lead to a loss. Eliminating this risk is the target of this algorithm.There are other 
+ * techniques that can address this but it involves guessing words that are known to be
+ * wrong.
+ *  
+ * This strategy calculates, for each guess word, the number of remaining possible
+ * letters by positions for each target word in the dictionary. It then calcuates the average across
+ * the target words. Note variants on this strategt would focus on the minimum of maximum column 
+ * lengths which would identify the best or worst case scenarios.
+ * 
+ * Although the total number of possible words is the multiple of the column count from p0 to pn,
+ * the majority of combinations are invalid (e.g. ABAAB, DDXXA, etc. are not in the English language 
+ * dictionary). Using a sum is assumed to give a better target to minimise, but this remains to be 
+ * proven.
+ * 
+ * This algorithm does not use response buckets to group outcomes, but that is a possible optimisation. 
+ * It just needs to know the column sum for each guess word across all target words.
+ *  
  * Algorithm:
- * 1. For each candidate word, get response buckets (groups of targets producing same response)
- * 2. For each bucket, calculate column lengths directly from the bucket's word set
- * 3. Calculate weighted average: Σ (bucket_probability × bucket_column_lengths)
- * 4. Select word with minimum expected column lengths
- * <p>
- * Optimization: Results are cached based on dictionary size to avoid recalculation when the
- * dictionary hasn't changed. This is critical for the first guess where the full dictionary
- * is used.
- * <p>
- * Complexity: O(N × B × L) where N = dictionary size, B = number of unique response buckets
- * (typically much smaller than N), L = word length. With caching, subsequent calls on the same
- * dictionary are O(1).
+ * 1. For each guess word and target word pair, get the response 
+ * 2. Filter the dictionary based on that response to get the possible remaining words
+ * 3. Calculate the column lengths for the remaining words
+ * 4. Calculate the average column length across all target words for the guess word
+ * 5. Select the guess word with the minimum average column length
  */
+
 public class MinimiseColumnLengths extends SelectionAlgo{
     
     // Cache: dictionary size -> (word -> expected column length)
@@ -43,10 +53,6 @@ public class MinimiseColumnLengths extends SelectionAlgo{
     @Override
     String selectWord(Response lastResponse, Dictionary dictionary)
     {
-        if (dictionary.getWordCount() == 0) {
-            return "";
-        }
-        
         // If only one word left, return it
         if (dictionary.getWordCount() == 1) {
             return dictionary.selectRandomWord();
@@ -64,7 +70,7 @@ public class MinimiseColumnLengths extends SelectionAlgo{
         Map<String, Float> results = new HashMap<>();
         WordEntropy analyser = new WordEntropy(dictionary);
         
-        // Evaluate each candidate word
+        // Evaluate each candidate (guess) word
         for (String candidateWord : dictionary.getMasterSetOfWords()) {
             float expectedColumnLength = calculateExpectedColumnLength(candidateWord, dictionary, analyser);
             results.put(candidateWord, expectedColumnLength);
@@ -85,6 +91,7 @@ public class MinimiseColumnLengths extends SelectionAlgo{
         String bestWord = "";
         
         Set<String> validWords = dictionary.getMasterSetOfWords();
+        //Iterate over valid words
         for (String word : validWords) {
             Float expectedLength = results.get(word);
             if (expectedLength != null && expectedLength < minExpectedColumnLength) {
@@ -93,6 +100,7 @@ public class MinimiseColumnLengths extends SelectionAlgo{
             }
         }
         
+        // Best word should not be empty, care needs to be taken here as it random selection is misleading
         return bestWord.isEmpty() ? dictionary.selectRandomWord() : bestWord;
     }
     
@@ -156,7 +164,10 @@ public class MinimiseColumnLengths extends SelectionAlgo{
             for (String word : words) {
                 uniqueLetters.add(word.charAt(pos));
             }
-            totalLength += uniqueLetters.size();
+            // Multiply total length by number of unique letters in this position to get all possibilities. This replaces a simple sum.
+            if(totalLength == 0)
+                totalLength = uniqueLetters.size();
+            else totalLength *= uniqueLetters.size();
         }
         
         return totalLength;

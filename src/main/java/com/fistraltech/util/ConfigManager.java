@@ -135,6 +135,8 @@ public class ConfigManager {
         config.setWordLength(Integer.parseInt(properties.getProperty("game.word.length", "5")));
         config.setMaxAttempts(Integer.parseInt(properties.getProperty("game.max.attempts", "6")));
         config.setSimulationIterations(Integer.parseInt(properties.getProperty("game.simulation.iterations", "1")));
+        config.setMinWordLength(Integer.parseInt(properties.getProperty("game.min.word.length", "4")));
+        config.setMaxWordLength(Integer.parseInt(properties.getProperty("game.max.word.length", "7")));
         
         // Set dictionary paths (using legacy property for backward compatibility)
         String dictPath = resolveLegacyDictionaryPath();

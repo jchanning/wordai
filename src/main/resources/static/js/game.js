@@ -1413,8 +1413,14 @@ async function loadDictionaryScreenData(dictionaryId, dictionaryName) {
     }
 
     const data = await response.json();
+    console.log('Dictionary data received:', data);
+    console.log('Entropy map keys:', data.entropy ? Object.keys(data.entropy).length : 0);
+    
     const words = Array.isArray(data.words) ? data.words : [];
     const wordLength = data.wordLength || (words[0] ? words[0].length : 0);
+    const entropyMap = data.entropy || {};
+    
+    console.log('Using entropy map with', Object.keys(entropyMap).length, 'entries');
 
     const nameEl = document.getElementById('dictionaryName');
     const lengthEl = document.getElementById('dictionaryWordLength');
@@ -1431,7 +1437,7 @@ async function loadDictionaryScreenData(dictionaryId, dictionaryName) {
 
     renderDictionaryLetterFrequency(words, wordLength);
     renderDictionaryComplexity(words, wordLength);
-    renderDictionaryWords(words, wordLength);
+    renderDictionaryWords(words, wordLength, entropyMap);
 }
 
 // State for letter frequency table sorting
@@ -1695,10 +1701,11 @@ const dictionaryWordsState = {
     sortAscending: false, // Default: descending (hardest first)
     searchTerm: '',
     allWords: [],
-    wordLength: 0
+    wordLength: 0,
+    entropyMap: {}
 };
 
-function renderDictionaryWords(words, wordLength) {
+function renderDictionaryWords(words, wordLength, entropyMap = {}) {
     const container = document.getElementById('dictionaryWords');
     if (!container) {
         return;
@@ -1708,9 +1715,16 @@ function renderDictionaryWords(words, wordLength) {
         return;
     }
 
-    // Store words for filtering/sorting
+    console.log('renderDictionaryWords called with', words.length, 'words and entropy map with', Object.keys(entropyMap).length, 'entries');
+    if (words.length > 0 && Object.keys(entropyMap).length > 0) {
+        const sampleWord = words[0];
+        console.log('Sample word:', sampleWord, 'Entropy:', entropyMap[sampleWord]);
+    }
+
+    // Store words and entropy for filtering/sorting
     dictionaryWordsState.allWords = words;
     dictionaryWordsState.wordLength = wordLength;
+    dictionaryWordsState.entropyMap = entropyMap;
 
     const complexity = dictionaryScreenState._complexity;
     const neighbourCounts = complexity?.neighbourCounts || new Map();
@@ -1718,7 +1732,8 @@ function renderDictionaryWords(words, wordLength) {
     let wordInfos = words.map(w => {
         const score = neighbourCounts.get(w) || 0;
         const bucket = getComplexityBucket(score);
-        return { word: w, score, bucket };
+        const entropy = entropyMap[w] || 0;
+        return { word: w, score, bucket, entropy };
     });
 
     // Apply search filter
@@ -1730,20 +1745,20 @@ function renderDictionaryWords(words, wordLength) {
     // Apply sorting
     wordInfos = sortDictionaryWordsData(wordInfos, dictionaryWordsState.sortColumn, dictionaryWordsState.sortAscending);
 
-    const headers = ['Word', '1-away', 'Complexity'];
+    const headers = ['Word', '1-away', 'Complexity', 'Entropy'];
     let html = '<table class="analysis-table">';
     html += '<thead><tr>';
     headers.forEach((h, idx) => {
         const sortClass = dictionaryWordsState.sortColumn === idx ? (dictionaryWordsState.sortAscending ? 'sort-asc' : 'sort-desc') : '';
         const sortIndicator = dictionaryWordsState.sortColumn === idx ? (dictionaryWordsState.sortAscending ? ' ▲' : ' ▼') : '';
-        const thClass = idx === 1 ? 'num' : '';
+        const thClass = (idx === 1 || idx === 3) ? 'num' : ''; // Numeric columns: 1-away and Entropy
         html += `<th class="sortable ${sortClass} ${thClass}" onclick="sortDictionaryWords(${idx})" style="cursor: pointer;" title="Click to sort">${h}${sortIndicator}</th>`;
     });
     html += '</tr></thead>';
     html += '<tbody>';
     
     if (wordInfos.length === 0) {
-        html += '<tr><td colspan="3" class="muted-center" style="padding: 20px;">No words match your search</td></tr>';
+        html += '<tr><td colspan="4" class="muted-center" style="padding: 20px;">No words match your search</td></tr>';
     } else {
         for (const info of wordInfos) {
             html += `
@@ -1751,6 +1766,7 @@ function renderDictionaryWords(words, wordLength) {
                     <td class="mono">${info.word.toUpperCase()}</td>
                     <td class="num">${info.score}</td>
                     <td><span class="complexity-pill complexity-${info.bucket.key}">${info.bucket.label}</span></td>
+                    <td class="num">${info.entropy.toFixed(3)}</td>
                 </tr>
             `;
         }
@@ -1783,6 +1799,10 @@ function sortDictionaryWordsData(wordInfos, column, ascending) {
             const complexityOrder = { 'very-easy': 0, 'easy': 1, 'medium': 2, 'hard': 3, 'very-hard': 4 };
             valA = complexityOrder[a.bucket.key] || 0;
             valB = complexityOrder[b.bucket.key] || 0;
+        } else if (column === 3) {
+            // Sort by Entropy
+            valA = a.entropy || 0;
+            valB = b.entropy || 0;
         }
         
         // Numeric comparison
@@ -1806,15 +1826,15 @@ function sortDictionaryWords(columnIndex) {
         dictionaryWordsState.sortAscending = columnIndex === 0; // Ascending for word, descending for numbers
     }
     
-    // Re-render with current words
-    renderDictionaryWords(dictionaryWordsState.allWords, dictionaryWordsState.wordLength);
+    // Re-render with current words and entropy data
+    renderDictionaryWords(dictionaryWordsState.allWords, dictionaryWordsState.wordLength, dictionaryWordsState.entropyMap);
 }
 
 function filterDictionaryWords() {
     const searchInput = document.getElementById('dictionaryWordsSearch');
     if (searchInput) {
         dictionaryWordsState.searchTerm = searchInput.value;
-        renderDictionaryWords(dictionaryWordsState.allWords, dictionaryWordsState.wordLength);
+        renderDictionaryWords(dictionaryWordsState.allWords, dictionaryWordsState.wordLength, dictionaryWordsState.entropyMap);
     }
 }
 

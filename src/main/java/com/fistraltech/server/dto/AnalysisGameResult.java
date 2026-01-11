@@ -15,11 +15,11 @@ public class AnalysisGameResult {
     private int attempts;
     private boolean won;
     private String algorithm;
-    private List<AnalysisGuess> guesses;
+    private List<GuessDetails> guesses;
     
     public AnalysisGameResult() {}
     
-    public AnalysisGameResult(String targetWord, int attempts, boolean won, String algorithm, List<AnalysisGuess> guesses) {
+    public AnalysisGameResult(String targetWord, int attempts, boolean won, String algorithm, List<GuessDetails> guesses) {
         this.targetWord = targetWord;
         this.attempts = attempts;
         this.won = won;
@@ -59,27 +59,27 @@ public class AnalysisGameResult {
         this.algorithm = algorithm;
     }
     
-    public List<AnalysisGuess> getGuesses() {
+    public List<GuessDetails> getGuesses() {
         return guesses;
     }
     
-    public void setGuesses(List<AnalysisGuess> guesses) {
+    public void setGuesses(List<GuessDetails> guesses) {
         this.guesses = guesses;
     }
     
     /**
      * DTO representing a single guess within a game during analysis.
      */
-    public static class AnalysisGuess {
+    public static class GuessDetails {
         private int attemptNumber;
         private String guess;
         private String response;
         private int remainingWords;
         private int letterCount;
-        
-        public AnalysisGuess() {}
-        
-        public AnalysisGuess(int attemptNumber, String guess, String response, int remainingWords, int letterCount) {
+
+        public GuessDetails() {}
+
+        public GuessDetails(int attemptNumber, String guess, String response, int remainingWords, int letterCount) {
             this.attemptNumber = attemptNumber;
             this.guess = guess;
             this.response = response;

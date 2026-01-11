@@ -208,6 +208,24 @@ public class Dictionary {
         // Simulating every possible response would be O(N²) which is too expensive
         return this;
     }
+    
+    /**
+     * Creates a deep copy of this dictionary.
+     * 
+     * <p>This is useful for game sessions that need to filter the dictionary without
+     * affecting the master cached copy. The clone contains a copy of all words and
+     * rebuilds its internal index.
+     * 
+     * @return a new Dictionary instance with the same words
+     */
+    @Override
+    public Dictionary clone() {
+        Dictionary copy = new Dictionary(this.wordLength);
+        // Create a new HashSet with copies of the words
+        Set<String> wordsCopy = new HashSet<>(this.masterSetOfWords);
+        copy.addWords(wordsCopy);
+        return copy;
+    }
 
     public String toString(){
         return "Dictionary size: " + masterSetOfWords.size();
