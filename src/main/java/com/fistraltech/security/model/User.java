@@ -1,9 +1,19 @@
 package com.fistraltech.security.model;
 
-import jakarta.persistence.*;
 import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
+
+import jakarta.persistence.CollectionTable;
+import jakarta.persistence.Column;
+import jakarta.persistence.ElementCollection;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.Table;
 
 @Entity
 @Table(name = "users")
@@ -45,9 +55,15 @@ public class User {
     @Column(name = "enabled")
     private boolean enabled = true;
     
+    // Role constants
+    public static final String ROLE_GUEST = "ROLE_GUEST";
+    public static final String ROLE_USER = "ROLE_USER"; // Registered Player
+    public static final String ROLE_PREMIUM = "ROLE_PREMIUM"; // Premium Player
+    public static final String ROLE_ADMIN = "ROLE_ADMIN"; // Administrator
+    
     public User() {
         this.createdAt = LocalDateTime.now();
-        this.roles.add("ROLE_USER");
+        this.roles.add(ROLE_USER); // Default to registered player
     }
     
     // Getters and Setters
@@ -137,5 +153,42 @@ public class User {
     
     public void setEnabled(boolean enabled) {
         this.enabled = enabled;
+    }
+    
+    // Role checking convenience methods
+    public boolean isGuest() {
+        return roles.contains(ROLE_GUEST);
+    }
+    
+    public boolean isRegisteredPlayer() {
+        return roles.contains(ROLE_USER);
+    }
+    
+    public boolean isPremiumPlayer() {
+        return roles.contains(ROLE_PREMIUM);
+    }
+    
+    public boolean isAdmin() {
+        return roles.contains(ROLE_ADMIN);
+    }
+    
+    public void addRole(String role) {
+        this.roles.add(role);
+    }
+    
+    public void removeRole(String role) {
+        this.roles.remove(role);
+    }
+    
+    public boolean hasRole(String role) {
+        return roles.contains(role);
+    }
+    
+    public String getPrimaryRole() {
+        if (isAdmin()) return "Administrator";
+        if (isPremiumPlayer()) return "Premium Player";
+        if (isRegisteredPlayer()) return "Registered Player";
+        if (isGuest()) return "Guest";
+        return "Unknown";
     }
 }

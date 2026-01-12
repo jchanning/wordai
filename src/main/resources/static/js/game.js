@@ -1332,6 +1332,12 @@ function onDictionaryChange() {
 
         if (currentView === 'dictionary') {
             refreshDictionaryScreen();
+        } else if (currentView === 'play') {
+            // Automatically start a new game when dictionary changes on play screen
+            newGame().catch(error => {
+                console.error('Failed to start new game after dictionary change:', error);
+                showStatus('Failed to start new game', 'error');
+            });
         }
     }
 }

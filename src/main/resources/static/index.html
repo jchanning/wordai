@@ -49,19 +49,6 @@
                     <h2 class="screen-title">Interactive Play</h2>
                 </div>
                 <div class="screen-toolbar-right">
-                    <select id="strategySelector" class="form-input" style="width: auto; max-width: 200px; margin-right: 8px;" onchange="changeStrategy()">
-                        <option value="RANDOM">Random Selection</option>
-                        <option value="ENTROPY">Maximum Entropy</option>
-                        <option value="MOST_COMMON_LETTERS">Most Common Letters</option>
-                        <option value="MINIMISE_COLUMN_LENGTHS">Minimise Column Lengths</option>
-                        <option value="DICTIONARY_REDUCTION">Dictionary Reduction</option>
-                    </select>
-                    <button id="getSuggestionBtn" class="btn btn-info" style="margin-right: 8px;" onclick="getSuggestion()">
-                        Get Suggestion <span id="helpCounter" class="help-counter-inline">3/3</span>
-                    </button>
-                    <button class="btn btn-success" onclick="newGame()">New Game</button>
-                    <button class="btn btn-danger" onclick="newSession()">New Session</button>
-                    <button class="btn btn-secondary" onclick="showSessionViewer()">View Session</button>
                 </div>
             </div>
 
@@ -69,7 +56,13 @@
             <div class="main-layout" id="gameView">
         <!-- Left Column: Game History -->
         <div class="history-panel panel play-panel">
-            <h3>Session Stats</h3>
+            <div style="position: relative; padding-top: 0.5rem;">
+                <h3>Session</h3>
+                <div style="position: absolute; top: -1rem; right: 0; display: flex; gap: 0.5rem;">
+                    <button class="btn btn-danger" onclick="newSession()" style="font-size: 0.875rem; padding: 0.5rem 1rem;">New</button>
+                    <button class="btn btn-secondary" onclick="showSessionViewer()" style="font-size: 0.875rem; padding: 0.5rem 1rem;">View</button>
+                </div>
+            </div>
             <div class="win-rate-stat">
                 <div class="win-rate-label">Win Rate</div>
                 <div class="win-rate-value" id="stat-winrate">0%</div>
@@ -119,7 +112,10 @@
         
         <!-- Middle Column: Game Board -->
         <div class="game-container panel play-panel">
-            <h3>Game</h3>
+            <div style="position: relative; padding-top: 0.5rem;">
+                <h3>Game</h3>
+                <button class="btn btn-success" onclick="newGame()" style="position: absolute; top: -1rem; right: 0; font-size: 0.875rem; padding: 0.5rem 1rem;">New Game</button>
+            </div>
             
             <div class="game-info">
                 <div>Attempts: <span id="attempts">0</span>/<span id="maxAttempts">6</span></div>
@@ -137,7 +133,21 @@
         
         <!-- Right Column: Analytics -->
         <div class="info-panel panel play-panel">
-            <h3>Game Analytics</h3>
+            <div style="position: relative; padding-top: 0.5rem;">
+                <h3>Assistant</h3>
+                <div style="position: absolute; top: -1rem; right: 0; display: flex; gap: 0.5rem; align-items: center;">
+                    <select id="strategySelector" class="form-input" style="width: auto; max-width: 200px; font-size: 0.875rem;" onchange="changeStrategy()">
+                        <option value="RANDOM">Random Selection</option>
+                        <option value="ENTROPY">Maximum Entropy</option>
+                        <option value="MOST_COMMON_LETTERS">Most Common Letters</option>
+                        <option value="MINIMISE_COLUMN_LENGTHS">Minimise Column Lengths</option>
+                        <option value="DICTIONARY_REDUCTION">Dictionary Reduction</option>
+                    </select>
+                    <button id="getSuggestionBtn" class="btn btn-info" onclick="getSuggestion()" style="font-size: 0.875rem; padding: 0.5rem 1rem;">
+                        Assist <span id="helpCounter" class="help-counter-inline">3/3</span>
+                    </button>
+                </div>
+            </div>
             
             <div class="analytics-grid">
                 <!-- Left Column: Stats -->
