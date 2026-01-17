@@ -32,25 +32,19 @@ if ($LASTEXITCODE -ne 0) {
 # Step 2: Upload JAR
 Write-Host ""
 Write-Host "Step 2: Uploading JAR to server..." -ForegroundColor Yellow
-scp -i $KEY target\wordai-1.0-SNAPSHOT.jar opc@${IP}:~/wordai-app/
+scp -i $KEY target\wordai-1.3.2.jar opc@${IP}:~/wordai-app/wordai.jar
 
 # Step 3: Upload configuration
 Write-Host ""
 Write-Host "Step 3: Uploading configuration files..." -ForegroundColor Yellow
 scp -i $KEY deployment\wordai.properties opc@${IP}:~/wordai-app/
 scp -i $KEY deployment\setup-dictionaries.sh opc@${IP}:~/wordai-app/
+scp -i $KEY deployment\wordai.service opc@${IP}:~/
 
 # Step 4: Extract dictionaries and restart
 Write-Host ""
 Write-Host "Step 4: Setting up dictionaries and restarting service..." -ForegroundColor Yellow
-ssh -i $KEY opc@$IP @"
-cd ~/wordai-app
-chmod +x setup-dictionaries.sh
-./setup-dictionaries.sh
-sudo systemctl restart wordai
-sleep 3
-sudo systemctl status wordai --no-pager
-"@
+ssh -i $KEY opc@$IP "cd ~/wordai-app; chmod +x setup-dictionaries.sh; ./setup-dictionaries.sh; if [ -f ~/wordai.service ]; then sudo cp ~/wordai.service /etc/systemd/system/wordai.service; sudo systemctl daemon-reload; fi; sudo systemctl restart wordai; sleep 3; sudo systemctl status wordai --no-pager"
 
 Write-Host ""
 Write-Host "=== Deployment Complete ===" -ForegroundColor Green

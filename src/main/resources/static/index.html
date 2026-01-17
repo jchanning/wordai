@@ -61,10 +61,10 @@
             <div id="playGameHost">
             <div class="main-layout" id="gameView">
         <!-- Left Column: Game History -->
-        <div class="history-panel panel play-panel">
-            <div style="position: relative; padding-top: 0.5rem;">
+            <div class="history-panel panel play-panel">
+            <div class="panel-header-row">
                 <h3>Session</h3>
-                <div style="position: absolute; top: -1rem; right: 0; display: flex; gap: 0.5rem;">
+                <div class="panel-header-actions">
                     <button class="btn btn-danger" onclick="newSession()" style="font-size: 0.875rem; padding: 0.5rem 1rem;">New</button>
                     <button class="btn btn-secondary" onclick="showSessionViewer()" style="font-size: 0.875rem; padding: 0.5rem 1rem;">View</button>
                 </div>
@@ -118,9 +118,11 @@
         
         <!-- Middle Column: Game Board -->
         <div class="game-container panel play-panel">
-            <div style="position: relative; padding-top: 0.5rem;">
+            <div class="panel-header-row">
                 <h3>Game</h3>
-                <button class="btn btn-success" onclick="newGame()" style="position: absolute; top: -1rem; right: 0; font-size: 0.875rem; padding: 0.5rem 1rem;">New Game</button>
+                <div class="panel-header-actions">
+                    <button class="btn btn-success" onclick="newGame()" style="font-size: 0.875rem; padding: 0.5rem 1rem;">New Game</button>
+                </div>
             </div>
             
             <div class="game-info">
@@ -146,9 +148,9 @@
         
         <!-- Right Column: Analytics -->
         <div class="info-panel panel play-panel">
-            <div style="position: relative; padding-top: 0.5rem;">
+            <div class="panel-header-row">
                 <h3>Assistant</h3>
-                <div style="position: absolute; top: -1rem; right: 0; display: flex; gap: 0.5rem; align-items: center;">
+                <div class="panel-header-actions panel-header-actions-inline">
                     <select id="strategySelector" class="form-input" style="width: auto; max-width: 200px; font-size: 0.875rem;" onchange="changeStrategy()">
                         <option value="RANDOM">Random Selection</option>
                         <option value="ENTROPY">Maximum Entropy</option>
@@ -168,17 +170,17 @@
                     <summary class="analytics-summary">Key Statistics</summary>
                     <div class="analytics-content">
                         <div class="info-section">
-                            <div class="info-label">Total Dictionary Words:</div>
+                            <div class="info-label">Word Count:</div>
                             <div class="info-value" id="totalWords">2315</div>
                         </div>
                         
                         <div class="info-section">
-                            <div class="info-label">Remaining Valid Words:</div>
+                            <div class="info-label">Remaining:</div>
                             <div class="info-value" id="remainingWords">2315</div>
                         </div>
                         
                         <div class="info-section">
-                            <div class="info-label">Words Eliminated:</div>
+                            <div class="info-label">Eliminated:</div>
                             <div class="info-value" id="eliminatedWords">0</div>
                         </div>
                         
@@ -188,7 +190,7 @@
                         </div>
                         
                         <div class="info-section">
-                            <div class="info-label">Unique Letters Remaining:</div>
+                            <div class="info-label">Unique Letters:</div>
                             <div class="info-value" id="uniqueLetters">26</div>
                         </div>
                         
@@ -237,6 +239,22 @@
             </div>
 
         </section>
+
+        <!-- Mobile Bottom Navigation -->
+        <nav class="mobile-bottom-nav" id="mobileBottomNav">
+            <button class="mobile-nav-btn" data-view="session" onclick="switchMobileView('session')" aria-label="Session view">
+                <span class="mobile-nav-icon">📊</span>
+                <span class="mobile-nav-label">Session</span>
+            </button>
+            <button class="mobile-nav-btn active" data-view="game" onclick="switchMobileView('game')" aria-label="Game view">
+                <span class="mobile-nav-icon">🎮</span>
+                <span class="mobile-nav-label">Game</span>
+            </button>
+            <button class="mobile-nav-btn" data-view="assistant" onclick="switchMobileView('assistant')" aria-label="Assistant view">
+                <span class="mobile-nav-icon">🤖</span>
+                <span class="mobile-nav-label">Assistant</span>
+            </button>
+        </nav>
 
         <!-- Screen: Session Analytics -->
         <section id="screen-session" class="screen" hidden>

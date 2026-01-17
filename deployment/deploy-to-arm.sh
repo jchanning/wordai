@@ -45,7 +45,7 @@ echo ""
 
 # Set proper permissions
 echo "Step 7: Setting permissions..."
-chmod +x ~/wordai-app/wordai-1.1.jar
+chmod +x ~/wordai-app/wordai.jar
 echo "Permissions set"
 echo ""
 

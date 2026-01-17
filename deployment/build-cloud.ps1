@@ -10,9 +10,9 @@ mvn clean package -DskipTests -Pcloud
 
 if ($LASTEXITCODE -eq 0) {
     Write-Host ""
-    Write-Host "✓ Build successful!" -ForegroundColor Green
+    Write-Host "Build successful!" -ForegroundColor Green
     Write-Host ""
-    Write-Host "JAR location: target\wordai-1.0-SNAPSHOT.jar" -ForegroundColor Cyan
+    Write-Host "JAR location: target\wordai-1.3.2.jar" -ForegroundColor Cyan
     Write-Host "Target Java version: 17" -ForegroundColor Cyan
     Write-Host ""
     Write-Host "Next steps:" -ForegroundColor Yellow
@@ -20,6 +20,6 @@ if ($LASTEXITCODE -eq 0) {
     Write-Host "  2. Or manually upload JAR and run setup on server" -ForegroundColor White
 } else {
     Write-Host ""
-    Write-Host "✗ Build failed!" -ForegroundColor Red
+    Write-Host "Build failed!" -ForegroundColor Red
     exit 1
 }

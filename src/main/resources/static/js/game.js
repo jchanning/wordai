@@ -2,12 +2,18 @@ const API_BASE = '/api/wordai';
 let currentGameId = null;
 let gameEnded = false;
 let currentView = 'play';
+let currentMobileView = 'game'; // Track which mobile panel is visible (game, assistant, session)
 let currentWordLength = 5; // Track the current game's word length
 let currentDictionarySize = 2315; // Track the current dictionary's total word count
 let helpUsedCount = 0; // Track how many times help has been used in this game
 const MAX_HELP_COUNT = 3; // Maximum number of help requests allowed per game
 let currentGameGuesses = []; // Track all guesses with their responses and metrics for current game
 let currentUser = null; // Track logged-in user
+let latestOccurrenceData = null; // Cache latest occurrence data to re-render with letter status
+
+function shouldSuppressNativeKeyboard() {
+    return window.matchMedia('(pointer: coarse)').matches;
+}
 
 // Initialize page
 window.addEventListener('DOMContentLoaded', function() {
@@ -181,6 +187,9 @@ function setView(view) {
     });
 
     ensureGameViewHost(view);
+    updateMobileBottomNavVisibility(view);
+    handleMobilePanelMode();
+    closeMobileNav();
 
     document.querySelectorAll('.nav-link[data-nav]').forEach(link => {
         const isActive = link.getAttribute('data-nav') === view;
@@ -204,6 +213,19 @@ function setView(view) {
     
     if (view === 'help') {
         loadHelpContent();
+    }
+}
+
+function updateMobileBottomNavVisibility(view) {
+    const bottomNav = document.getElementById('mobileBottomNav');
+    if (!bottomNav) {
+        return;
+    }
+
+    if (view === 'play') {
+        bottomNav.style.removeProperty('display');
+    } else {
+        bottomNav.style.setProperty('display', 'none', 'important');
     }
 }
 
@@ -290,8 +312,17 @@ function setupHelpAnchorLinks(container) {
 
 function setupLetterInputs() {
     const inputs = document.querySelectorAll('.letter-input');
+    const suppressKeyboard = shouldSuppressNativeKeyboard();
     
     inputs.forEach((input, index) => {
+        if (suppressKeyboard) {
+            input.setAttribute('inputmode', 'none');
+            input.setAttribute('readonly', 'readonly');
+            input.setAttribute('autocomplete', 'off');
+            input.setAttribute('autocapitalize', 'off');
+            input.setAttribute('autocorrect', 'off');
+        }
+
         // Handle typing in each input
         input.addEventListener('input', function(e) {
             const value = e.target.value.toUpperCase();
@@ -311,6 +342,10 @@ function setupLetterInputs() {
 
         // Handle backspace to move to previous input
         input.addEventListener('keydown', function(e) {
+            if (suppressKeyboard) {
+                e.preventDefault();
+                return;
+            }
             if (e.key === 'Backspace' && !e.target.value && index > 0) {
                 inputs[index - 1].focus();
                 inputs[index - 1].value = '';
@@ -325,11 +360,19 @@ function setupLetterInputs() {
 
         // Prevent non-letter characters
         input.addEventListener('keypress', function(e) {
+            if (suppressKeyboard) {
+                e.preventDefault();
+                return;
+            }
             const char = String.fromCharCode(e.which);
             if (!/[a-zA-Z]/.test(char)) {
                 e.preventDefault();
             }
         });
+
+        if (suppressKeyboard) {
+            input.addEventListener('focus', () => input.blur());
+        }
     });
 }
 
@@ -344,12 +387,13 @@ function getCurrentGuess() {
 
 function clearLetterInputs() {
     const inputs = document.querySelectorAll('.letter-input');
+    const suppressKeyboard = shouldSuppressNativeKeyboard();
     inputs.forEach(input => {
         input.value = '';
         input.classList.remove('filled');
         input.disabled = false;
     });
-    if (inputs.length > 0) {
+    if (!suppressKeyboard && inputs.length > 0) {
         inputs[0].focus();
     }
 }
@@ -517,6 +561,7 @@ async function newGame() {
         
         // Reset keyboard letter status tracking for new game
         window.letterStatusMap = {};
+        latestOccurrenceData = null;
         
         // Create letter inputs based on word length
         adjustLetterInputGrid(data.wordLength);
@@ -686,6 +731,11 @@ function addGuessToHistory(word, results) {
     
     // Update on-screen keyboard with letter feedback
     trackLetterStatus(results);
+
+    // Re-render occurrence table with current letter statuses so colors stay in sync
+    if (latestOccurrenceData) {
+        updateOccurrenceTable(latestOccurrenceData);
+    }
 }
 
 async function checkHealth() {
@@ -726,8 +776,10 @@ function initializeAnalytics(dictionaryMetrics) {
     
     // Update occurrence count by position table
     if (dictionaryMetrics.occurrenceCountByPosition) {
-        updateOccurrenceTable(dictionaryMetrics.occurrenceCountByPosition);
+        latestOccurrenceData = dictionaryMetrics.occurrenceCountByPosition;
+        updateOccurrenceTable(latestOccurrenceData);
     } else {
+        latestOccurrenceData = null;
         updateOccurrenceTable(null);
     }
     
@@ -775,7 +827,8 @@ function updateAnalytics(guessedWord, remainingCount, dictionaryMetrics) {
         
         // Update occurrence count by position table
         if (dictionaryMetrics.occurrenceCountByPosition) {
-            updateOccurrenceTable(dictionaryMetrics.occurrenceCountByPosition);
+            latestOccurrenceData = dictionaryMetrics.occurrenceCountByPosition;
+            updateOccurrenceTable(latestOccurrenceData);
         }
         
         // Update most frequent char by position table
@@ -882,6 +935,7 @@ function updateOccurrenceTable(occurrenceData) {
     
     // All 26 letters
     const allLetters = 'abcdefghijklmnopqrstuvwxyz'.split('');
+    const letterStatusMap = (window.letterStatusMap) ? window.letterStatusMap : {};
     
     allLetters.forEach((letter, idx) => {
         const row = document.createElement('tr');
@@ -891,10 +945,26 @@ function updateOccurrenceTable(occurrenceData) {
         const counts = occurrenceData[letter] || Array(numPositions).fill(0);
         const isEliminated = counts.every(count => count === 0);
         
-        // Letter cell - centered with reduced padding
+        // Letter cell - centered with reduced padding and status color
         const letterCell = document.createElement('td');
         letterCell.textContent = letter.toUpperCase();
-        letterCell.style.cssText = `padding: 6px 4px; font-weight: bold; text-align: center; ${isEliminated ? 'color: var(--text-secondary); opacity: 0.4; text-decoration: line-through;' : 'color: var(--text-primary);'}`;
+        letterCell.style.cssText = 'padding: 6px 4px; font-weight: bold; text-align: center;';
+
+        const status = letterStatusMap[letter.toUpperCase()];
+        if (status === 'G') {
+            letterCell.classList.add('letter-status-correct');
+        } else if (status === 'A') {
+            letterCell.classList.add('letter-status-present');
+        } else if (status === 'R' || status === 'X') {
+            letterCell.classList.add('letter-status-absent');
+        } else {
+            letterCell.classList.add('letter-status-unused');
+        }
+
+        if (isEliminated) {
+            letterCell.style.opacity = '0.6';
+            letterCell.style.textDecoration = 'line-through';
+        }
         row.appendChild(letterCell);
         
         // Position count cells
@@ -1959,6 +2029,7 @@ function matchDictionaryColumnHeights() {
 function adjustLetterInputGrid(wordLength) {
     const letterInputs = document.getElementById('letterInputs');
     letterInputs.innerHTML = '';
+    const suppressKeyboard = shouldSuppressNativeKeyboard();
 
     for (let i = 0; i < wordLength; i++) {
         const input = document.createElement('input');
@@ -1968,10 +2039,13 @@ function adjustLetterInputGrid(wordLength) {
         input.id = `letter${i}`;
         input.autocomplete = 'off';
         input.spellcheck = false;
-        input.inputMode = 'text';
-        input.autocapitalize = 'characters';
+        input.inputMode = suppressKeyboard ? 'none' : 'text';
+        input.autocapitalize = suppressKeyboard ? 'off' : 'characters';
         input.setAttribute('autocorrect', 'off');
         input.setAttribute('aria-label', `Letter ${i + 1} of ${wordLength}`);
+        if (suppressKeyboard) {
+            input.setAttribute('readonly', 'readonly');
+        }
         
         letterInputs.appendChild(input);
     }
@@ -1980,7 +2054,7 @@ function adjustLetterInputGrid(wordLength) {
     setupLetterInputs();
     
     // Focus the first input
-    if (wordLength > 0) {
+    if (!suppressKeyboard && wordLength > 0) {
         document.getElementById('letter0').focus();
     }
     
@@ -2004,9 +2078,9 @@ function initializeKeyboard() {
     // Initialize keyboard state tracking
     window.keyboardState = window.keyboardState || {};
     
-    // Create letter buttons for A-Z
-    for (let i = 0; i < 26; i++) {
-        const letter = String.fromCharCode(65 + i); // A=65 in ASCII
+    // Create letter buttons in QWERTY layout
+    const qwertyKeys = 'QWERTYUIOPASDFGHJKLZXCVBNM'.split('');
+    qwertyKeys.forEach(letter => {
         const button = document.createElement('button');
         button.type = 'button';
         button.className = 'keyboard-key key-unused';
@@ -2023,7 +2097,7 @@ function initializeKeyboard() {
         });
         
         keyboardContainer.appendChild(button);
-    }
+    });
     
     // Reset keyboard state for new game
     updateKeyboardDisplay({});
@@ -2031,20 +2105,23 @@ function initializeKeyboard() {
 
 function insertLetterFromKeyboard(letter) {
     const inputs = document.querySelectorAll('.letter-input');
+    const suppressKeyboard = shouldSuppressNativeKeyboard();
     let inserted = false;
     
     for (let i = 0; i < inputs.length; i++) {
         if (!inputs[i].value) {
             inputs[i].value = letter;
             inputs[i].classList.add('filled');
-            inputs[i].focus();
+            if (!suppressKeyboard) {
+                inputs[i].focus();
+            }
             inserted = true;
             break;
         }
     }
     
     // If all filled, focus last input
-    if (!inserted && inputs.length > 0) {
+    if (!inserted && inputs.length > 0 && !suppressKeyboard) {
         inputs[inputs.length - 1].focus();
     }
 }
@@ -2058,16 +2135,17 @@ function updateKeyboardDisplay(responseCounts) {
     const buttons = keyboardContainer.querySelectorAll('.keyboard-key');
     
     buttons.forEach(button => {
-        const letter = button.dataset.letter;
+        const letter = (button.dataset.letter || '').toUpperCase();
+        const status = responseCounts ? responseCounts[letter] : undefined;
         
         // Check the response status for this letter from all previous guesses
-        if (responseCounts[letter] === 'G') {
+        if (status === 'G') {
             // Green - correct position
             button.className = 'keyboard-key key-correct';
-        } else if (responseCounts[letter] === 'A') {
+        } else if (status === 'A') {
             // Amber/Yellow - wrong position
             button.className = 'keyboard-key key-present';
-        } else if (responseCounts[letter] === 'R' || responseCounts[letter] === 'X') {
+        } else if (status === 'R' || status === 'X') {
             // Red - absent or excess
             button.className = 'keyboard-key key-absent';
         } else {
@@ -2090,7 +2168,7 @@ function trackLetterStatus(results) {
     }
     
     results.forEach(result => {
-        const letter = result.letter;
+        const letter = (result.letter || '').toUpperCase();
         const status = result.status;
         
         const currentStatus = window.letterStatusMap[letter] || null;
@@ -2562,6 +2640,8 @@ async function runAutoplayGames(dictionaryId, strategy, wordLength, guessDelay =
             currentGameGuesses = [];
             gameEnded = false;
             helpUsedCount = 0;
+            window.letterStatusMap = {};
+            latestOccurrenceData = null;
             
             // Update UI elements
             document.getElementById('attempts').textContent = '0';
@@ -3200,12 +3280,19 @@ function initMobileNavigation() {
             closeMobileNav();
         }
     });
+    
+    // Initialize mobile view switcher for progressive disclosure
+    initMobileViewSwitcher();
 }
 
 function toggleMobileNav() {
     const hamburgerMenu = document.getElementById('hamburgerMenu');
     const appNav = document.getElementById('appNav');
     const overlay = document.getElementById('mobileNavOverlay');
+
+    if (!hamburgerMenu || !appNav || !overlay) {
+        return;
+    }
     
     const isOpen = appNav.classList.toggle('mobile-nav-open');
     hamburgerMenu.classList.toggle('active');
@@ -3226,10 +3313,93 @@ function closeMobileNav() {
     const hamburgerMenu = document.getElementById('hamburgerMenu');
     const appNav = document.getElementById('appNav');
     const overlay = document.getElementById('mobileNavOverlay');
+
+    if (!hamburgerMenu || !appNav || !overlay) {
+        return;
+    }
     
     appNav.classList.remove('mobile-nav-open');
     hamburgerMenu.classList.remove('active');
     overlay.classList.remove('active');
     hamburgerMenu.setAttribute('aria-expanded', 'false');
     document.body.style.overflow = '';
+}
+
+/* ========================================
+   MOBILE VIEW SWITCHING - PROGRESSIVE DISCLOSURE
+   ======================================== */
+
+function initMobileViewSwitcher() {
+    const navBtns = document.querySelectorAll('.mobile-nav-btn');
+    navBtns.forEach(btn => {
+        btn.addEventListener('click', function() {
+            const view = this.getAttribute('data-view');
+            switchMobileView(view);
+        });
+    });
+
+    handleMobilePanelMode();
+
+    window.addEventListener('resize', handleMobilePanelMode);
+}
+
+function handleMobilePanelMode() {
+    if (window.innerWidth > 768) {
+        showAllPanels();
+        return;
+    }
+
+    if (!currentMobileView) {
+        currentMobileView = 'game';
+    }
+
+    switchMobileView(currentMobileView);
+}
+
+function switchMobileView(view) {
+    if (window.innerWidth > 768) {
+        // Don't switch on desktop, show all panels
+        return;
+    }
+
+    currentMobileView = view;
+
+    // Update button states
+    document.querySelectorAll('.mobile-nav-btn').forEach(btn => {
+        const isActive = btn.getAttribute('data-view') === view;
+        btn.classList.toggle('active', isActive);
+        btn.setAttribute('aria-current', isActive ? 'page' : 'false');
+    });
+
+    // Remove mobile-active from ALL panels first
+    document.querySelector('.history-panel')?.classList.remove('mobile-active');
+    document.querySelector('.game-container')?.classList.remove('mobile-active');
+    document.querySelector('.info-panel')?.classList.remove('mobile-active');
+
+    // Then add mobile-active to the selected panel only
+    const panelMap = {
+        session: document.querySelector('.history-panel'),
+        game: document.querySelector('.game-container'),
+        assistant: document.querySelector('.info-panel')
+    };
+
+    if (panelMap[view]) {
+        panelMap[view].classList.add('mobile-active');
+    }
+}
+
+function showAllPanels() {
+    if (window.innerWidth <= 768) {
+        return;
+    }
+
+    // Remove mobile-active classes and show all panels normally
+    document.querySelectorAll('.history-panel, .game-container, .info-panel').forEach(panel => {
+        panel.classList.remove('mobile-active');
+    });
+
+    // Reset button states
+    document.querySelectorAll('.mobile-nav-btn').forEach(btn => {
+        btn.classList.remove('active');
+    });
 }

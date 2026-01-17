@@ -121,7 +121,7 @@ body {
 
 /* Hamburger Menu Button */
 .hamburger-menu {
-    display: none;
+    display: none !important;
     flex-direction: column;
     justify-content: space-around;
     width: 2.5rem;
@@ -133,6 +133,13 @@ body {
     padding: 0.5rem;
     z-index: 1001;
     transition: all 0.3s ease;
+}
+
+/* Show hamburger on mobile */
+@media (max-width: 768px) {
+    .hamburger-menu {
+        display: flex !important;
+    }
 }
 
 .hamburger-menu:hover {
@@ -204,6 +211,24 @@ body {
     max-width: 1600px;
     padding: var(--padding-md) var(--padding-xl);
     flex: 1;
+    padding-bottom: var(--padding-md);
+}
+
+/* Desktop: no special padding needed */
+@media (min-width: 769px) {
+    .app-main {
+        max-width: 1600px;
+        padding: var(--padding-md) var(--padding-xl);
+    }
+}
+
+/* Mobile: account for bottom nav and remove horizontal padding */
+@media (max-width: 768px) {
+    .app-main {
+        max-width: 100%;
+        padding: var(--padding-md) var(--padding-md);
+        padding-bottom: 80px;
+    }
 }
 
 .screen[hidden] {
@@ -936,7 +961,24 @@ summary:focus-visible {
     gap: var(--padding-lg);
     width: 100%;
     flex: 1;
-    align-items: start;
+    align-items: stretch;
+}
+
+/* Desktop: normal width */
+@media (min-width: 769px) {
+    .main-layout {
+        width: 100%;
+        max-width: 100%;
+        margin: 0;
+    }
+}
+
+/* Mobile: full viewport width with negative margin for edge-to-edge */
+@media (max-width: 768px) {
+    .main-layout {
+        width: 100%;
+        margin: 0;
+    }
 }
 
 
@@ -970,6 +1012,24 @@ summary:focus-visible {
             "game"
             "analytics"
             "history";
+    }
+}
+
+/* Desktop: show all panels normally */
+@media (min-width: 769px) {
+    .history-panel,
+    .game-container,
+    .info-panel {
+        display: flex !important;
+    }
+
+    .history-panel.mobile-active,
+    .game-container.mobile-active,
+    .info-panel.mobile-active {
+        display: flex !important;
+        width: auto !important;
+        padding: 0 !important;
+        animation: none !important;
     }
 }
 
@@ -1009,6 +1069,27 @@ summary:focus-visible {
         grid-template-columns: 1fr;
     }
 
+    .panel-header-row {
+        align-items: flex-start;
+    }
+
+    .panel-header-actions {
+        width: 100%;
+        margin-left: 0;
+        justify-content: flex-start;
+    }
+
+    .panel-header-actions-inline {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .panel-header-actions-inline .form-input,
+    .panel-header-actions-inline .btn {
+        width: 100%;
+        max-width: 100%;
+    }
+
     /* Prevent mobile browsers from zooming on form focus */
     select,
     input[type="number"],
@@ -1026,6 +1107,28 @@ summary:focus-visible {
 /* --- Panels --- */
 .history-panel, .game-container, .info-panel {
     min-height: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.panel-header-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--padding-sm);
+    flex-wrap: wrap;
+}
+
+.panel-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    margin-left: auto;
+}
+
+.panel-header-actions-inline {
+    flex-wrap: nowrap;
 }
 
 .info-panel {
@@ -1060,6 +1163,9 @@ h3 {
 
 /* --- Game Board --- */
 .game-container {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
 }
 
 .game-info {
@@ -1129,7 +1235,7 @@ h3 {
     width: 100%;
     align-items: center;
     margin-top: var(--padding-md);
-    max-height: 400px;
+    flex: 1;
     overflow-y: auto;
     padding-right: var(--padding-xs);
 }
@@ -2127,6 +2233,8 @@ select:focus {
 
 .keyboard-container {
     margin-top: var(--padding-md);
+    flex-shrink: 0;
+    margin-bottom: var(--padding-md);
 }
 
 .keyboard-container h4 {
@@ -2218,6 +2326,32 @@ select:focus {
     cursor: not-allowed;
 }
 
+/* Shared letter status styling (for tables and other indicators) */
+.letter-status-correct {
+    background: var(--correct);
+    color: #fff;
+    border-radius: 0.35rem;
+}
+
+.letter-status-present {
+    background: var(--present);
+    color: #fff;
+    border-radius: 0.35rem;
+}
+
+.letter-status-absent {
+    background: var(--absent);
+    color: #fff;
+    border-radius: 0.35rem;
+    opacity: 0.75;
+}
+
+.letter-status-unused {
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    border-radius: 0.35rem;
+}
+
 /* Responsive keyboard on mobile */
 @media (max-width: 768px) {
     .keyboard {
@@ -2245,5 +2379,160 @@ select:focus {
         min-width: 36px;
         min-height: 36px;
         font-size: 0.75rem;
+    }
+}
+
+/* ========================================
+   MOBILE VIEW SWITCHING - PROGRESSIVE DISCLOSURE
+   ======================================== */
+
+/* Hide all panels by default on mobile */
+@media (max-width: 768px) {
+    /* Container for panels with slide animation */
+    .main-layout {
+        grid-template-columns: 1fr;
+        gap: 0;
+        grid-template-areas: "game";
+        width: 100%;
+        margin: 0;
+    }
+
+    /* Hide ALL panels initially on mobile */
+    .history-panel,
+    .game-container,
+    .info-panel {
+        display: none !important;
+        width: 100% !important;
+    }
+
+    /* Show ONLY active panel on mobile */
+    .history-panel.mobile-active,
+    .game-container.mobile-active,
+    .info-panel.mobile-active {
+        display: flex !important;
+        width: 100% !important;
+        padding: var(--padding-md) !important;
+        animation: slideInFromRight 0.3s ease-out;
+    }
+}
+
+/* Slide animations for mobile panel transitions */
+@keyframes slideInFromRight {
+    from {
+        opacity: 0;
+        transform: translateX(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+@keyframes slideOutToLeft {
+    from {
+        opacity: 1;
+        transform: translateX(0);
+    }
+    to {
+        opacity: 0;
+        transform: translateX(-30px);
+    }
+}
+
+/* Mobile bottom navigation - ONLY show on mobile */
+.mobile-bottom-nav {
+    display: none !important;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: var(--bg-primary);
+    border-top: 2px solid var(--border-color);
+    justify-content: space-around;
+    align-items: center;
+    gap: 0;
+    padding: 0;
+    height: 60px;
+    z-index: 100;
+    box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.1);
+}
+
+@media (max-width: 768px) {
+    .mobile-bottom-nav {
+        display: flex !important;
+    }
+
+    /* Adjust main layout to account for bottom nav */
+    .app-main {
+        max-width: 100%;
+        padding: 0;
+        padding-bottom: 70px;
+    }
+}
+
+.mobile-nav-btn {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    padding: 8px;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    color: var(--text-secondary);
+    font-size: 0.75rem;
+    font-weight: 600;
+    width: 33.333%;
+    min-width: 0;
+    transition: all 0.2s ease;
+    border-top: 3px solid transparent;
+    text-transform: uppercase;
+    letter-spacing: var(--letter-spacing-wide);
+}
+
+.mobile-nav-btn:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.mobile-nav-btn:active {
+    background: rgba(59, 130, 246, 0.1);
+}
+
+.mobile-nav-btn.active {
+    color: var(--accent-primary);
+    border-top-color: var(--accent-primary);
+    background: rgba(59, 130, 246, 0.08);
+}
+
+.mobile-nav-icon {
+    font-size: 1.25rem;
+}
+
+.mobile-nav-label {
+    font-size: 0.65rem;
+}
+
+@media (max-width: 480px) {
+    .mobile-nav-btn {
+        gap: 2px;
+        font-size: 0.65rem;
+    }
+
+    .mobile-nav-icon {
+        font-size: 1rem;
+    }
+
+    .mobile-nav-label {
+        font-size: 0.55rem;
+    }
+
+    .mobile-bottom-nav {
+        height: 56px;
+    }
+
+    .app-main {
+        padding-bottom: 66px;
     }
 }
