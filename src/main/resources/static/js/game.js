@@ -29,16 +29,97 @@ async function checkAuthentication() {
         if (response.ok) {
             currentUser = await response.json();
             displayUserInfo();
+            updateUIForUserRole();
         } else {
             // Not authenticated, user can play anonymously
             currentUser = null;
             showGuestOptions();
+            updateUIForUserRole();
         }
     } catch (error) {
         // Not authenticated, user can play anonymously
         console.log('Playing as guest');
         currentUser = null;
         showGuestOptions();
+        updateUIForUserRole();
+    }
+}
+
+function updateUIForUserRole() {
+    // Hide/show features based on user role
+    const premiumFeatures = document.querySelectorAll('[data-role="premium"]');
+    const adminFeatures = document.querySelectorAll('[data-role="admin"]');
+    const userFeatures = document.querySelectorAll('[data-role="user"]');
+    
+    // Premium features (analytics, export, etc.)
+    premiumFeatures.forEach(element => {
+        element.style.display = (currentUser && (isUserPremium() || isUserAdmin())) ? 'block' : 'none';
+    });
+    
+    // Admin features
+    adminFeatures.forEach(element => {
+        element.style.display = (currentUser && isUserAdmin()) ? 'block' : 'none';
+    });
+    
+    // Registered user features (stats, history)
+    userFeatures.forEach(element => {
+        element.style.display = currentUser ? 'block' : 'none';
+    });
+    
+    // Add role indicators to UI
+    updateRoleIndicators();
+}
+
+function isUserAdmin() {
+    return currentUser && currentUser.roles && currentUser.roles.includes('ROLE_ADMIN');
+}
+
+function isUserPremium() {
+    return currentUser && currentUser.roles && currentUser.roles.includes('ROLE_PREMIUM');
+}
+
+function isUserRegistered() {
+    return currentUser && currentUser.roles && currentUser.roles.includes('ROLE_USER');
+}
+
+function getUserPrimaryRole() {
+    if (!currentUser) return 'Guest';
+    return currentUser.primaryRole || 'Guest';
+}
+
+function updateRoleIndicators() {
+    const roleIndicator = document.getElementById('roleIndicator');
+    const userRole = getUserPrimaryRole();
+    
+    if (roleIndicator) {
+        roleIndicator.textContent = userRole;
+        roleIndicator.className = 'role-badge role-' + userRole.toLowerCase().replace(' ', '-');
+    }
+    
+    // Update navigation with admin link
+    updateNavigation();
+}
+
+function updateNavigation() {
+    let adminLink = document.getElementById('adminLink');
+    
+    if (isUserAdmin()) {
+        if (!adminLink) {
+            adminLink = document.createElement('a');
+            adminLink.id = 'adminLink';
+            adminLink.href = '/admin.html';
+            adminLink.textContent = 'Admin Panel';
+            adminLink.style.marginLeft = '15px';
+            adminLink.style.color = '#dc3545';
+            adminLink.style.textDecoration = 'none';
+            
+            const userInfo = document.getElementById('userInfo');
+            if (userInfo) {
+                userInfo.appendChild(adminLink);
+            }
+        }
+    } else if (adminLink) {
+        adminLink.remove();
     }
 }
 

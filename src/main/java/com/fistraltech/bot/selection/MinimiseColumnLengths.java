@@ -115,13 +115,13 @@ public class MinimiseColumnLengths extends SelectionAlgo{
      * @return expected column length (lower is better)
      */
     private float calculateExpectedColumnLength(String candidateWord, Dictionary dictionary, WordEntropy analyser) {
-        Map<String, Set<String>> buckets = analyser.getResponseBuckets(candidateWord);
+        Map<Short, Set<String>> buckets = analyser.getResponseBuckets(candidateWord);
         int dictionarySize = dictionary.getWordCount();
         int wordLength = dictionary.getWordLength();
         
         float expectedLength = 0f;
         
-        for (Map.Entry<String, Set<String>> entry : buckets.entrySet()) {
+        for (Map.Entry<Short, Set<String>> entry : buckets.entrySet()) {
             Set<String> bucketWords = entry.getValue();
             int bucketSize = bucketWords.size();
             

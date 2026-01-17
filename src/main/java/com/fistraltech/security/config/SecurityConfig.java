@@ -1,17 +1,20 @@
 package com.fistraltech.security.config;
 
-import com.fistraltech.security.service.CustomOAuth2UserService;
-import com.fistraltech.security.service.CustomUserDetailsService;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 
+import com.fistraltech.security.service.CustomOAuth2UserService;
+import com.fistraltech.security.service.CustomUserDetailsService;
+
 @Configuration
 @EnableWebSecurity
+@EnableMethodSecurity(prePostEnabled = true)
 public class SecurityConfig {
     
     private final CustomUserDetailsService userDetailsService;
@@ -30,12 +33,19 @@ public class SecurityConfig {
                 .ignoringRequestMatchers("/api/**", "/h2-console/**")
             )
             .authorizeHttpRequests(auth -> auth
+                // Public endpoints
                 .requestMatchers("/", "/index.html", "/login.html", "/help.html", "/register", 
                                "/api/auth/register", "/api/auth/login", "/api/auth/check",
-                               "/api/game/**", "/api/dictionary/**",
                                "/css/**", "/js/**", "/h2-console/**", "/error", "/static/**").permitAll()
-                .requestMatchers("/api/auth/user").authenticated()
-                .anyRequest().permitAll()
+                // Guest access - basic game functionality
+                .requestMatchers("/api/wordai/games/**", "/api/wordai/dictionaries/**").permitAll()
+                // Authenticated user endpoints
+                .requestMatchers("/api/auth/user", "/api/wordai/stats/**").authenticated()
+                // Premium features
+                .requestMatchers("/api/wordai/analytics/**", "/api/wordai/export/**").hasAnyRole("PREMIUM", "ADMIN")
+                // Admin only endpoints
+                .requestMatchers("/api/wordai/admin/**", "/api/admin/**").hasRole("ADMIN")
+                .anyRequest().authenticated()
             )
             .formLogin(form -> form
                 .loginPage("/login.html")

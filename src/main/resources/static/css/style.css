@@ -1569,3 +1569,82 @@ select:focus {
     border-top: 1px solid var(--border-color);
     margin: 2rem 0;
 }
+
+/* Role Badge Styles */
+.role-badge {
+    display: inline-block;
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.75rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: capitalize;
+    letter-spacing: 0.05em;
+}
+
+.role-badge.role-administrator {
+    background: #dc3545;
+    color: white;
+}
+
+.role-badge.role-premium-player {
+    background: #28a745;
+    color: white;
+}
+
+.role-badge.role-registered-player {
+    background: #007bff;
+    color: white;
+}
+
+.role-badge.role-guest {
+    background: #6c757d;
+    color: white;
+}
+
+.role-badge.role-admin {
+    background: #dc3545;
+    color: white;
+}
+
+.role-badge.role-premium {
+    background: #28a745;
+    color: white;
+}
+
+.role-badge.role-user {
+    background: #007bff;
+    color: white;
+}
+
+/* Premium feature overlay */
+[data-role="premium"]:not([data-user-role*="premium"]):not([data-user-role*="admin"]) {
+    position: relative;
+}
+
+[data-role="premium"]:not([data-user-role*="premium"]):not([data-user-role*="admin"])::after {
+    content: '🔒 Premium';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.8);
+    color: #ffc107;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    font-weight: 600;
+    border-radius: inherit;
+    cursor: not-allowed;
+}
+
+/* Admin feature visibility */
+[data-role="admin"] {
+    border-left: 3px solid #dc3545;
+}
+
+/* User feature highlighting */
+[data-role="user"] {
+    border-left: 2px solid var(--accent-primary);
+}

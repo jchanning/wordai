@@ -28,6 +28,7 @@
             <div class="app-header-right">
                 <div class="user-info" id="userInfo" style="display: none;">
                     <span class="user-name" id="userName"></span>
+                    <span id="roleIndicator" class="role-badge" style="margin-left: 10px;"></span>
                     <button class="btn btn-secondary btn-sm" onclick="logout()">Logout</button>
                 </div>
                 <div id="status" class="status" style="display:none;" role="status" aria-live="polite" aria-atomic="true">
@@ -103,7 +104,7 @@
             
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
                 <h3 style="margin: 0;">Recent Games</h3>
-                <button class="btn btn-success" style="font-size: 0.75em; padding: 4px 10px;" onclick="exportSessionGamesToCSV()" title="Export all session games to CSV">Export CSV</button>
+                <button class="btn btn-success" style="font-size: 0.75em; padding: 4px 10px;" onclick="exportSessionGamesToCSV()" title="Export all session games to CSV" data-role="premium">Export CSV</button>
             </div>
             <div class="game-history" id="game-history">
                 <p class="empty-history-msg muted-center">No games played yet</p>
