@@ -13,6 +13,7 @@ let currentUser = null; // Track logged-in user
 window.addEventListener('DOMContentLoaded', function() {
     checkAuthentication();
     initRouter();
+    initMobileNavigation();
 
     // Create initial letter inputs with default word length
     adjustLetterInputGrid(5);
@@ -358,6 +359,12 @@ function disableLetterInputs() {
     inputs.forEach(input => {
         input.disabled = true;
     });
+    
+    // Also disable keyboard buttons when game ends
+    const keyboardButtons = document.querySelectorAll('.keyboard-key');
+    keyboardButtons.forEach(button => {
+        button.disabled = true;
+    });
 }
 
 let statusHideTimer = null;
@@ -507,6 +514,9 @@ async function newGame() {
         currentGameId = data.gameId;
         currentWordLength = data.wordLength; // Store the word length for this game
         gameEnded = false;
+        
+        // Reset keyboard letter status tracking for new game
+        window.letterStatusMap = {};
         
         // Create letter inputs based on word length
         adjustLetterInputGrid(data.wordLength);
@@ -673,6 +683,9 @@ function addGuessToHistory(word, results) {
     }
 
     historyDiv.appendChild(guessRow);
+    
+    // Update on-screen keyboard with letter feedback
+    trackLetterStatus(results);
 }
 
 async function checkHealth() {
@@ -1970,7 +1983,131 @@ function adjustLetterInputGrid(wordLength) {
     if (wordLength > 0) {
         document.getElementById('letter0').focus();
     }
+    
+    // Initialize keyboard after setting up inputs
+    initializeKeyboard();
 }
+
+/* ========================================
+   ON-SCREEN KEYBOARD FUNCTIONS
+   ======================================== */
+
+function initializeKeyboard() {
+    const keyboardContainer = document.getElementById('gameKeyboard');
+    if (!keyboardContainer) {
+        return;
+    }
+    
+    // Clear existing keyboard
+    keyboardContainer.innerHTML = '';
+    
+    // Initialize keyboard state tracking
+    window.keyboardState = window.keyboardState || {};
+    
+    // Create letter buttons for A-Z
+    for (let i = 0; i < 26; i++) {
+        const letter = String.fromCharCode(65 + i); // A=65 in ASCII
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'keyboard-key key-unused';
+        button.textContent = letter;
+        button.dataset.letter = letter;
+        button.setAttribute('aria-label', `Letter ${letter}`);
+        
+        // Handle click on keyboard
+        button.addEventListener('click', function(e) {
+            e.preventDefault();
+            if (!this.disabled && !gameEnded) {
+                insertLetterFromKeyboard(letter);
+            }
+        });
+        
+        keyboardContainer.appendChild(button);
+    }
+    
+    // Reset keyboard state for new game
+    updateKeyboardDisplay({});
+}
+
+function insertLetterFromKeyboard(letter) {
+    const inputs = document.querySelectorAll('.letter-input');
+    let inserted = false;
+    
+    for (let i = 0; i < inputs.length; i++) {
+        if (!inputs[i].value) {
+            inputs[i].value = letter;
+            inputs[i].classList.add('filled');
+            inputs[i].focus();
+            inserted = true;
+            break;
+        }
+    }
+    
+    // If all filled, focus last input
+    if (!inserted && inputs.length > 0) {
+        inputs[inputs.length - 1].focus();
+    }
+}
+
+function updateKeyboardDisplay(responseCounts) {
+    const keyboardContainer = document.getElementById('gameKeyboard');
+    if (!keyboardContainer) {
+        return;
+    }
+    
+    const buttons = keyboardContainer.querySelectorAll('.keyboard-key');
+    
+    buttons.forEach(button => {
+        const letter = button.dataset.letter;
+        
+        // Check the response status for this letter from all previous guesses
+        if (responseCounts[letter] === 'G') {
+            // Green - correct position
+            button.className = 'keyboard-key key-correct';
+        } else if (responseCounts[letter] === 'A') {
+            // Amber/Yellow - wrong position
+            button.className = 'keyboard-key key-present';
+        } else if (responseCounts[letter] === 'R' || responseCounts[letter] === 'X') {
+            // Red - absent or excess
+            button.className = 'keyboard-key key-absent';
+        } else {
+            // Not yet guessed
+            button.className = 'keyboard-key key-unused';
+        }
+    });
+}
+
+function trackLetterStatus(results) {
+    // Track best status for each letter across all guesses
+    // G (correct) > A (present) > R/X (absent) > unused
+    
+    if (!window.letterStatusMap) {
+        window.letterStatusMap = {};
+    }
+    
+    if (!results || !Array.isArray(results)) {
+        return;
+    }
+    
+    results.forEach(result => {
+        const letter = result.letter;
+        const status = result.status;
+        
+        const currentStatus = window.letterStatusMap[letter] || null;
+        
+        // Update to best status found
+        if (status === 'G') {
+            window.letterStatusMap[letter] = 'G';
+        } else if (status === 'A' && currentStatus !== 'G') {
+            window.letterStatusMap[letter] = 'A';
+        } else if ((status === 'R' || status === 'X') && !currentStatus) {
+            window.letterStatusMap[letter] = 'R';
+        }
+    });
+    
+    updateKeyboardDisplay(window.letterStatusMap);
+}
+
 
 // Session Viewer Functions
 function showSessionViewer() {
@@ -3018,4 +3155,81 @@ function downloadCSV(content, filename) {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+}
+
+// ========================================
+// MOBILE NAVIGATION
+// ========================================
+
+function initMobileNavigation() {
+    const hamburgerMenu = document.getElementById('hamburgerMenu');
+    const appNav = document.getElementById('appNav');
+    
+    if (!hamburgerMenu || !appNav) {
+        return;
+    }
+    
+    // Create overlay for mobile menu
+    const overlay = document.createElement('div');
+    overlay.className = 'mobile-nav-overlay';
+    overlay.id = 'mobileNavOverlay';
+    document.body.appendChild(overlay);
+    
+    // Toggle menu on hamburger click
+    hamburgerMenu.addEventListener('click', function(e) {
+        e.stopPropagation();
+        toggleMobileNav();
+    });
+    
+    // Close menu when overlay is clicked
+    overlay.addEventListener('click', function() {
+        closeMobileNav();
+    });
+    
+    // Close menu when a nav link is clicked
+    const navLinks = appNav.querySelectorAll('.nav-link');
+    navLinks.forEach(link => {
+        link.addEventListener('click', function() {
+            closeMobileNav();
+        });
+    });
+    
+    // Close menu on escape key
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape' && appNav.classList.contains('mobile-nav-open')) {
+            closeMobileNav();
+        }
+    });
+}
+
+function toggleMobileNav() {
+    const hamburgerMenu = document.getElementById('hamburgerMenu');
+    const appNav = document.getElementById('appNav');
+    const overlay = document.getElementById('mobileNavOverlay');
+    
+    const isOpen = appNav.classList.toggle('mobile-nav-open');
+    hamburgerMenu.classList.toggle('active');
+    overlay.classList.toggle('active');
+    
+    // Update aria-expanded
+    hamburgerMenu.setAttribute('aria-expanded', isOpen);
+    
+    // Prevent body scroll when menu is open
+    if (isOpen) {
+        document.body.style.overflow = 'hidden';
+    } else {
+        document.body.style.overflow = '';
+    }
+}
+
+function closeMobileNav() {
+    const hamburgerMenu = document.getElementById('hamburgerMenu');
+    const appNav = document.getElementById('appNav');
+    const overlay = document.getElementById('mobileNavOverlay');
+    
+    appNav.classList.remove('mobile-nav-open');
+    hamburgerMenu.classList.remove('active');
+    overlay.classList.remove('active');
+    hamburgerMenu.setAttribute('aria-expanded', 'false');
+    document.body.style.overflow = '';
 }
