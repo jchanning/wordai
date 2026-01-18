@@ -690,8 +690,10 @@ async function makeGuess() {
         return;
     }
 
-    if (word.length !== currentWordLength) {
-        showStatus(`Word must be ${currentWordLength} letters long!`, 'error');
+    // Validate word length against actual number of inputs (more reliable than currentWordLength)
+    const expectedLength = document.querySelectorAll('.letter-input').length;
+    if (word.length !== expectedLength) {
+        showStatus(`Word must be ${expectedLength} letters long!`, 'error');
         return;
     }
 
@@ -910,11 +912,11 @@ function updateColumnLengthsChart(columnLengths) {
     }
     
     const maxHeight = 26; // Maximum possible unique letters per position
-    const chartHeight = 120; // Height available for bars (reduced to leave space for labels below)
+    const chartHeight = 120; // Height available for bars within 180px container (padding leaves room for labels)
     
     columnLengths.forEach((count, index) => {
         const barContainer = document.createElement('div');
-        barContainer.style.cssText = 'flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px;';
+        barContainer.style.cssText = 'flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px;';
         
         // Create bar wrapper for positioning
         const barWrapper = document.createElement('div');
@@ -922,7 +924,7 @@ function updateColumnLengthsChart(columnLengths) {
         
         // Calculate bar height as percentage of max (26)
         const heightPercent = (count / maxHeight) * 100;
-        const barHeight = (heightPercent / 100) * chartHeight;
+        const barHeight = Math.min(chartHeight, (heightPercent / 100) * chartHeight);
         
         // Create the bar
         const bar = document.createElement('div');
@@ -940,13 +942,13 @@ function updateColumnLengthsChart(columnLengths) {
         
         // Add count label below bar
         const countLabel = document.createElement('div');
-        countLabel.style.cssText = 'font-size: 0.85em; font-weight: 700; color: var(--text-primary);';
+        countLabel.className = 'count-label';
         countLabel.textContent = count;
         barContainer.appendChild(countLabel);
         
         // Add position label below count
         const positionLabel = document.createElement('div');
-        positionLabel.style.cssText = 'font-size: 0.7em; color: var(--text-secondary); font-weight: bold;';
+        positionLabel.className = 'pos-label';
         positionLabel.textContent = `P${index + 1}`;
         barContainer.appendChild(positionLabel);
         
@@ -985,7 +987,8 @@ function updateOccurrenceTable(occurrenceData) {
     for (let i = 0; i < numPositions; i++) {
         const posHeader = document.createElement('th');
         posHeader.textContent = `P${i + 1}`;
-        posHeader.style.cssText = 'padding: 6px 4px; text-align: center; border-bottom: 2px solid var(--text-secondary); position: sticky; top: 0; background: var(--bg-primary); z-index: 1; font-weight: 600;';
+        posHeader.className = 'pos-label';
+        posHeader.style.cssText = 'padding: 6px 4px; text-align: center; border-bottom: 2px solid var(--text-secondary); position: sticky; top: 0; background: var(--bg-primary); z-index: 1;';
         headerRow.appendChild(posHeader);
     }
     
@@ -1080,7 +1083,7 @@ function updateMostFrequentTable(mostFrequentData) {
     mostFrequentData.forEach((letter, index) => {
         const cell = document.createElement('td');
         cell.textContent = letter ? letter.toUpperCase() : '-';
-        cell.style.cssText = `padding: 12px 8px; text-align: center; font-weight: bold; font-size: 1.2em; color: var(--correct-color); border: 1px solid rgba(255,255,255,0.1); background: rgba(106, 170, 100, 0.15);`;
+        cell.style.cssText = `padding: 12px 8px; text-align: center; font-weight: 700; font-size: 1em; color: var(--correct-color); border: 1px solid rgba(255,255,255,0.1); background: rgba(106, 170, 100, 0.15);`;
         row.appendChild(cell);
     });
     
@@ -1092,7 +1095,8 @@ function updateMostFrequentTable(mostFrequentData) {
     mostFrequentData.forEach((letter, index) => {
         const labelCell = document.createElement('td');
         labelCell.textContent = `P${index + 1}`;
-        labelCell.style.cssText = 'padding: 6px 4px; text-align: center; font-size: 0.85em; color: var(--text-secondary); font-weight: 600; border: 1px solid rgba(255,255,255,0.1);';
+        labelCell.className = 'pos-label';
+        labelCell.style.cssText = 'padding: 6px 4px; text-align: center; border: 1px solid rgba(255,255,255,0.1);';
         labelRow.appendChild(labelCell);
     });
     

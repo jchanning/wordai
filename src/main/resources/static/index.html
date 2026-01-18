@@ -32,7 +32,7 @@
             <div class="app-header-right">
                 <div class="user-info" id="userInfo" style="display: none;">
                     <span class="user-name" id="userName"></span>
-                    <span id="roleIndicator" class="role-badge" style="margin-left: 10px;"></span>
+                    <span id="roleIndicator" class="role-badge"></span>
                     <button class="btn btn-secondary btn-sm" onclick="logout()">Logout</button>
                 </div>
                 <a class="nav-link-signin" id="signInLink" href="/login.html" style="display: none;">Sign In</a>
@@ -58,8 +58,8 @@
             <div class="panel-header-row">
                 <h3>Session</h3>
                 <div class="panel-header-actions">
-                    <button class="btn btn-danger" onclick="newSession()" style="font-size: 0.875rem; padding: 0.5rem 1rem;">New</button>
-                    <button class="btn btn-secondary" onclick="showSessionViewer()" style="font-size: 0.875rem; padding: 0.5rem 1rem;">View</button>
+                    <button class="btn btn-success btn-md" onclick="newSession()">New</button>
+                    <button class="btn btn-secondary btn-md" onclick="showSessionViewer()">View</button>
                 </div>
             </div>
             <div class="win-rate-stat">
@@ -100,9 +100,9 @@
                 <p class="muted-center muted-small">No games played yet</p>
             </div>
             
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                <h3 style="margin: 0;">Recent Games</h3>
-                <button class="btn btn-success" style="font-size: 0.75em; padding: 4px 10px;" onclick="exportSessionGamesToCSV()" title="Export all session games to CSV" data-role="premium">Export CSV</button>
+            <div class="panel-header-row">
+                <h3>Recent Games</h3>
+                <button class="btn btn-success btn-xs" onclick="exportSessionGamesToCSV()" title="Export all session games to CSV" data-role="premium">Export CSV</button>
             </div>
             <div class="game-history" id="game-history">
                 <p class="empty-history-msg muted-center">No games played yet</p>
@@ -114,10 +114,10 @@
             <div class="panel-header-row">
                 <h3>Game</h3>
                 <div class="panel-header-actions">
-                    <select id="dictionarySelector" class="dictionary-selector" onchange="onDictionaryChange()" style="margin-right: 0.5rem;">
+                    <select id="dictionarySelector" class="dictionary-selector" onchange="onDictionaryChange()">
                         <option value="">Loading dictionaries...</option>
                     </select>
-                    <button class="btn btn-success" onclick="newGame()" style="font-size: 0.875rem; padding: 0.5rem 1rem;">New Game</button>
+                    <button class="btn btn-success btn-md" onclick="newGame()">New</button>
                 </div>
             </div>
             
@@ -147,7 +147,7 @@
             <div class="panel-header-row">
                 <h3>Assistant</h3>
                 <div class="panel-header-actions panel-header-actions-inline">
-                    <select id="strategySelector" class="form-input" style="width: auto; max-width: 200px; font-size: 0.875rem;" onchange="changeStrategy()">
+                    <select id="strategySelector" class="form-input strategy-selector" onchange="changeStrategy()">
                         <option value="RANDOM">Random Selection</option>
                         <option value="ENTROPY">Maximum Entropy</option>
                         <option value="MOST_COMMON_LETTERS">Most Common Letters</option>
@@ -156,7 +156,7 @@
                         <option value="BELLMAN_OPTIMAL">Bellman Optimal</option>
                         <option value="BELLMAN_FULL_DICTIONARY">Bellman Full Dictionary</option>
                     </select>
-                    <button id="getSuggestionBtn" class="btn btn-info" onclick="getSuggestion()" style="font-size: 0.875rem; padding: 0.5rem 1rem;">
+                    <button id="getSuggestionBtn" class="btn btn-info btn-md" onclick="getSuggestion()">
                         Assist <span id="helpCounter" class="help-counter-inline">3/3</span>
                     </button>
                 </div>
@@ -265,7 +265,7 @@
                 </div>
             </div>
             <div id="sessionViewer" class="session-viewer-panel" style="display:block;">
-                <div id="sessionContent" style="background: var(--bg-secondary); padding: 20px; border-radius: 12px;"></div>
+                <div id="sessionContent" class="panel"></div>
             </div>
         </section>
 
@@ -435,7 +435,7 @@
                     <div class="panel dictionary-panel dictionary-panel-grow">
                         <div class="dictionary-words-header">
                             <h3>Words</h3>
-                            <input type="text" id="dictionaryWordsSearch" class="form-input" placeholder="Search words..." oninput="filterDictionaryWords()" style="max-width: 250px;">
+                            <input type="text" id="dictionaryWordsSearch" class="form-input search-input-compact" placeholder="Search words..." oninput="filterDictionaryWords()">
                         </div>
                         <div class="dictionary-words-scroll" id="dictionaryWords">
                             <p class="muted-center muted-small">No dictionary selected.</p>
