@@ -38,7 +38,8 @@ public class SecurityConfig {
                                "/api/auth/register", "/api/auth/login", "/api/auth/check",
                                "/css/**", "/js/**", "/h2-console/**", "/error", "/static/**").permitAll()
                 // Guest access - basic game functionality
-                .requestMatchers("/api/wordai/games/**", "/api/wordai/dictionaries/**").permitAll()
+                .requestMatchers("/api/wordai/games/**", "/api/wordai/dictionaries/**", 
+                               "/api/wordai/algorithms").permitAll()
                 // Authenticated user endpoints
                 .requestMatchers("/api/auth/user", "/api/wordai/stats/**").authenticated()
                 // Premium features

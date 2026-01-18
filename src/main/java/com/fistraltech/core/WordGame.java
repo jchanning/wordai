@@ -71,6 +71,8 @@ public class WordGame {
             throw new InvalidWordException("Invalid target word, it is not in the dictionary");
         }
         this.targetWord = word;
+        Logger logger = Logger.getLogger(WordGame.class.getName());
+        logger.fine(() -> "The target word is: " + targetWord);
         this.wordLength = word.length();
         this.targetWordLetters = targetWord.toCharArray();
     }
@@ -79,7 +81,7 @@ public class WordGame {
     public void setRandomTargetWord() throws InvalidWordException {
         String randomTargetWord = gameWords.selectRandomWord();
         Logger logger = Logger.getLogger(WordGame.class.getName());
-        logger.info(() -> "The target word is: " + randomTargetWord);
+        logger.fine(() -> "The target word is: " + randomTargetWord);
         setTargetWord(randomTargetWord);
     }
 

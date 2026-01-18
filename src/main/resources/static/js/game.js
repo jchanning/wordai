@@ -24,6 +24,9 @@ window.addEventListener('DOMContentLoaded', function() {
     // Create initial letter inputs with default word length
     adjustLetterInputGrid(5);
     
+    // Load available algorithms and populate selectors
+    loadAlgorithms();
+    
     newGame();
     updateHistoryDisplay();
     updateStats();
@@ -49,6 +52,71 @@ async function checkAuthentication() {
         currentUser = null;
         showGuestOptions();
         updateUIForUserRole();
+    }
+}
+
+async function loadAlgorithms() {
+    try {
+        console.log('Loading algorithms from API...');
+        const response = await fetch(`${API_BASE}/algorithms`);
+        if (!response.ok) {
+            console.error('Failed to load algorithms, status:', response.status);
+            return;
+        }
+        
+        const algorithms = await response.json();
+        console.log('Loaded algorithms:', algorithms);
+        
+        // Update all strategy selectors
+        const selectors = [
+            'strategySelector',
+            'autoplayStrategy',
+            'analysisStrategy'
+        ];
+        
+        selectors.forEach(selectorId => {
+            const selector = document.getElementById(selectorId);
+            if (selector) {
+                const currentValue = selector.value; // Preserve current selection
+                
+                // Clear existing options
+                selector.innerHTML = '';
+                
+                // Add algorithm options (only include enabled algorithms)
+                algorithms.forEach(algo => {
+                    // Skip disabled algorithms - remove from UI entirely
+                    if (algo.enabled === 'false') {
+                        console.log('Skipping disabled algorithm:', algo.id);
+                        return;
+                    }
+                    
+                    console.log('Adding algorithm:', algo.id, 'to', selectorId);
+                    const option = document.createElement('option');
+                    option.value = algo.id;
+                    option.textContent = algo.name;
+                    option.title = algo.description;
+                    
+                    selector.appendChild(option);
+                });
+                
+                // Restore selection if still valid and enabled
+                if (currentValue) {
+                    const option = Array.from(selector.options).find(opt => opt.value === currentValue);
+                    if (option && !option.disabled) {
+                        selector.value = currentValue;
+                    } else {
+                        // Select first enabled option
+                        const firstEnabled = Array.from(selector.options).find(opt => !opt.disabled);
+                        if (firstEnabled) {
+                            selector.value = firstEnabled.value;
+                        }
+                    }
+                }
+            }
+        });
+        
+    } catch (error) {
+        console.error('Error loading algorithms:', error);
     }
 }
 
@@ -1391,6 +1459,10 @@ function getStrategyDisplayName(strategy) {
             return 'Minimise Column Lengths';
         case 'DICTIONARY_REDUCTION':
             return 'Dictionary Reduction';
+        case 'BELLMAN_OPTIMAL':
+            return 'Bellman Optimal';
+        case 'BELLMAN_FULL_DICTIONARY':
+            return 'Bellman Full Dictionary';
         default:
             return strategy;
     }

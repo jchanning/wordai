@@ -288,6 +288,10 @@ public class WordGameService {
                 return new com.fistraltech.bot.selection.MinimiseColumnLengths(dictionary);
             case "DICTIONARY_REDUCTION":
                 return new com.fistraltech.bot.selection.SelectMaximumDictionaryReduction(dictionary);
+            case "BELLMAN_OPTIMAL":
+                return new com.fistraltech.bot.selection.SelectBellmanOptimal(dictionary);
+            case "BELLMAN_FULL_DICTIONARY":
+                return new com.fistraltech.bot.selection.SelectBellmanFullDictionary(dictionary);
             case "RANDOM":
             default:
                 return new com.fistraltech.bot.selection.SelectRandom(dictionary);

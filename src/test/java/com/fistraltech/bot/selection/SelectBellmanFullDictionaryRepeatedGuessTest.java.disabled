@@ -1,0 +1,197 @@
+package com.fistraltech.bot.selection;
+
+import com.fistraltech.bot.WordGamePlayer;
+import com.fistraltech.bot.filter.Filter;
+import com.fistraltech.core.Config;
+import com.fistraltech.core.Dictionary;
+import com.fistraltech.core.InvalidWordException;
+import com.fistraltech.core.Response;
+import com.fistraltech.core.WordGame;
+import com.fistraltech.util.ConfigManager;
+import org.junit.jupiter.api.Test;
+
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
+import static org.junit.jupiter.api.Assertions.*;
+
+/**
+ * Tests for the specific repeated guess failures observed in analysis.
+ * Each test reproduces an exact failure scenario from the CSV output.
+ */
+class SelectBellmanFullDictionaryRepeatedGuessTest {
+
+    @Test
+    void iteration430_NICHE_shouldNotRepeatREUSE() throws InvalidWordException {
+        // Target: NICHE
+        // Expected sequence from CSV: RAISE,LINGO,REUSE,REUSE,REUSE,REUSE (LOST)
+        // The algorithm should NOT select REUSE 4 times in a row
+        
+        Dictionary dictionary = ConfigManager.getInstance().createDictionary();
+        Config config = ConfigManager.getInstance().createGameConfig();
+        SelectBellmanFullDictionary algo = new SelectBellmanFullDictionary(dictionary);
+        WordGame game = new WordGame(dictionary, config);
+        game.setTargetWord("NICHE");
+        
+        List<String> guesses = new ArrayList<>();
+        Set<String> uniqueGuesses = new HashSet<>();
+        Filter filter = new Filter(config);
+        
+        for (int i = 0; i < 6; i++) {
+            Dictionary remaining = dictionary.applyFilter(filter);
+            Response lastResponse = game.getGuesses().isEmpty() ? new Response("") : game.getGuesses().get(game.getGuesses().size() - 1);
+            
+            String guess = algo.selectWord(lastResponse, remaining);
+            guesses.add(guess);
+            uniqueGuesses.add(guess);
+            
+            System.out.println("Guess " + (i+1) + ": " + guess + ", Remaining: " + remaining.getWordCount());
+            
+            Response response = game.guess(guess);
+            filter.applyResponse(response, guess);
+            
+            if (response.isAllGreen()) {
+                break;
+            }
+        }
+        
+        System.out.println("Iteration 430 (NICHE) guesses: " + String.join(",", guesses));
+        
+        // Assert all guesses are unique
+        assertEquals(guesses.size(), uniqueGuesses.size(), 
+            "All guesses should be unique. Guesses: " + guesses);
+        
+        // Assert we don't see REUSE repeated
+        long reuseCount = guesses.stream().filter(g -> g.equals("REUSE")).count();
+        assertTrue(reuseCount <= 1, "REUSE should not be selected more than once. Count: " + reuseCount);
+    }
+
+    @Test
+    void iteration643_PALER_shouldNotRepeatRIDER() throws InvalidWordException {
+        // Target: PALER
+        // Expected sequence from CSV: RAISE,EMPTY,RIDER,RIDER,RIDER,RIDER (LOST)
+        
+        Dictionary dictionary = ConfigManager.getInstance().createDictionary();
+        Config config = ConfigManager.getInstance().createGameConfig();
+        SelectBellmanFullDictionary algo = new SelectBellmanFullDictionary(dictionary);
+        WordGame game = new WordGame(dictionary, config);
+        game.setTargetWord("PALER");
+        
+        List<String> guesses = new ArrayList<>();
+        Set<String> uniqueGuesses = new HashSet<>();
+        Filter filter = new Filter(config);
+        
+        for (int i = 0; i < 6; i++) {
+            Dictionary remaining = dictionary.applyFilter(filter);
+            Response lastResponse = game.getGuesses().isEmpty() ? new Response("") : game.getGuesses().get(game.getGuesses().size() - 1);
+            
+            String guess = algo.selectWord(lastResponse, remaining);
+            guesses.add(guess);
+            uniqueGuesses.add(guess);
+            
+            System.out.println("Guess " + (i+1) + ": " + guess + ", Remaining: " + remaining.getWordCount());
+            
+            Response response = game.guess(guess);
+            filter.applyResponse(response, guess);
+            
+            if (response.isAllGreen()) {
+                break;
+            }
+        }
+        
+        System.out.println("Iteration 643 (PALER) guesses: " + String.join(",", guesses));
+        
+        assertEquals(guesses.size(), uniqueGuesses.size(), 
+            "All guesses should be unique. Guesses: " + guesses);
+        
+        long riderCount = guesses.stream().filter(g -> g.equals("RIDER")).count();
+        assertTrue(riderCount <= 1, "RIDER should not be selected more than once. Count: " + riderCount);
+    }
+
+    @Test
+    void iteration1861_VOCAL_shouldNotRepeatFOLLY() throws InvalidWordException {
+        // Target: VOCAL
+        // Expected sequence from CSV: RAISE,CLOUT,FOLLY,FOLLY,FOLLY,FOLLY (LOST)
+        
+        Dictionary dictionary = ConfigManager.getInstance().createDictionary();
+        Config config = ConfigManager.getInstance().createGameConfig();
+        SelectBellmanFullDictionary algo = new SelectBellmanFullDictionary(dictionary);
+        WordGame game = new WordGame(dictionary, config);
+        game.setTargetWord("VOCAL");
+        
+        List<String> guesses = new ArrayList<>();
+        Set<String> uniqueGuesses = new HashSet<>();
+        Filter filter = new Filter(config);
+        
+        for (int i = 0; i < 6; i++) {
+            Dictionary remaining = dictionary.applyFilter(filter);
+            Response lastResponse = game.getGuesses().isEmpty() ? new Response("") : game.getGuesses().get(game.getGuesses().size() - 1);
+            
+            String guess = algo.selectWord(lastResponse, remaining);
+            guesses.add(guess);
+            uniqueGuesses.add(guess);
+            
+            System.out.println("Guess " + (i+1) + ": " + guess + ", Remaining: " + remaining.getWordCount());
+            
+            Response response = game.guess(guess);
+            filter.applyResponse(response, guess);
+            
+            if (response.isAllGreen()) {
+                break;
+            }
+        }
+        
+        System.out.println("Iteration 1861 (VOCAL) guesses: " + String.join(",", guesses));
+        
+        assertEquals(guesses.size(), uniqueGuesses.size(), 
+            "All guesses should be unique. Guesses: " + guesses);
+        
+        long follyCount = guesses.stream().filter(g -> g.equals("FOLLY")).count();
+        assertTrue(follyCount <= 1, "FOLLY should not be selected more than once. Count: " + follyCount);
+    }
+
+    @Test
+    void iteration1849_AROSE_shouldNotRepeatREUSEFiveTimes() throws InvalidWordException {
+        // Target: AROSE
+        // Expected sequence from CSV: RAISE,REUSE,REUSE,REUSE,REUSE,REUSE (LOST)
+        // This is particularly egregious - REUSE selected 5 times!
+        
+        Dictionary dictionary = ConfigManager.getInstance().createDictionary();
+        Config config = ConfigManager.getInstance().createGameConfig();
+        SelectBellmanFullDictionary algo = new SelectBellmanFullDictionary(dictionary);
+        WordGame game = new WordGame(dictionary, config);
+        game.setTargetWord("AROSE");
+        
+        List<String> guesses = new ArrayList<>();
+        Set<String> uniqueGuesses = new HashSet<>();
+        Filter filter = new Filter(config);
+        
+        for (int i = 0; i < 6; i++) {
+            Dictionary remaining = dictionary.applyFilter(filter);
+            Response lastResponse = game.getGuesses().isEmpty() ? new Response("") : game.getGuesses().get(game.getGuesses().size() - 1);
+            
+            String guess = algo.selectWord(lastResponse, remaining);
+            guesses.add(guess);
+            uniqueGuesses.add(guess);
+            
+            System.out.println("Guess " + (i+1) + ": " + guess + ", Remaining: " + remaining.getWordCount());
+            
+            Response response = game.guess(guess);
+            filter.applyResponse(response, guess);
+            
+            if (response.isAllGreen()) {
+                break;
+            }
+        }
+        
+        System.out.println("Iteration 1849 (AROSE) guesses: " + String.join(",", guesses));
+        
+        assertEquals(guesses.size(), uniqueGuesses.size(), 
+            "All guesses should be unique. Guesses: " + guesses);
+        
+        long reuseCount = guesses.stream().filter(g -> g.equals("REUSE")).count();
+        assertTrue(reuseCount <= 1, "REUSE should not be selected more than once. Count: " + reuseCount);
+    }
+}

@@ -24,6 +24,7 @@ import com.fistraltech.analysis.WordEntropy;
 import com.fistraltech.core.Dictionary;
 import com.fistraltech.core.InvalidWordException;
 import com.fistraltech.core.Response;
+import com.fistraltech.server.AlgorithmFeatureService;
 import com.fistraltech.server.DictionaryService;
 import com.fistraltech.server.WordGameService;
 import com.fistraltech.server.dto.CreateGameRequest;
@@ -92,6 +93,9 @@ public class WordGameController {
     
     @Autowired
     private WordGameService gameService;
+    
+    @Autowired
+    private AlgorithmFeatureService algorithmFeatureService;
     
     /**
      * Health check endpoint
@@ -466,6 +470,15 @@ public class WordGameController {
                 return ResponseEntity.badRequest().body(error);
             }
             
+            // Validate that the algorithm is enabled
+            if (!algorithmFeatureService.isAlgorithmEnabled(strategy)) {
+                Map<String, String> error = new HashMap<>();
+                error.put("error", "Algorithm disabled");
+                error.put("message", "Algorithm '" + strategy + "' is not enabled on this server");
+                logger.warning("Attempt to use disabled algorithm '" + strategy + "' for game " + gameId);
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).body(error);
+            }
+            
             session.setSelectedStrategy(strategy);
             
             Map<String, String> response = new HashMap<>();
@@ -531,6 +544,10 @@ public class WordGameController {
             "Reduces possible letters at each position"));
         algorithms.add(createAlgorithmInfo("DICTIONARY_REDUCTION", "Dictionary Reduction", 
             "Maximizes expected reduction in remaining possibilities"));
+        algorithms.add(createAlgorithmInfo("BELLMAN_OPTIMAL", "Bellman Optimal", 
+            "Minimizes the expected remaining dictionary size after each guess"));
+        algorithms.add(createAlgorithmInfo("BELLMAN_FULL_DICTIONARY", "Bellman Full Dictionary", 
+            "Uses full dictionary guesses (including known incorrect) to reduce remaining possibilities"));
         
         return ResponseEntity.ok(algorithms);
     }
@@ -540,6 +557,8 @@ public class WordGameController {
         info.put("id", id);
         info.put("name", name);
         info.put("description", description);
+        boolean enabled = algorithmFeatureService.isAlgorithmEnabled(id);
+        info.put("enabled", String.valueOf(enabled));
         return info;
     }
 }

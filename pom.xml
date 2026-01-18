@@ -42,6 +42,7 @@
     </profiles>
 
     <dependencies>
+
         <!-- Spring Boot Starter Web -->
         <dependency>
             <groupId>org.springframework.boot</groupId>

@@ -55,6 +55,10 @@ public class GameSession {
     // Cached WordEntropy from DictionaryService for fast entropy-based suggestions
     private WordEntropy cachedWordEntropy;
     
+    // Cached algorithm instance to maintain state (e.g., guessedWords) across suggestions
+    private SelectionAlgo cachedAlgorithm;
+    private String cachedAlgorithmStrategy;
+    
     public GameSession(String gameId, WordGame wordGame, Config config, Dictionary dictionary) {
         this.gameId = gameId;
         this.wordGame = wordGame;
@@ -174,6 +178,12 @@ public class GameSession {
                 case "DICTIONARY_REDUCTION":
                     logger.fine(() -> "Using cached WordEntropy for first DICTIONARY_REDUCTION suggestion (full dict)");
                     return cachedWordEntropy.getWordWithMaximumReduction(filteredDictionary.getMasterSetOfWords());
+                case "BELLMAN_OPTIMAL":
+                    logger.fine(() -> "Using cached WordEntropy for first BELLMAN_OPTIMAL suggestion (full dict)");
+                    return cachedWordEntropy.getWordWithMaximumReduction(filteredDictionary.getMasterSetOfWords());
+                case "BELLMAN_FULL_DICTIONARY":
+                    logger.fine(() -> "Using cached WordEntropy for first BELLMAN_FULL_DICTIONARY suggestion (full dict)");
+                    return cachedWordEntropy.getWordWithMaximumReduction(filteredDictionary.getMasterSetOfWords());
                     
                 case "MINIMISE_COLUMN_LENGTHS":
                     logger.fine(() -> "Using cached WordEntropy for first MINIMISE_COLUMN_LENGTHS suggestion (full dict)");
@@ -198,6 +208,15 @@ public class GameSession {
                 logger.fine(() -> "Recomputing dictionary reduction for dictionary of " + filteredDictionary.getWordCount() + " words");
                 algo = new SelectMaximumDictionaryReduction(filteredDictionary);
                 break;
+            case "BELLMAN_OPTIMAL":
+                logger.fine(() -> "Recomputing Bellman optimal selection for dictionary of " + filteredDictionary.getWordCount() + " words");
+                algo = new com.fistraltech.bot.selection.SelectBellmanOptimal(filteredDictionary);
+                break;
+            case "BELLMAN_FULL_DICTIONARY":
+                logger.fine(() -> "Computing Bellman full-dictionary selection for dictionary of " + filteredDictionary.getWordCount() + " words");
+                com.fistraltech.bot.selection.SelectBellmanFullDictionary bellmanAlgo = 
+                    (com.fistraltech.bot.selection.SelectBellmanFullDictionary) getCachedOrCreateAlgorithm(strategyUpper, originalDictionary, filteredDictionary);
+                return bellmanAlgo.selectWord(filteredDictionary);
             case "RANDOM":
             default:
                 algo = new SelectRandom(filteredDictionary);
@@ -207,5 +226,42 @@ public class GameSession {
         // Create an empty response for the first guess
         Response emptyResponse = new Response("");
         return algo.selectWord(emptyResponse);
+    }
+    
+    /**
+     * Gets or creates a cached algorithm instance for strategies that maintain state.
+     * 
+     * <p>Algorithms like SelectBellmanFullDictionary track guessedWords across calls.
+     * Creating a new instance per suggestion would reset this state, allowing duplicates.
+     * This method caches the instance for the game's lifetime.
+     * 
+     * @param strategy the strategy identifier
+     * @param fullDict the full dictionary (for algorithms that use it)
+     * @param remainingDict the remaining dictionary after filtering
+     * @return the cached or newly created algorithm instance
+     */
+    private SelectionAlgo getCachedOrCreateAlgorithm(String strategy, Dictionary fullDict, Dictionary remainingDict) {
+        // Check if we can reuse the cached instance
+        if (cachedAlgorithm != null && strategy.equals(cachedAlgorithmStrategy)) {
+            logger.fine(() -> "Reusing cached algorithm instance for " + strategy);
+            return cachedAlgorithm;
+        }
+        
+        // Create new instance and cache it
+        logger.fine(() -> "Creating new algorithm instance for " + strategy);
+        switch (strategy) {
+            case "BELLMAN_FULL_DICTIONARY":
+                cachedAlgorithm = new com.fistraltech.bot.selection.SelectBellmanFullDictionary(fullDict);
+                break;
+            case "BELLMAN_OPTIMAL":
+                cachedAlgorithm = new com.fistraltech.bot.selection.SelectBellmanOptimal(remainingDict);
+                break;
+            default:
+                // For other strategies, don't cache (they don't maintain state)
+                return null;
+        }
+        
+        cachedAlgorithmStrategy = strategy;
+        return cachedAlgorithm;
     }
 }
