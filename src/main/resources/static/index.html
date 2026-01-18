@@ -27,7 +27,6 @@
                     <a class="nav-link" href="#/dictionary" data-nav="dictionary">Dictionary</a>
                     <a class="nav-link" href="#/admin" data-nav="admin">Admin</a>
                     <a class="nav-link" href="#/help" data-nav="help">Help</a>
-                    <a class="nav-link nav-link-signin" id="signInLink" href="/login.html" style="display: none;">Sign In</a>
                 </nav>
             </div>
             <div class="app-header-right">
@@ -36,13 +35,7 @@
                     <span id="roleIndicator" class="role-badge" style="margin-left: 10px;"></span>
                     <button class="btn btn-secondary btn-sm" onclick="logout()">Logout</button>
                 </div>
-                <div id="status" class="status" style="display:none;" role="status" aria-live="polite" aria-atomic="true">
-                    <span id="statusMessage" class="status-message"></span>
-                    <button type="button" id="statusDismiss" class="status-dismiss" aria-label="Dismiss status" onclick="hideStatus()">×</button>
-                </div>
-                <select id="dictionarySelector" class="dictionary-selector" onchange="onDictionaryChange()">
-                    <option value="">Loading dictionaries...</option>
-                </select>
+                <a class="nav-link-signin" id="signInLink" href="/login.html" style="display: none;">Sign In</a>
             </div>
         </div>
     </div>
@@ -121,6 +114,9 @@
             <div class="panel-header-row">
                 <h3>Game</h3>
                 <div class="panel-header-actions">
+                    <select id="dictionarySelector" class="dictionary-selector" onchange="onDictionaryChange()" style="margin-right: 0.5rem;">
+                        <option value="">Loading dictionaries...</option>
+                    </select>
                     <button class="btn btn-success" onclick="newGame()" style="font-size: 0.875rem; padding: 0.5rem 1rem;">New Game</button>
                 </div>
             </div>
@@ -406,11 +402,13 @@
             </div>
         </section>
 
-        <!-- Screen: Dictionary Analysis (placeholder) -->
+        <!-- Screen: Dictionary Analysis -->
         <section id="screen-dictionary" class="screen" hidden>
             <div class="screen-toolbar">
                 <div class="screen-toolbar-left">
-                    <h2 class="screen-title">Standard (5 Letters)</h2>
+                    <select id="dictionarySelectorDict" class="dictionary-selector-title" onchange="onDictionaryChange()">
+                        <option value="">Loading dictionaries...</option>
+                    </select>
                 </div>
             </div>
 
@@ -482,6 +480,13 @@
             </div>
         </section>
     </main>
+
+    <div class="status-bar-shell">
+        <div id="status" class="status" role="status" aria-live="polite" aria-atomic="true">
+            <span id="statusMessage" class="status-message"></span>
+            <button type="button" id="statusDismiss" class="status-dismiss" aria-label="Clear message" onclick="hideStatus()">×</button>
+        </div>
+    </div>
     <script src="js/game.js?v=20260118153700"></script>
 </body>
 </html>

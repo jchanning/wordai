@@ -206,6 +206,29 @@ body {
     border-color: rgba(59, 130, 246, 0.6);
 }
 
+.nav-link-signin {
+    text-decoration: none;
+    color: var(--accent-primary);
+    padding: 0.55rem 0.8rem;
+    border-radius: 0.5rem;
+    border: 1px solid var(--accent-primary);
+    font-weight: 700;
+    font-size: 0.9rem;
+    background: transparent;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 44px;
+    touch-action: manipulation;
+    cursor: pointer;
+}
+
+.nav-link-signin:hover {
+    background: rgba(59, 130, 246, 0.15);
+    color: var(--accent-hover);
+    border-color: var(--accent-hover);
+}
+
 .app-main {
     width: 100%;
     max-width: 1600px;
@@ -278,6 +301,51 @@ body {
     font-size: 1.25rem;
     font-weight: 800;
     letter-spacing: var(--letter-spacing-tight);
+}
+
+.dictionary-selector {
+    appearance: none;
+    padding: 0.5rem 0.75rem;
+    background-color: var(--bg-secondary);
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+    border-radius: 0.5rem;
+    font-weight: 600;
+    font-size: 0.9rem;
+    cursor: pointer;
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right 0.5rem center;
+    background-size: 1.25rem;
+    padding-right: 2rem;
+}
+
+.dictionary-selector:hover {
+    border-color: var(--accent-primary);
+}
+
+.dictionary-selector-title {
+    appearance: none;
+    padding: 0.55rem 0.8rem;
+    background-color: rgba(51, 65, 85, 0.25);
+    color: var(--text-primary);
+    border: 1px solid transparent;
+    border-radius: 0.5rem;
+    font-weight: 800;
+    font-size: 1.25rem;
+    letter-spacing: var(--letter-spacing-tight);
+    cursor: pointer;
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right 0.5rem center;
+    background-size: 1.5rem;
+    padding-right: 2.5rem;
+}
+
+.dictionary-selector-title:hover {
+    color: var(--text-primary);
+    border-color: var(--border-color);
+    background-color: rgba(51, 65, 85, 0.45);
 }
 
 .screen-subtitle {
@@ -1414,31 +1482,39 @@ select:focus {
 }
 
 /* --- Status Messages --- */
+.status-bar-shell {
+    width: 100%;
+    background: var(--bg-secondary);
+    border-top: 1px solid var(--border-color);
+    box-shadow: 0 -6px 12px -6px rgb(0 0 0 / 0.35);
+    display: flex;
+    justify-content: center;
+}
+
 .status {
-    position: fixed;
-    top: 70px;
-    right: 1rem;
-    max-width: 400px;
+    position: static;
+    width: 100%;
+    max-width: 1600px;
+    margin: 0 auto;
     padding: var(--padding-md);
-    border-radius: 0.5rem;
+    border-radius: 0;
     font-weight: 600;
-    animation: slideIn 0.3s ease-out;
     font-size: 0.95rem;
     display: flex;
     align-items: center;
     gap: var(--padding-sm);
-    z-index: 101;
-    box-shadow: var(--shadow-lg);
-    border: 1px solid transparent;
+    box-shadow: none;
+    border: none;
+    background: transparent;
 }
 
 @keyframes slideIn {
     from {
-        transform: translateX(420px);
+        transform: translateY(16px);
         opacity: 0;
     }
     to {
-        transform: translateX(0);
+        transform: translateY(0);
         opacity: 1;
     }
 }
@@ -1993,22 +2069,14 @@ select:focus {
         padding: 0.2rem 0.35rem;
     }
     
-    /* Smaller dictionary selector on mobile */
-    .dictionary-selector {
-        font-size: 0.85rem;
-        padding: 0.5rem 0.75rem;
-        flex-grow: 1;
-        max-width: 150px;
-    }
-    
-    /* Status message positioning for mobile */
+    /* Status message layout for mobile */
     .status {
-        position: fixed;
-        top: 65px;
-        left: var(--padding-sm);
-        right: var(--padding-sm);
-        max-width: none;
+        position: static;
+        width: 100%;
+        max-width: 100%;
+        padding: var(--padding-sm);
         font-size: 0.875rem;
+        margin: 0 auto;
     }
     
     /* Show hamburger menu on mobile */
@@ -2138,10 +2206,6 @@ select:focus {
         width: 100%;
     }
     
-    .dictionary-selector {
-        width: 100%;
-    }
-    
     .user-info {
         flex-wrap: wrap;
         font-size: 0.875rem;
@@ -2220,12 +2284,12 @@ select:focus {
     
     /* Compact status message on small screens */
     .status {
-        top: 60px;
-        left: var(--padding-xs);
-        right: var(--padding-xs);
-        max-width: none;
+        position: static;
+        width: 100%;
+        max-width: 100%;
         font-size: 0.85rem;
         padding: var(--padding-sm);
+        margin: 0 auto;
     }
     
     .user-info {

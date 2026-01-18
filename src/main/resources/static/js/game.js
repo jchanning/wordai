@@ -269,14 +269,18 @@ function setView(view) {
         }
     });
 
-    // The global dictionary selector is used for play + dictionary exploration.
-    const dictSelector = document.getElementById('dictionarySelector');
-    if (dictSelector) {
-        dictSelector.style.display = (view === 'play' || view === 'dictionary') ? '' : 'none';
-    }
-
-    if (view === 'dictionary') {
+    // Ensure dictionary selectors are populated when switching to relevant views
+    if (view === 'dictionary' && availableDictionaries.length > 0) {
+        const selectorDict = document.getElementById('dictionarySelectorDict');
+        if (selectorDict && selectorDict.options.length === 0) {
+            populateDictionarySelector();
+        }
         refreshDictionaryScreen();
+    } else if (view === 'play' && availableDictionaries.length > 0) {
+        const selector = document.getElementById('dictionarySelector');
+        if (selector && selector.options.length === 0) {
+            populateDictionarySelector();
+        }
     }
     
     if (view === 'help') {
@@ -541,15 +545,9 @@ function showStatus(message, type = 'info', options = {}) {
         }
     };
 
-    const autoHideMs = Number.isFinite(options.autoHideMs) ? options.autoHideMs : defaultAutoHideMs(type);
+    const autoHideMs = Number.isFinite(options.autoHideMs) ? options.autoHideMs : 0;
     if (autoHideMs > 0) {
-        statusHideTimer = setTimeout(() => {
-            if (isStatusInteracting(statusDiv)) {
-                statusHideTimer = setTimeout(() => hideStatus(), 1500);
-                return;
-            }
-            hideStatus();
-        }, autoHideMs);
+        statusHideTimer = setTimeout(() => hideStatus(), autoHideMs);
     }
 }
 
@@ -566,7 +564,8 @@ function hideStatus() {
     if (msgEl) {
         msgEl.textContent = '';
     }
-    statusDiv.style.display = 'none';
+    statusDiv.className = 'status';
+    statusDiv.style.display = 'flex';
 }
 
 function updateHelpCounter() {
@@ -658,10 +657,8 @@ async function newGame() {
         
         // Set the strategy for the new game based on dropdown selection
         await changeStrategy();
-        
-        showStatus('New game started! Start guessing!', 'success');
     } catch (error) {
-        showStatus('Failed to create new game: ' + error.message, 'error');
+        console.error('Failed to create new game:', error);
     }
 }
 
@@ -680,8 +677,6 @@ async function newSession() {
     
     // Start a new game
     await newGame();
-    
-    showStatus('New session started! Stats have been reset.', 'success');
 }
 
 async function makeGuess() {
@@ -760,12 +755,11 @@ async function makeGuess() {
             // Fetch game status to get target word and update status
             fetchTargetWordAndSave(data.attemptNumber);
         } else {
-            showStatus(`Keep going! ${data.maxAttempts - data.attemptNumber} attempts left.`, 'info');
             updateAssistant('playing', data.attemptNumber, data.remainingWordsCount);
         }
 
     } catch (error) {
-        showStatus('Error making guess: ' + error.message, 'error');
+        console.error('Error making guess:', error);
     }
 }
 
@@ -812,12 +806,12 @@ async function checkHealth() {
         const data = await response.json();
         
         if (response.ok) {
-            showStatus(`Server is running! Active sessions: ${data.activeSessions}`, 'success');
+            console.log('Server is running. Active sessions:', data.activeSessions);
         } else {
-            showStatus('Server health check failed', 'error');
+            console.error('Server health check failed');
         }
     } catch (error) {
-        showStatus('Cannot connect to server: ' + error.message, 'error');
+        console.error('Cannot connect to server:', error);
     }
 }
 
@@ -1216,7 +1210,7 @@ function exportSessionGamesToCSV() {
     const history = getGameHistory();
     
     if (history.length === 0) {
-        showStatus('No games to export', 'error');
+        console.log('No games to export');
         return;
     }
     
@@ -1263,8 +1257,6 @@ function exportSessionGamesToCSV() {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    
-    showStatus(`Exported ${history.length} game${history.length !== 1 ? 's' : ''} to ${filename}`, 'success');
 }
 
 function updateAttemptsDistribution() {
@@ -1377,7 +1369,6 @@ function updateStats() {
 // Strategy and Suggestion Functions
 async function changeStrategy() {
     if (!currentGameId) {
-        showStatus('No active game', 'error');
         return;
     }
 
@@ -1393,18 +1384,17 @@ async function changeStrategy() {
         });
 
         if (response.ok) {
-            showStatus(`Strategy changed to ${getStrategyDisplayName(strategy)}`, 'success');
+            console.log('Strategy changed to:', getStrategyDisplayName(strategy));
         } else {
-            showStatus('Failed to change strategy', 'error');
+            console.error('Failed to change strategy');
         }
     } catch (error) {
-        showStatus('Error changing strategy: ' + error.message, 'error');
+        console.error('Error changing strategy:', error);
     }
 }
 
 async function getSuggestion() {
     if (!currentGameId) {
-        showStatus('No active game', 'error');
         return;
     }
 
@@ -1482,33 +1472,64 @@ async function loadDictionaries() {
         populateDictionarySelector();
     } catch (error) {
         console.error('Failed to load dictionaries:', error);
-        showStatus('Failed to load dictionaries: ' + error.message, 'error');
         
-        // Fallback to default option
+        // Fallback to default option for both selectors
         const selector = document.getElementById('dictionarySelector');
-        selector.innerHTML = '<option value="">Standard (5 Letters)</option>';
+        const selectorDict = document.getElementById('dictionarySelectorDict');
+        
+        if (selector) {
+            selector.innerHTML = '<option value="">Standard (5 Letters)</option>';
+        }
+        if (selectorDict) {
+            selectorDict.innerHTML = '<option value="">Standard (5 Letters)</option>';
+        }
     }
 }
 
 function populateDictionarySelector() {
     const selector = document.getElementById('dictionarySelector');
-    selector.innerHTML = '';
+    const selectorDict = document.getElementById('dictionarySelectorDict');
+    
+    // Clear both selectors
+    if (selector) selector.innerHTML = '';
+    if (selectorDict) selectorDict.innerHTML = '';
 
     availableDictionaries.forEach(dict => {
-        const option = document.createElement('option');
-        option.value = dict.id;
-        option.textContent = dict.name;
-        
-        if (!dict.available) {
-            option.disabled = true;
-            option.textContent += ' (Not Available)';
+        // Create option for Play page selector
+        if (selector) {
+            const option = document.createElement('option');
+            option.value = dict.id;
+            option.textContent = dict.name;
+            
+            if (!dict.available) {
+                option.disabled = true;
+                option.textContent += ' (Not Available)';
+            }
+            
+            if (dict.description) {
+                option.title = dict.description;
+            }
+            
+            selector.appendChild(option);
         }
         
-        if (dict.description) {
-            option.title = dict.description;
+        // Create option for Dictionary page selector
+        if (selectorDict) {
+            const option2 = document.createElement('option');
+            option2.value = dict.id;
+            option2.textContent = dict.name;
+            
+            if (!dict.available) {
+                option2.disabled = true;
+                option2.textContent += ' (Not Available)';
+            }
+            
+            if (dict.description) {
+                option2.title = dict.description;
+            }
+            
+            selectorDict.appendChild(option2);
         }
-        
-        selector.appendChild(option);
     });
 
     // Select the 5-letter dictionary by default, fallback to first available
@@ -1516,7 +1537,8 @@ function populateDictionarySelector() {
     const defaultDict = fiveLetterDict || availableDictionaries.find(d => d.available);
     
     if (defaultDict) {
-        selector.value = defaultDict.id;
+        if (selector) selector.value = defaultDict.id;
+        if (selectorDict) selectorDict.value = defaultDict.id;
         // Adjust the letter input grid for the selected dictionary's word length
         adjustLetterInputGrid(defaultDict.wordLength);
     }
@@ -1556,13 +1578,25 @@ function populateDictionarySelector() {
 }
 
 function onDictionaryChange() {
+    // Get the selector that triggered the change - could be either one
     const selector = document.getElementById('dictionarySelector');
-    const selectedId = selector.value;
+    const selectorDict = document.getElementById('dictionarySelectorDict');
+    
+    // Determine which selector was changed by checking event.target or use the first non-null value
+    let selectedId = null;
+    if (selector && selector.value) {
+        selectedId = selector.value;
+        // Sync the dictionary page selector
+        if (selectorDict) selectorDict.value = selectedId;
+    } else if (selectorDict && selectorDict.value) {
+        selectedId = selectorDict.value;
+        // Sync the play page selector
+        if (selector) selector.value = selectedId;
+    }
+    
     const selectedDict = availableDictionaries.find(d => d.id === selectedId);
     
     if (selectedDict) {
-        showStatus(`Dictionary changed to: ${selectedDict.name}`, 'success');
-        
         // Adjust the letter input grid for the new word length
         adjustLetterInputGrid(selectedDict.wordLength);
 
@@ -1572,7 +1606,6 @@ function onDictionaryChange() {
             // Automatically start a new game when dictionary changes on play screen
             newGame().catch(error => {
                 console.error('Failed to start new game after dictionary change:', error);
-                showStatus('Failed to start new game', 'error');
             });
         }
     }
