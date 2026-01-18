@@ -32,7 +32,7 @@ if ($LASTEXITCODE -ne 0) {
 # Step 2: Upload JAR
 Write-Host ""
 Write-Host "Step 2: Uploading JAR to server..." -ForegroundColor Yellow
-scp -i $KEY target\wordai-1.3.2.jar opc@${IP}:~/wordai-app/wordai.jar
+scp -i $KEY target\wordai-1.4.0.jar opc@${IP}:~/wordai-app/wordai.jar
 
 # Step 3: Upload configuration
 Write-Host ""
