@@ -1559,6 +1559,59 @@ select:focus {
     background: transparent;
 }
 
+/* --- Footer --- */
+.app-footer {
+    width: 100%;
+    background: var(--bg-tertiary);
+    border-top: 1px solid var(--border-color);
+    margin-top: auto;
+}
+
+.footer-content {
+    max-width: 1600px;
+    margin: 0 auto;
+    padding: var(--padding-lg) var(--padding-xl);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--padding-md);
+    text-align: center;
+}
+
+.footer-copyright {
+    font-size: var(--font-size-caption);
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+.footer-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--padding-md) var(--padding-lg);
+    justify-content: center;
+    align-items: center;
+}
+
+.footer-link {
+    font-size: var(--font-size-caption);
+    color: var(--text-secondary);
+    text-decoration: none;
+    transition: color 0.2s ease;
+    white-space: nowrap;
+}
+
+.footer-link:hover,
+.footer-link:focus {
+    color: var(--text-primary);
+    text-decoration: underline;
+}
+
+.footer-link:focus-visible {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 2px;
+    border-radius: 2px;
+}
+
 @keyframes slideIn {
     from {
         transform: translateY(16px);
@@ -3141,5 +3194,24 @@ select:focus {
 
     .app-main {
         padding-bottom: 66px;
+    }
+
+    /* Footer mobile adjustments */
+    .footer-content {
+        padding: var(--padding-md) var(--padding-lg);
+        gap: var(--padding-sm);
+    }
+
+    .footer-links {
+        gap: var(--padding-sm);
+        flex-direction: column;
+    }
+
+    .footer-link {
+        font-size: 0.8rem;
+    }
+
+    .footer-copyright {
+        font-size: 0.8rem;
     }
 }
