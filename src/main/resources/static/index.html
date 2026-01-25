@@ -2,24 +2,27 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="theme-color" content="#0f172a">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
     <title>WordAI Game - Web Interface</title>
     <link rel="icon" href="data:,">
-    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/style.css?v=20260125_0600">
 </head>
 <body>
     <div class="header-bar">
         <div class="app-header">
             <div class="app-header-left">
-                <h1 class="header-title">WordAI</h1>
                 <button class="hamburger-menu" id="hamburgerMenu" aria-label="Toggle navigation menu" aria-expanded="false" aria-controls="appNav">
                     <span class="hamburger-line"></span>
                     <span class="hamburger-line"></span>
                     <span class="hamburger-line"></span>
                 </button>
+                <h1 class="header-title">WordAI</h1>
                 <nav class="app-nav" id="appNav" aria-label="Application Modes">
                     <a class="nav-link" href="#/play" data-nav="play">Play</a>
                     <a class="nav-link" href="#/bot-demo" data-nav="bot-demo">Auto</a>
@@ -150,10 +153,6 @@
                     <select id="strategySelector" class="form-input strategy-selector" onchange="changeStrategy()">
                         <option value="RANDOM">Random Selection</option>
                         <option value="ENTROPY">Maximum Entropy</option>
-                        <option value="MOST_COMMON_LETTERS">Most Common Letters</option>
-                        <option value="MINIMISE_COLUMN_LENGTHS">Minimise Column Lengths</option>
-                        <option value="DICTIONARY_REDUCTION">Dictionary Reduction</option>
-                        <option value="BELLMAN_OPTIMAL">Bellman Optimal</option>
                         <option value="BELLMAN_FULL_DICTIONARY">Bellman Full Dictionary</option>
                     </select>
                     <button id="getSuggestionBtn" class="btn btn-info btn-md" onclick="getSuggestion()">
@@ -503,6 +502,6 @@
         </div>
     </footer>
 
-    <script src="js/game.js?v=20260118153700"></script>
+    <script src="js/game.js?v=20260125_0600"></script>
 </body>
 </html>

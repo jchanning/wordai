@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WordAI Frontend Tests</title>
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        body { padding: 20px; background: #0f172a; color: white; font-family: sans-serif; }
+        .test-container { margin-bottom: 20px; padding: 10px; border: 1px solid #334155; }
+        .pass { color: #22c55e; }
+        .fail { color: #ef4444; }
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+    <h1>Frontend Unit Tests</h1>
+    <div id="results"></div>
+
+    <!-- Fixture Area -->
+    <div id="fixture" class="hidden">
+        <div class="letter-inputs">
+            <input id="l0" class="letter-input filled" value="A">
+            <input id="l1" class="letter-input filled" value="B">
+            <input id="l2" class="letter-input" value="">
+        </div>
+        
+        <div class="app-header">
+            <button id="hamburgerMenu"></button>
+            <nav id="appNav"></nav>
+            <div id="mobileNavOverlay"></div>
+        </div>
+    </div>
+
+    <!-- Load Game Script (Mocking parts if necessary) -->
+    <script>
+        // Mock global variables expected by game.js
+        window.wsClient = null;
+        window.currentUser = null;
+        // Mock window.matchMedia
+        window.matchMedia = window.matchMedia || function() {
+            return { matches: false, addListener: function() {} };
+        };
+    </script>
+    <script src="js/game.js"></script>
+
+    <script>
+        const results = document.getElementById('results');
+        let passed = 0;
+        let failed = 0;
+
+        function assert(condition, message) {
+            const div = document.createElement('div');
+            if (condition) {
+                div.className = 'pass';
+                div.textContent = `✓ ${message}`;
+                passed++;
+            } else {
+                div.className = 'fail';
+                div.textContent = `✗ ${message}`;
+                failed++;
+            }
+            results.appendChild(div);
+        }
+
+        function testDeleteLastLetter() {
+            console.log('Testing deleteLastLetter...');
+            const fixture = document.getElementById('fixture');
+            const inputs = fixture.querySelectorAll('.letter-input');
+            
+            // Setup
+            inputs[0].value = 'A'; inputs[0].classList.add('filled');
+            inputs[1].value = 'B'; inputs[1].classList.add('filled');
+            inputs[2].value = '';  inputs[2].classList.remove('filled');
+            
+            // Action: Delete last letter (should delete 'B' at index 1)
+            deleteLastLetter();
+            
+            // Assert
+            assert(inputs[1].value === '', 'Last filled letter (B) should be cleared');
+            assert(!inputs[1].classList.contains('filled'), 'Last filled input should lose "filled" class');
+            assert(document.activeElement === inputs[1], 'Focus should be on the cleared input');
+            assert(inputs[0].value === 'A', 'Previous letter (A) should remain');
+            
+            // Action: Delete again (should delete 'A' at index 0)
+            deleteLastLetter();
+            assert(inputs[0].value === '', 'First letter (A) should be cleared');
+            assert(document.activeElement === inputs[0], 'Focus should be on first input');
+        }
+
+        function testMenuToggle() {
+            console.log('Testing Menu Toggle...');
+            // Since initMobileNavigation adds listeners to IDs in DOM, we need to ensure they exist and simulate clicks
+            // However, game.js runs on DOMContentLoaded. We might need to manually trigger functions if exposed, 
+            // or rely on the function definitions being available globally (which they are).
+            
+            const nav = document.getElementById('appNav');
+            const hamburger = document.getElementById('hamburgerMenu');
+            const overlay = document.getElementById('mobileNavOverlay');
+            
+            // Action: Open
+            toggleMobileNav(); 
+            assert(nav.classList.contains('mobile-nav-open'), 'Nav should have mobile-nav-open class');
+            assert(hamburger.classList.contains('active'), 'Hamburger should be active');
+            assert(overlay.classList.contains('active'), 'Overlay should be active');
+            
+            // Action: Close
+            closeMobileNav();
+            assert(!nav.classList.contains('mobile-nav-open'), 'Nav should NOT have mobile-nav-open class');
+        }
+
+        // Run Tests
+        setTimeout(() => {
+            try {
+                testDeleteLastLetter();
+                testMenuToggle();
+                
+                const summary = document.createElement('h3');
+                summary.textContent = `Tests Completed: ${passed} Passed, ${failed} Failed`;
+                summary.style.color = failed > 0 ? '#ef4444' : '#22c55e';
+                results.prepend(summary);
+            } catch (e) {
+                const err = document.createElement('div');
+                err.className = 'fail';
+                err.textContent = `Test Error: ${e.message}`;
+                results.appendChild(err);
+            }
+        }, 500); // Wait for scripts to load
+    </script>
+</body>
+</html>

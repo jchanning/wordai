@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Nav Z-Index Test</title>
+    <style>
+        .header-bar {
+            position: sticky;
+            z-index: 100;
+            will-change: transform; /* The culprit */
+            background: blue;
+            height: 50px;
+        }
+        .header-bar.fixed-test {
+            will-change: auto; /* The fix */
+        }
+        .app-nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 200px;
+            height: 100vh;
+            background: red;
+            z-index: 1000;
+        }
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0,0,0,0.5);
+            z-index: 999;
+        }
+        .link {
+            display: block;
+            padding: 20px;
+            background: white;
+            margin: 10px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div class="overlay"></div>
+    <div class="header-bar" id="header">
+        <nav class="app-nav">
+            <div class="link" id="testLink">Test Link</div>
+        </nav>
+    </div>
+    
+    <div id="result" style="position: fixed; top: 100px; right: 20px; background: white; padding: 20px;"></div>
+
+    <script>
+        const link = document.getElementById('testLink');
+        const rect = link.getBoundingClientRect();
+        const output = document.getElementById('result');
+        
+        // Check what is at the center of the link
+        const element = document.elementFromPoint(rect.left + rect.width/2, rect.top + rect.height/2);
+        
+        if (element === link || link.contains(element)) {
+            output.innerHTML = "<h2 style='color:green'>PASS: Link is clickable</h2>";
+        } else {
+            output.innerHTML = "<h2 style='color:red'>FAIL: Link covered by " + element.className + "</h2>";
+        }
+    </script>
+</body>
+</html>

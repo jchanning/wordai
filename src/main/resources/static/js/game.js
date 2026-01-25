@@ -477,7 +477,7 @@ function disableLetterInputs() {
     });
     
     // Also disable keyboard buttons when game ends
-    const keyboardButtons = document.querySelectorAll('.keyboard-key');
+    const keyboardButtons = document.querySelectorAll('.game-key');
     keyboardButtons.forEach(button => {
         button.disabled = true;
     });
@@ -792,6 +792,9 @@ function addGuessToHistory(word, results) {
     }
 
     historyDiv.appendChild(guessRow);
+    
+    // Auto-scroll to the bottom to ensure the latest guess is visible
+    historyDiv.scrollTop = historyDiv.scrollHeight;
     
     // Update on-screen keyboard with letter feedback
     trackLetterStatus(results);
@@ -2187,29 +2190,81 @@ function initializeKeyboard() {
     // Initialize keyboard state tracking
     window.keyboardState = window.keyboardState || {};
     
-    // Create letter buttons in QWERTY layout
-    const qwertyKeys = 'QWERTYUIOPASDFGHJKLZXCVBNM'.split('');
-    qwertyKeys.forEach(letter => {
-        const button = document.createElement('button');
-        button.type = 'button';
-        button.className = 'keyboard-key key-unused';
-        button.textContent = letter;
-        button.dataset.letter = letter;
-        button.setAttribute('aria-label', `Letter ${letter}`);
+    // Create standard QWERTY layout in rows
+    const rows = [
+        ['Q','W','E','R','T','Y','U','I','O','P'],
+        ['A','S','D','F','G','H','J','K','L'],
+        ['Z','X','C','V','B','N','M'] // Backspace/Enter handled separately or added here
+    ];
+    
+    rows.forEach((rowKeys, rowIndex) => {
+        const rowDiv = document.createElement('div');
+        rowDiv.className = 'keyboard-row';
         
-        // Handle click on keyboard
-        button.addEventListener('click', function(e) {
-            e.preventDefault();
-            if (!this.disabled && !gameEnded) {
-                insertLetterFromKeyboard(letter);
-            }
+        rowKeys.forEach(letter => {
+            const button = document.createElement('button');
+            button.type = 'button';
+            // Use 'game-key' to match new CSS
+            button.className = 'game-key key-unused';
+            button.textContent = letter;
+            button.dataset.letter = letter;
+            button.setAttribute('aria-label', `Letter ${letter}`);
+            
+            // Handle click on keyboard
+            button.addEventListener('click', function(e) {
+                e.preventDefault();
+                // Vibration feedback if supported
+                if (navigator.vibrate) navigator.vibrate(5);
+                
+                if (!this.disabled && !gameEnded) {
+                    insertLetterFromKeyboard(letter);
+                }
+            });
+            
+            rowDiv.appendChild(button);
         });
         
-        keyboardContainer.appendChild(button);
+        // Add special keys to bottom row if needed, 
+        // but for now we rely on explicit Backspace/Guess buttons in UI
+        if (rowIndex === 2) {
+             const backspaceBtn = document.createElement('button');
+             backspaceBtn.className = 'game-key wide-key';
+             backspaceBtn.innerHTML = '⌫'; // Backspace symbol
+             backspaceBtn.onclick = function(e) {
+                 e.preventDefault();
+                 if (!gameEnded) deleteLastLetter();
+             };
+             rowDiv.appendChild(backspaceBtn);
+        }
+        
+        keyboardContainer.appendChild(rowDiv);
     });
     
     // Reset keyboard state for new game
     updateKeyboardDisplay({});
+}
+
+function deleteLastLetter() {
+    const inputs = document.querySelectorAll('.letter-input');
+    // Find the last filled input
+    let lastFilledIndex = -1;
+    for (let i = 0; i < inputs.length; i++) {
+        if (inputs[i].value) {
+            lastFilledIndex = i;
+        } else {
+            break; 
+        }
+    }
+    
+    if (lastFilledIndex >= 0) {
+        const input = inputs[lastFilledIndex];
+        input.value = '';
+        input.classList.remove('filled');
+        input.focus();
+    } else if (inputs.length > 0) {
+        // If nothing filled, ensure first is focused
+        inputs[0].focus();
+    }
 }
 
 function insertLetterFromKeyboard(letter) {
@@ -2241,25 +2296,28 @@ function updateKeyboardDisplay(responseCounts) {
         return;
     }
     
-    const buttons = keyboardContainer.querySelectorAll('.keyboard-key');
+    // Select all keys (including backspace/enter if they have game-key class)
+    const buttons = keyboardContainer.querySelectorAll('.game-key');
     
     buttons.forEach(button => {
         const letter = (button.dataset.letter || '').toUpperCase();
+        if (!letter) return; // Skip special keys like Backspace that might not have dataset.letter
+
         const status = responseCounts ? responseCounts[letter] : undefined;
         
         // Check the response status for this letter from all previous guesses
         if (status === 'G') {
             // Green - correct position
-            button.className = 'keyboard-key key-correct';
+            button.className = 'game-key key-correct';
         } else if (status === 'A') {
             // Amber/Yellow - wrong position
-            button.className = 'keyboard-key key-present';
+            button.className = 'game-key key-present';
         } else if (status === 'R' || status === 'X') {
             // Red - absent or excess
-            button.className = 'keyboard-key key-absent';
+            button.className = 'game-key key-absent';
         } else {
             // Not yet guessed
-            button.className = 'keyboard-key key-unused';
+            button.className = 'game-key key-unused';
         }
     });
 }

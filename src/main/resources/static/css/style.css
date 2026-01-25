@@ -144,7 +144,7 @@ body {
     border-radius: 0.5rem;
     cursor: pointer;
     padding: 0.5rem;
-    z-index: 1001;
+    z-index: 2100; /* Ensure above mobile nav (2000) */
     transition: all 0.3s ease;
 }
 
@@ -1035,7 +1035,7 @@ summary:focus-visible {
     box-shadow: var(--shadow-md);
     display: flex;
     justify-content: center;
-    will-change: transform; /* Optimize sticky performance */
+    /* will-change: transform; removed as it creates a new stacking context that breaks fixed mobile nav */
 }
 
 @supports not ((-webkit-backdrop-filter: blur(12px)) or (backdrop-filter: blur(12px))) {
@@ -2120,22 +2120,23 @@ select:focus {
     
     .app-header {
         padding: var(--padding-sm) var(--padding-md);
-        gap: var(--padding-xs);
-        flex-wrap: wrap;
+        gap: var(--padding-sm);
+        flex-wrap: nowrap; /* Keep on one line */
     }
     
     .app-header-left {
-        width: 100%;
-        order: 1;
-        justify-content: space-between;
-        gap: var(--padding-xs);
+        width: auto;
+        flex: 1;
+        order: 0;
+        justify-content: flex-start;
+        gap: var(--padding-sm);
     }
     
     .app-header-right {
-        width: 100%;
-        order: 2;
-        justify-content: space-between;
-        gap: var(--padding-xs);
+        width: auto;
+        order: 0;
+        justify-content: flex-end;
+        gap: var(--padding-sm);
     }
     
     .header-title {
@@ -2174,7 +2175,33 @@ select:focus {
     
     /* Show hamburger menu on mobile */
     .hamburger-menu {
+        display: flex !important;
+        flex-shrink: 0;
+    }
+
+    /* Mobile Header Layout */
+    .app-header {
         display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: nowrap; /* Prevent wrapping so sign-in stays right */
+        padding: var(--padding-sm) var(--padding-md);
+        gap: var(--padding-sm);
+        height: 60px; /* Enforce height */
+    }
+
+    /* Adjust Title Size on Mobile */
+    .header-title {
+        font-size: 1.15rem;
+    }
+
+    /* Ensure left side doesn't grow too much, but allow title to show */
+    .app-header-left {
+        display: flex;
+        align-items: center;
+        gap: var(--padding-sm);
+        flex: 1; /* Allow it to take available space */
+        min-width: 0; /* Allow shrinking */
     }
     
     /* Mobile navigation */
@@ -2185,15 +2212,17 @@ select:focus {
         width: 280px;
         height: 100vh;
         background: var(--bg-secondary);
+        display: flex; /* Ensure display is flex */
         flex-direction: column;
         gap: 0;
         padding: 5rem 0 2rem 0;
         transform: translateX(-100%);
         transition: transform 0.3s ease;
-        z-index: 1000;
+        z-index: 2000; /* Higher than overlay (999) and hamburger (1001) */
         overflow-y: auto;
         border-right: 1px solid var(--border-color);
         box-shadow: var(--shadow-lg);
+        visibility: visible; /* Ensure it's not hidden by other rules */
     }
     
     .app-nav.mobile-nav-open {
@@ -2202,6 +2231,8 @@ select:focus {
     
     .nav-link {
         width: 100%;
+        display: flex; /* Flex to align items */
+        align-items: center;
         justify-content: flex-start;
         border-radius: 0;
         border-left: 4px solid transparent;
@@ -2211,6 +2242,16 @@ select:focus {
         padding: 1rem 1.5rem;
         font-size: 1rem;
         min-height: 48px;
+        touch-action: manipulation;
+        cursor: pointer;
+        background: var(--bg-secondary); /* Ensure background exists for touch target */
+        color: var(--text-primary);
+        text-decoration: none;
+    }
+    
+    .nav-link:hover, .nav-link:active {
+        background: rgba(59, 130, 246, 0.1) !important;
+        color: var(--text-primary);
     }
     
     .nav-link.active {
@@ -2226,7 +2267,7 @@ select:focus {
         width: 100vw;
         height: 100vh;
         background: rgba(0, 0, 0, 0.5);
-        z-index: 999;
+        z-index: 1500; /* Below nav, above content */
         opacity: 0;
         pointer-events: none;
         transition: opacity 0.3s ease;
@@ -2892,155 +2933,134 @@ select:focus {
    ======================================== */
 
 .keyboard-container {
-    margin-top: var(--padding-md);
-    flex-shrink: 0;
-    margin-bottom: var(--padding-md);
+    margin-top: auto; /* Push to bottom of flex container */
+    width: 100%;
+    margin-bottom: var(--padding-xs);
+    user-select: none;
+    touch-action: manipulation;
 }
 
 .keyboard-container h4 {
-    margin: 0 0 var(--padding-sm) 0;
-    font-size: 0.9rem;
-    font-weight: 700;
-    color: var(--text-secondary);
-    text-transform: uppercase;
-    letter-spacing: var(--letter-spacing-wide);
+    display: none; /* Hide label to save space on mobile */
 }
 
-.keyboard {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(2.5rem, 1fr));
-    gap: var(--padding-xs);
-    padding: var(--padding-md);
-    background: var(--bg-primary);
-    border-radius: 0.5rem;
-    border: 1px solid var(--border-color);
-}
-
-.keyboard-key {
-    /* Touch-optimized: minimum 44px tap target */
-    min-width: 44px;
-    min-height: 44px;
-    aspect-ratio: auto;
+/* New Row-Based Keyboard Layout */
+#gameKeyboard {
     display: flex;
-    align-items: center;
+    flex-direction: column;
+    gap: 6px;
+    width: 100%;
+    max-width: 600px;
+    margin: 0 auto;
+    padding: 4px;
+}
+
+.keyboard-row {
+    display: flex;
+    width: 100%;
+    gap: 4px;
     justify-content: center;
-    background: var(--bg-secondary);
-    border: 2px solid var(--border-color);
-    border-radius: 0.4rem;
-    cursor: pointer;
+}
+
+/* Key Styling */
+.game-key {
+    font-family: var(--font-main);
     font-weight: 700;
-    font-size: 0.95rem;
-    text-transform: uppercase;
-    color: var(--text-primary);
-    transition: all 0.15s ease;
-    touch-action: manipulation;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
     user-select: none;
+    background-color: var(--bg-secondary);
+    color: var(--text-primary);
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    text-transform: uppercase;
     -webkit-tap-highlight-color: transparent;
+    transition: background-color 0.15s ease, transform 0.1s;
+    
+    /* Dimensions */
+    height: 52px; /* Large touch target */
+    min-width: 28px;
+    font-size: 1.1rem;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.2);
 }
 
-.keyboard-key:hover:not(:disabled) {
-    background: var(--bg-tertiary);
-    transform: translateY(-2px);
-    box-shadow: var(--shadow-md);
+.game-key:active {
+    transform: translateY(2px);
+    box-shadow: none;
 }
 
-.keyboard-key:active:not(:disabled) {
-    transform: translateY(0);
-    box-shadow: var(--shadow-inset);
+.game-key.wide-key {
+    flex: 1.5;
+    font-size: 1.25rem; /* Larger icon for backspace */
 }
 
-.keyboard-key:focus-visible {
-    outline: none;
-    border-color: var(--accent-primary);
-    box-shadow: var(--shadow-focus);
-}
-
-/* Keyboard key color states */
-.keyboard-key.key-correct {
-    background: var(--correct);
-    border-color: var(--correct);
+/* Key Colors */
+.game-key.key-correct {
+    background-color: var(--correct);
     color: white;
 }
 
-.keyboard-key.key-present {
-    background: var(--present);
-    border-color: var(--present);
+.game-key.key-present {
+    background-color: var(--present);
     color: white;
 }
 
-.keyboard-key.key-absent {
-    background: var(--absent);
-    border-color: var(--absent);
+.game-key.key-absent {
+    background-color: var(--absent);
     color: white;
-    opacity: 0.6;
-}
-
-.keyboard-key.key-unused {
-    background: var(--bg-secondary);
-    border-color: var(--border-color);
-    color: var(--text-primary);
-}
-
-.keyboard-key:disabled {
     opacity: 0.5;
-    cursor: not-allowed;
 }
 
-/* Shared letter status styling (for tables and other indicators) */
-.letter-status-correct {
-    background: var(--correct);
-    color: #fff;
-    border-radius: 0.35rem;
+.game-key.key-unused {
+    background-color: #e2e8f0;
+    color: #0f172a; /* Dark text for contrast against light background */
 }
-
-.letter-status-present {
-    background: var(--present);
-    color: #fff;
-    border-radius: 0.35rem;
-}
-
-.letter-status-absent {
-    background: var(--absent);
-    color: #fff;
-    border-radius: 0.35rem;
-    opacity: 0.75;
-}
-
-.letter-status-unused {
-    background: var(--bg-secondary);
-    color: var(--text-primary);
-    border-radius: 0.35rem;
-}
-
-/* Responsive keyboard on mobile */
-@media (max-width: 768px) {
-    .keyboard {
-        grid-template-columns: repeat(auto-fit, minmax(2.25rem, 1fr));
-        gap: 0.375rem;
-        padding: var(--padding-sm);
-    }
-    
-    .keyboard-key {
-        min-width: 40px;
-        min-height: 40px;
-        font-size: 0.85rem;
-        border-width: 1px;
+/* Dark mode unused key */
+@media (prefers-color-scheme: dark) {
+    .game-key.key-unused {
+        background-color: #475569;
+        color: #f1f5f9;
     }
 }
 
+.game-key:disabled {
+    pointer-events: none;
+    opacity: 0.5;
+}
+
+/* Hover only on non-touch */
+@media (hover: hover) {
+    .game-key:hover:not(:disabled) {
+        background-color: var(--bg-tertiary);
+    }
+    .game-key.key-correct:hover { background-color: var(--correct); opacity: 0.9; }
+    .game-key.key-present:hover { background-color: var(--present); opacity: 0.9; }
+    .game-key.key-absent:hover { background-color: var(--absent); opacity: 0.7; }
+    .game-key.key-unused:hover { filter: brightness(0.9); }
+}
+
+/* Mobile Tweaks */
 @media (max-width: 480px) {
-    .keyboard {
-        grid-template-columns: repeat(auto-fit, minmax(2rem, 1fr));
-        gap: 0.25rem;
-        padding: var(--padding-xs);
+    #gameKeyboard {
+        gap: 4px;
+        padding: 2px;
     }
     
-    .keyboard-key {
-        min-width: 36px;
-        min-height: 36px;
-        font-size: 0.75rem;
+    .keyboard-row {
+        gap: 3px;
+    }
+
+    .game-key {
+        height: 56px; /* Even taller on phone */
+        font-size: 1.25rem;
+        border-radius: 4px;
     }
 }
+
+
 
 /* ========================================
    MOBILE VIEW SWITCHING - PROGRESSIVE DISCLOSURE
@@ -3048,13 +3068,13 @@ select:focus {
 
 /* Hide all panels by default on mobile */
 @media (max-width: 768px) {
-    /* Container for panels with slide animation */
+    /* Main Layout Reset for Mobile */
     .main-layout {
-        grid-template-columns: 1fr;
-        gap: 0;
-        grid-template-areas: "game";
+        display: block !important; /* Switch from grid to block for simpler visibility control */
         width: 100%;
+        height: auto;
         margin: 0;
+        padding: 0;
     }
 
     /* Hide ALL panels initially on mobile */
@@ -3063,17 +3083,110 @@ select:focus {
     .info-panel {
         display: none !important;
         width: 100% !important;
+        margin: 0 !important;
+        border: none !important;
+        border-radius: 0 !important;
+        background: transparent !important;
+        box-shadow: none !important;
     }
 
-    /* Show ONLY active panel on mobile */
+    /* --- ACTIVE PANEL STYLES --- */
     .history-panel.mobile-active,
     .game-container.mobile-active,
     .info-panel.mobile-active {
         display: flex !important;
-        width: 100% !important;
-        padding: var(--padding-md) !important;
-        animation: slideInFromRight 0.3s ease-out;
+        flex-direction: column !important;
+        /* Calculate height: 100vh - header (~60px) - bottom nav (60px) - padding */
+        height: calc(100dvh - 130px) !important; 
+        overflow-y: auto;
+        padding-bottom: 20px !important; /* Spacing above bottom nav */
+        animation: fadeIn 0.15s ease-out;
     }
+
+    /* Specific fix for Game Container to enable sticky keyboard */
+    .game-container.mobile-active {
+        overflow: hidden !important; /* Let children handle scrolling */
+        height: calc(100dvh - 120px) !important;
+        padding: 0 !important;
+    }
+
+    /* Game Header compacting */
+    .game-container.mobile-active .panel-header-row {
+        padding: 0.25rem 0.5rem;
+        min-height: auto;
+    }
+
+    .game-container.mobile-active h3 {
+        font-size: 1rem;
+        margin: 0;
+    }
+
+    /* Game Info (Attempts) compacting */
+    .game-container.mobile-active .game-info {
+        margin: 0.25rem 0;
+        padding: 0;
+        font-size: 0.8rem;
+    }
+
+    /* GUESS HISTORY (Scrollable Area) */
+    .game-container.mobile-active .guess-history {
+        flex: 1 1 auto; /* Grow to fill space */
+        overflow-y: auto; /* Internal scrolling */
+        width: 100%;
+        padding: 0.25rem;
+        gap: 0.25rem;
+        /* Ensure it's not covered */
+        margin-bottom: 0.25rem;
+        /* Scrollbar styling */
+        scrollbar-width: thin;
+    }
+
+    /* CURRENT GUESS ROW */
+    .game-container.mobile-active .guess-container {
+        flex: 0 0 auto;
+        padding: 0.25rem;
+        margin-bottom: 0.25rem;
+        background: var(--bg-primary); /* Stickiness background */
+        z-index: 10;
+        border-top: 1px solid var(--border-color);
+        border-bottom: 1px solid var(--border-color);
+    }
+    
+    /* Input resizing for mobile */
+    .game-container.mobile-active .letter-inputs {
+        gap: 4px;
+    }
+    
+    .game-container.mobile-active .letter-input {
+        width: 14vw;
+        height: 14vw;
+        max-width: 3rem;
+        max-height: 3rem;
+        font-size: 1.5rem;
+    }
+
+    /* KEYBOARD (Fixed at bottom of container) */
+    .game-container.mobile-active .keyboard-container {
+        flex: 0 0 auto;
+        width: 100%;
+        padding: 0.25rem;
+        margin-top: auto; /* Push to bottom */
+        background: var(--bg-primary);
+    }
+
+    .game-container.mobile-active .keyboard {
+        gap: 2px;
+    }
+    
+    .game-key {
+        height: 3.5rem !important; /* Taller touch targets */
+        font-size: 1.1rem;
+    }
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
 }
 
 /* Slide animations for mobile panel transitions */
@@ -3106,15 +3219,19 @@ select:focus {
     bottom: 0;
     left: 0;
     right: 0;
-    background: var(--bg-primary);
-    border-top: 2px solid var(--border-color);
-    justify-content: space-around;
-    align-items: center;
-    gap: 0;
     padding: 0;
-    height: 60px;
-    z-index: 100;
-    box-shadow: var(--shadow-top);
+    padding-bottom: env(safe-area-inset-bottom, 0px); /* iPhone Notch support */
+    height: calc(60px + env(safe-area-inset-bottom, 0px));
+    
+    background: rgba(15, 23, 42, 0.95); /* Semi-transparent dark bg */
+    backdrop-filter: blur(12px);
+    border-top: 1px solid var(--border-color);
+    box-shadow: 0 -4px 6px -1px rgba(0, 0, 0, 0.1);
+    
+    justify-content: space-around;
+    align-items: flex-start; /* Align top so text doesn't hit home bar */
+    gap: 0;
+    z-index: 9999;
 }
 
 @media (max-width: 768px) {
@@ -3126,7 +3243,7 @@ select:focus {
     .app-main {
         max-width: 100%;
         padding: 0;
-        padding-bottom: 70px;
+        padding-bottom: calc(70px + env(safe-area-inset-bottom, 0px));
     }
 }
 
