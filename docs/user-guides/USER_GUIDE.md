@@ -92,7 +92,7 @@ Once logged in:
 - Click **"Logout"** to sign out
 
 ### OAuth Options
-Google and Apple Sign-In are available but require configuration (see [AUTHENTICATION_SETUP.md](AUTHENTICATION_SETUP.md)).
+Google and Apple Sign-In are available but require configuration (see [Authentication Setup](../deployment/authentication.md)).
 
 ---
 

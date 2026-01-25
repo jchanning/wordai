@@ -336,5 +336,5 @@ Oracle Cloud Free Tier limits:
 ---
 
 For more details, see:
-- [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md) - Initial setup
+- [Deployment Guide](../docs/deployment/deployment-guide.md) - Initial setup
 - [OCI_JAVA_INSTALL_GUIDE.md](OCI_JAVA_INSTALL_GUIDE.md) - Java installation troubleshooting
