@@ -1,13 +1,14 @@
 package com.fistraltech.bot;
 
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
 import com.fistraltech.bot.filter.Filter;
 import com.fistraltech.bot.selection.SelectionAlgo;
 import com.fistraltech.core.Dictionary;
 import com.fistraltech.core.InvalidWordException;
 import com.fistraltech.core.Response;
 import com.fistraltech.core.WordGame;
-import java.util.logging.Logger;
-import java.util.logging.Level;
 
 /**
  * Automated player implementation for word-guessing games using pluggable strategies.
@@ -51,9 +52,8 @@ import java.util.logging.Level;
  * <p><strong>Available Strategies:</strong>
  * <ul>
  *   <li>{@code SelectRandom} - Random word selection</li>
- *   <li>{@code SelectMostCommonLetters} - Frequency-based selection</li>
  *   <li>{@code SelectMaximumEntropy} - Information theory-based selection</li>
- *   <li>{@code SelectFixedFirstWord} - Uses a predefined optimal first word</li>
+ *   <li>{@code SelectBellmanFullDictionary} - Bellman full dictionary strategy</li>
  * </ul>
  * 
  * <p><strong>Performance Tracking:</strong><br>

@@ -29,10 +29,16 @@ if ($LASTEXITCODE -ne 0) {
     exit 1
 }
 
-# Step 2: Upload JAR
+# Step 2: Upload JAR (find latest version)
 Write-Host ""
 Write-Host "Step 2: Uploading JAR to server..." -ForegroundColor Yellow
-scp -i $KEY target\wordai-1.5.0.jar opc@${IP}:~/wordai-app/wordai.jar
+$jarFile = Get-ChildItem target/wordai-*.jar | Sort-Object LastWriteTime -Descending | Select-Object -First 1
+if (-not $jarFile) {
+    Write-Host "ERROR: No JAR file found in target directory!" -ForegroundColor Red
+    exit 1
+}
+Write-Host "Using: $($jarFile.Name)" -ForegroundColor Cyan
+scp -i $KEY $jarFile.FullName opc@${IP}:~/wordai-app/wordai.jar
 
 # Step 3: Upload configuration
 Write-Host ""

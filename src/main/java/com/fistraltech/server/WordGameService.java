@@ -282,14 +282,6 @@ public class WordGameService {
         switch (algorithmId.toUpperCase()) {
             case "ENTROPY":
                 return new com.fistraltech.bot.selection.SelectMaximumEntropy(dictionary);
-            case "MOST_COMMON_LETTERS":
-                return new com.fistraltech.bot.selection.SelectMostCommonLetters(dictionary);
-            case "MINIMISE_COLUMN_LENGTHS":
-                return new com.fistraltech.bot.selection.MinimiseColumnLengths(dictionary);
-            case "DICTIONARY_REDUCTION":
-                return new com.fistraltech.bot.selection.SelectMaximumDictionaryReduction(dictionary);
-            case "BELLMAN_OPTIMAL":
-                return new com.fistraltech.bot.selection.SelectBellmanOptimal(dictionary);
             case "BELLMAN_FULL_DICTIONARY":
                 return new com.fistraltech.bot.selection.SelectBellmanFullDictionary(dictionary);
             case "RANDOM":

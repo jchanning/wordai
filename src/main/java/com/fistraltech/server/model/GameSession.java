@@ -4,7 +4,6 @@ import java.util.logging.Logger;
 
 import com.fistraltech.analysis.WordEntropy;
 import com.fistraltech.bot.filter.Filter;
-import com.fistraltech.bot.selection.SelectMaximumDictionaryReduction;
 import com.fistraltech.bot.selection.SelectMaximumEntropy;
 import com.fistraltech.bot.selection.SelectRandom;
 import com.fistraltech.bot.selection.SelectionAlgo;
@@ -140,13 +139,13 @@ public class GameSession {
     /**
      * Suggests a next word based on {@link #selectedStrategy}.
      *
-     * <p>For ENTROPY, DICTIONARY_REDUCTION, and MINIMISE_COLUMN_LENGTHS strategies:
+     * <p>For ENTROPY strategy:
      * <ul>
      *   <li>First guess (unfiltered dictionary): uses pre-computed cached values</li>
      *   <li>Subsequent guesses (filtered dictionary): recomputes values based on remaining words</li>
      * </ul>
      *
-     * <p><strong>Why recomputation is required:</strong> Entropy (and similar metrics) measures
+     * <p><strong>Why recomputation is required:</strong> Entropy measures
      * how a candidate word partitions the <em>current</em> dictionary into response buckets.
      * When the dictionary changes (words are filtered out after each guess), the bucket
      * distributions change, so the metric values must be recomputed. Cached values are only
@@ -175,19 +174,9 @@ public class GameSession {
                     logger.fine(() -> "Using cached WordEntropy for first ENTROPY suggestion (full dict)");
                     return cachedWordEntropy.getMaximumEntropyWord(filteredDictionary.getMasterSetOfWords());
                     
-                case "DICTIONARY_REDUCTION":
-                    logger.fine(() -> "Using cached WordEntropy for first DICTIONARY_REDUCTION suggestion (full dict)");
-                    return cachedWordEntropy.getWordWithMaximumReduction(filteredDictionary.getMasterSetOfWords());
-                case "BELLMAN_OPTIMAL":
-                    logger.fine(() -> "Using cached WordEntropy for first BELLMAN_OPTIMAL suggestion (full dict)");
-                    return cachedWordEntropy.getWordWithMaximumReduction(filteredDictionary.getMasterSetOfWords());
                 case "BELLMAN_FULL_DICTIONARY":
                     logger.fine(() -> "Using cached WordEntropy for first BELLMAN_FULL_DICTIONARY suggestion (full dict)");
                     return cachedWordEntropy.getWordWithMaximumReduction(filteredDictionary.getMasterSetOfWords());
-                    
-                case "MINIMISE_COLUMN_LENGTHS":
-                    logger.fine(() -> "Using cached WordEntropy for first MINIMISE_COLUMN_LENGTHS suggestion (full dict)");
-                    return cachedWordEntropy.getWordWithMinimumColumnLength(filteredDictionary.getMasterSetOfWords());
             }
         }
         
@@ -199,18 +188,6 @@ public class GameSession {
             case "MAXIMUM_ENTROPY":
                 logger.fine(() -> "Recomputing entropy for dictionary of " + filteredDictionary.getWordCount() + " words");
                 algo = new SelectMaximumEntropy(filteredDictionary);
-                break;
-            case "MINIMISE_COLUMN_LENGTHS":
-                logger.fine(() -> "Recomputing column lengths for dictionary of " + filteredDictionary.getWordCount() + " words");
-                algo = new com.fistraltech.bot.selection.MinimiseColumnLengths(filteredDictionary);
-                break;
-            case "DICTIONARY_REDUCTION":
-                logger.fine(() -> "Recomputing dictionary reduction for dictionary of " + filteredDictionary.getWordCount() + " words");
-                algo = new SelectMaximumDictionaryReduction(filteredDictionary);
-                break;
-            case "BELLMAN_OPTIMAL":
-                logger.fine(() -> "Recomputing Bellman optimal selection for dictionary of " + filteredDictionary.getWordCount() + " words");
-                algo = new com.fistraltech.bot.selection.SelectBellmanOptimal(filteredDictionary);
                 break;
             case "BELLMAN_FULL_DICTIONARY":
                 logger.fine(() -> "Computing Bellman full-dictionary selection for dictionary of " + filteredDictionary.getWordCount() + " words");
@@ -252,9 +229,6 @@ public class GameSession {
         switch (strategy) {
             case "BELLMAN_FULL_DICTIONARY":
                 cachedAlgorithm = new com.fistraltech.bot.selection.SelectBellmanFullDictionary(fullDict);
-                break;
-            case "BELLMAN_OPTIMAL":
-                cachedAlgorithm = new com.fistraltech.bot.selection.SelectBellmanOptimal(remainingDict);
                 break;
             default:
                 // For other strategies, don't cache (they don't maintain state)

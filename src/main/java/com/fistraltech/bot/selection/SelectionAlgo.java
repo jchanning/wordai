@@ -35,14 +35,11 @@ import com.fistraltech.core.Response;
  *   <li><strong>{@code SelectRandom}:</strong> Random selection from valid words
  *       <ul><li>Simple, baseline strategy</li><li>Average ~5-6 attempts</li></ul>
  *   </li>
- *   <li><strong>{@code SelectMostCommonLetters}:</strong> Chooses words with frequent letters
- *       <ul><li>Maximizes letter coverage</li><li>Average ~4-5 attempts</li></ul>
- *   </li>
  *   <li><strong>{@code SelectMaximumEntropy}:</strong> Information theory-based selection
  *       <ul><li>Maximizes information gain</li><li>Average ~3-4 attempts</li><li>Computationally intensive</li></ul>
  *   </li>
- *   <li><strong>{@code SelectFixedFirstWord}:</strong> Uses optimal first word, then another strategy
- *       <ul><li>Combines predetermined opening with adaptive play</li></ul>
+ *   <li><strong>{@code SelectBellmanFullDictionary}:</strong> Uses full dictionary guesses
+ *       <ul><li>Includes known incorrect words to reduce remaining possibilities</li></ul>
  *   </li>
  * </ul>
  * 

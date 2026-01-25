@@ -773,7 +773,6 @@ public class WordEntropy {
     /**
      * Calculates expected column length (product of unique letters per position) after guessing a word.
      * Lower values indicate better column length minimization.
-     * Uses the same logic as MinimiseColumnLengths.calculateExpectedColumnLength().
      */
     private float calculateColumnLengthFromBuckets(Map<Short, Set<String>> buckets, int dictionarySize, int wordLength) {
         if (dictionarySize == 0) {

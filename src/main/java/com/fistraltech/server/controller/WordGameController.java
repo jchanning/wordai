@@ -538,14 +538,6 @@ public class WordGameController {
             "Selects words randomly from valid options"));
         algorithms.add(createAlgorithmInfo("ENTROPY", "Maximum Entropy", 
             "Chooses words that maximize information gain"));
-        algorithms.add(createAlgorithmInfo("MOST_COMMON_LETTERS", "Most Common Letters", 
-            "Selects words with most frequently occurring letters"));
-        algorithms.add(createAlgorithmInfo("MINIMISE_COLUMN_LENGTHS", "Minimise Column Lengths", 
-            "Reduces possible letters at each position"));
-        algorithms.add(createAlgorithmInfo("DICTIONARY_REDUCTION", "Dictionary Reduction", 
-            "Maximizes expected reduction in remaining possibilities"));
-        algorithms.add(createAlgorithmInfo("BELLMAN_OPTIMAL", "Bellman Optimal", 
-            "Minimizes the expected remaining dictionary size after each guess"));
         algorithms.add(createAlgorithmInfo("BELLMAN_FULL_DICTIONARY", "Bellman Full Dictionary", 
             "Uses full dictionary guesses (including known incorrect) to reduce remaining possibilities"));
         

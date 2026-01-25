@@ -203,9 +203,8 @@ public class Dictionary {
      * @return a Dictionary representing the union of all possible filtered states after the guess
      */
     public Dictionary getPossibleWordsAfterGuess(String candidateWord, Response lastResponse) {
-        // For the MinimiseColumnLengths strategy, we just return the current filtered dictionary
-        // The strategy evaluates column lengths on the existing search space, not simulated responses
-        // Simulating every possible response would be O(N²) which is too expensive
+        // For legacy compatibility - returns current filtered dictionary
+        // Previously used for column length strategies, now simplified
         return this;
     }
     

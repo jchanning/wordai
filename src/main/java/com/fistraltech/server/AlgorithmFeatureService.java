@@ -21,10 +21,6 @@ import jakarta.annotation.PostConstruct;
  * <pre>
  * algorithm.features.random.enabled=true
  * algorithm.features.entropy.enabled=true
- * algorithm.features.most-common-letters.enabled=true
- * algorithm.features.minimise-column-lengths.enabled=true
- * algorithm.features.dictionary-reduction.enabled=true
- * algorithm.features.bellman-optimal.enabled=true
  * algorithm.features.bellman-full-dictionary.enabled=true
  * </pre>
  * 
@@ -33,10 +29,6 @@ import jakarta.annotation.PostConstruct;
  * <pre>
  * algorithm.features.random.enabled=true
  * algorithm.features.entropy.enabled=false
- * algorithm.features.most-common-letters.enabled=false
- * algorithm.features.minimise-column-lengths.enabled=false
- * algorithm.features.dictionary-reduction.enabled=false
- * algorithm.features.bellman-optimal.enabled=false
  * algorithm.features.bellman-full-dictionary.enabled=false
  * </pre>
  * 
@@ -53,18 +45,6 @@ public class AlgorithmFeatureService {
     @Value("${algorithm.features.entropy.enabled:true}")
     private boolean entropyEnabled;
     
-    @Value("${algorithm.features.most-common-letters.enabled:true}")
-    private boolean mostCommonLettersEnabled;
-    
-    @Value("${algorithm.features.minimise-column-lengths.enabled:true}")
-    private boolean minimiseColumnLengthsEnabled;
-    
-    @Value("${algorithm.features.dictionary-reduction.enabled:true}")
-    private boolean dictionaryReductionEnabled;
-    
-    @Value("${algorithm.features.bellman-optimal.enabled:true}")
-    private boolean bellmanOptimalEnabled;
-    
     @Value("${algorithm.features.bellman-full-dictionary.enabled:true}")
     private boolean bellmanFullDictionaryEnabled;
     
@@ -73,10 +53,6 @@ public class AlgorithmFeatureService {
         logger.info("=== Algorithm Feature Toggles ===");
         logger.info("RANDOM: " + (randomEnabled ? "ENABLED" : "DISABLED"));
         logger.info("ENTROPY: " + (entropyEnabled ? "ENABLED" : "DISABLED"));
-        logger.info("MOST_COMMON_LETTERS: " + (mostCommonLettersEnabled ? "ENABLED" : "DISABLED"));
-        logger.info("MINIMISE_COLUMN_LENGTHS: " + (minimiseColumnLengthsEnabled ? "ENABLED" : "DISABLED"));
-        logger.info("DICTIONARY_REDUCTION: " + (dictionaryReductionEnabled ? "ENABLED" : "DISABLED"));
-        logger.info("BELLMAN_OPTIMAL: " + (bellmanOptimalEnabled ? "ENABLED" : "DISABLED"));
         logger.info("BELLMAN_FULL_DICTIONARY: " + (bellmanFullDictionaryEnabled ? "ENABLED" : "DISABLED"));
         logger.info("=================================");
     }
@@ -98,14 +74,6 @@ public class AlgorithmFeatureService {
             case "ENTROPY":
             case "MAXIMUM_ENTROPY":
                 return entropyEnabled;
-            case "MOST_COMMON_LETTERS":
-                return mostCommonLettersEnabled;
-            case "MINIMISE_COLUMN_LENGTHS":
-                return minimiseColumnLengthsEnabled;
-            case "DICTIONARY_REDUCTION":
-                return dictionaryReductionEnabled;
-            case "BELLMAN_OPTIMAL":
-                return bellmanOptimalEnabled;
             case "BELLMAN_FULL_DICTIONARY":
                 return bellmanFullDictionaryEnabled;
             default:
@@ -123,10 +91,6 @@ public class AlgorithmFeatureService {
         
         algorithms.put("RANDOM", new AlgorithmInfo("RANDOM", "Random Selection", randomEnabled));
         algorithms.put("ENTROPY", new AlgorithmInfo("ENTROPY", "Maximum Entropy", entropyEnabled));
-        algorithms.put("MOST_COMMON_LETTERS", new AlgorithmInfo("MOST_COMMON_LETTERS", "Most Common Letters", mostCommonLettersEnabled));
-        algorithms.put("MINIMISE_COLUMN_LENGTHS", new AlgorithmInfo("MINIMISE_COLUMN_LENGTHS", "Minimise Column Lengths", minimiseColumnLengthsEnabled));
-        algorithms.put("DICTIONARY_REDUCTION", new AlgorithmInfo("DICTIONARY_REDUCTION", "Dictionary Reduction", dictionaryReductionEnabled));
-        algorithms.put("BELLMAN_OPTIMAL", new AlgorithmInfo("BELLMAN_OPTIMAL", "Bellman Optimal", bellmanOptimalEnabled));
         algorithms.put("BELLMAN_FULL_DICTIONARY", new AlgorithmInfo("BELLMAN_FULL_DICTIONARY", "Bellman Full Dictionary", bellmanFullDictionaryEnabled));
         
         return algorithms;
