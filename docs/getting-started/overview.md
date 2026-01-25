@@ -259,21 +259,7 @@ For detailed class-level documentation, see:
 
 See the [Issues](https://github.com/YOUR_USERNAME/WordAI/issues) page for current bugs and feature requests.
 
-## � Documentation
-
-**Complete documentation is available in the [`docs/`](./docs/) directory:**
-
-- 🚀 **[Getting Started](./docs/getting-started/)** - Quick start and setup
-- 👤 **[User Guide](./docs/user-guides/)** - How to play and use the application
-- 🛠️ **[Deployment](./docs/deployment/)** - Oracle Cloud, HTTPS, DNS, and other deployment guides
-- 💻 **[Development](./docs/development/)** - Architecture, Java 21 upgrade, performance optimization
-- ✨ **[Features](./docs/features/)** - Game history, UI improvements, and planned features
-- 📦 **[Releases](./docs/releases/)** - Release notes and deployment reports
-- ❓ **[Troubleshooting](./docs/troubleshooting/)** - Common issues and solutions
-
-**For a complete index of all documentation**, see [docs/README.md](./docs/README.md).
-
-## �📊 Stats
+## 📊 Stats
 
 ![Code Size](https://img.shields.io/github/languages/code-size/YOUR_USERNAME/WordAI)
 ![Repo Size](https://img.shields.io/github/repo-size/YOUR_USERNAME/WordAI)
