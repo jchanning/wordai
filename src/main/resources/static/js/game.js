@@ -212,6 +212,13 @@ function displayUserInfo() {
         if (signInLink) {
             signInLink.style.display = 'none';
         }
+        
+        // Show or hide Admin nav link based on roles
+        const adminNavLink = document.querySelector('[data-nav="admin"]');
+        if (adminNavLink) {
+            const isAdmin = currentUser.roles && currentUser.roles.includes('ROLE_ADMIN');
+            adminNavLink.style.display = isAdmin ? '' : 'none';
+        }
     }
 }
 
@@ -221,6 +228,12 @@ function showGuestOptions() {
     
     if (userInfoElement) {
         userInfoElement.style.display = 'none';
+    }
+    
+    // Hide Admin nav link for guests
+    const adminNavLink = document.querySelector('[data-nav="admin"]');
+    if (adminNavLink) {
+        adminNavLink.style.display = 'none';
     }
     
     if (signInLink) {
@@ -285,6 +298,10 @@ function setView(view) {
     
     if (view === 'help') {
         loadHelpContent();
+    }
+    
+    if (view === 'admin') {
+        loadAdminScreen();
     }
 }
 
@@ -3569,4 +3586,237 @@ function showAllPanels() {
     document.querySelectorAll('.mobile-nav-btn').forEach(btn => {
         btn.classList.remove('active');
     });
+}
+
+// ============================================================
+// Admin Screen
+// ============================================================
+
+let adminUsers = [];       // cached user list
+let roleModalUserId = null; // user being edited in role modal
+
+function isCurrentUserAdmin() {
+    return currentUser && currentUser.roles && currentUser.roles.includes('ROLE_ADMIN');
+}
+
+function loadAdminScreen() {
+    const noAccess = document.getElementById('adminNoAccess');
+    const content  = document.getElementById('adminContent');
+    if (!isCurrentUserAdmin()) {
+        if (noAccess) noAccess.style.display = '';
+        if (content)  content.style.display = 'none';
+        return;
+    }
+    if (noAccess) noAccess.style.display = 'none';
+    if (content)  content.style.display = '';
+    refreshAdminUsers();
+}
+
+async function refreshAdminUsers() {
+    if (!isCurrentUserAdmin()) return;
+    const tbody = document.getElementById('adminUserTableBody');
+    if (!tbody) return;
+    tbody.innerHTML = '<tr><td colspan="8" class="admin-table-empty">Loading users...</td></tr>';
+    try {
+        const resp = await fetch('/api/admin/users');
+        if (!resp.ok) throw new Error('Failed to fetch users');
+        const data = await resp.json();
+        // Handle both paginated and non-paginated responses
+        adminUsers = data.users || data.content || data;
+        renderAdminUserTable();
+        const subtitle = document.getElementById('adminSubtitle');
+        if (subtitle) subtitle.textContent = `${adminUsers.length} user${adminUsers.length !== 1 ? 's' : ''} registered`;
+    } catch (err) {
+        tbody.innerHTML = `<tr><td colspan="8" class="admin-table-empty admin-error">Error: ${err.message}</td></tr>`;
+    }
+}
+
+function renderAdminUserTable() {
+    const tbody = document.getElementById('adminUserTableBody');
+    if (!tbody) return;
+    if (adminUsers.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="8" class="admin-table-empty">No users found.</td></tr>';
+        return;
+    }
+    tbody.innerHTML = adminUsers.map(u => {
+        const rolesHtml = (u.roles || []).map(r => {
+            const shortRole = r.replace('ROLE_', '');
+            const cls = shortRole === 'ADMIN' ? 'admin-badge-admin' : 'admin-badge-user';
+            return `<span class="admin-badge ${cls}">${shortRole}</span>`;
+        }).join(' ');
+        const statusCls = u.enabled ? 'admin-status-active' : 'admin-status-disabled';
+        const statusLabel = u.enabled ? 'Active' : 'Disabled';
+        const isSelf = currentUser && currentUser.id === u.id;
+        return `<tr>
+            <td>${u.id}</td>
+            <td>${escapeHtml(u.username || '\u2014')}</td>
+            <td>${escapeHtml(u.email)}</td>
+            <td>${escapeHtml(u.fullName || '\u2014')}</td>
+            <td><span class="admin-badge admin-badge-provider">${escapeHtml(u.provider || 'local')}</span></td>
+            <td>${rolesHtml}</td>
+            <td><span class="admin-status ${statusCls}">${statusLabel}</span></td>
+            <td class="admin-actions">
+                <button class="btn btn-info btn-sm" onclick="openRoleModal(${u.id})" title="Manage roles">Roles</button>
+                ${u.provider === 'local' ? `<button class="btn btn-secondary btn-sm" onclick="openPasswordModal(${u.id})" title="Reset password">Reset PW</button>` : ''}
+                ${isSelf ? '' : (u.enabled
+                    ? `<button class="btn btn-danger btn-sm" onclick="toggleUserEnabled(${u.id}, false)" title="Disable account">Disable</button>`
+                    : `<button class="btn btn-success btn-sm" onclick="toggleUserEnabled(${u.id}, true)" title="Enable account">Enable</button>`)}
+            </td>
+        </tr>`;
+    }).join('');
+}
+
+function escapeHtml(str) {
+    if (!str) return '';
+    const d = document.createElement('div');
+    d.textContent = str;
+    return d.innerHTML;
+}
+
+async function toggleUserEnabled(userId, enabled) {
+    try {
+        const endpoint = enabled ? 'enable' : 'disable';
+        const resp = await fetch(`/api/admin/users/${userId}/${endpoint}`, {
+            method: 'PUT'
+        });
+        if (!resp.ok) {
+            const err = await resp.json();
+            throw new Error(err.error || 'Request failed');
+        }
+        await refreshAdminUsers();
+        showStatus(enabled ? 'User enabled' : 'User disabled', 'success');
+    } catch (err) {
+        showStatus('Error: ' + err.message, 'error');
+    }
+}
+
+// ---- Role Modal ----
+
+function openRoleModal(userId) {
+    roleModalUserId = userId;
+    const user = adminUsers.find(u => u.id === userId);
+    if (!user) return;
+    document.getElementById('roleModalTitle').textContent = `Roles \u2014 ${user.username || user.email}`;
+    renderRoleModalRoles(user.roles || []);
+    document.getElementById('roleModal').style.display = 'flex';
+}
+
+function closeRoleModal() {
+    document.getElementById('roleModal').style.display = 'none';
+    roleModalUserId = null;
+}
+
+function renderRoleModalRoles(roles) {
+    const container = document.getElementById('roleModalCurrentRoles');
+    if (!container) return;
+    container.innerHTML = roles.map(r => {
+        const shortRole = r.replace('ROLE_', '');
+        const removable = shortRole !== 'USER';
+        return `<span class="admin-badge admin-badge-lg ${shortRole === 'ADMIN' ? 'admin-badge-admin' : 'admin-badge-user'}">
+            ${shortRole}
+            ${removable ? `<button class="admin-badge-remove" onclick="removeRoleFromModal('${shortRole}')" title="Remove role">&times;</button>` : ''}
+        </span>`;
+    }).join(' ');
+}
+
+async function addSelectedRole() {
+    const select = document.getElementById('roleModalSelect');
+    const role = select.value;
+    if (!role || !roleModalUserId) return;
+    try {
+        const resp = await fetch(`/api/admin/users/${roleModalUserId}/roles/${role}`, {
+            method: 'POST'
+        });
+        if (!resp.ok) {
+            const err = await resp.json();
+            throw new Error(err.error || 'Request failed');
+        }
+        const updated = await resp.json();
+        // Update cached user
+        const idx = adminUsers.findIndex(u => u.id === roleModalUserId);
+        if (idx >= 0) adminUsers[idx] = updated;
+        renderRoleModalRoles(updated.roles || []);
+        renderAdminUserTable();
+        select.value = '';
+        showStatus(`Role ${role} added`, 'success');
+    } catch (err) {
+        showStatus('Error: ' + err.message, 'error');
+    }
+}
+
+async function removeRoleFromModal(shortRole) {
+    if (!roleModalUserId) return;
+    try {
+        const resp = await fetch(`/api/admin/users/${roleModalUserId}/roles/${shortRole}`, {
+            method: 'DELETE'
+        });
+        if (!resp.ok) {
+            const err = await resp.json();
+            throw new Error(err.error || 'Request failed');
+        }
+        const updated = await resp.json();
+        const idx = adminUsers.findIndex(u => u.id === roleModalUserId);
+        if (idx >= 0) adminUsers[idx] = updated;
+        renderRoleModalRoles(updated.roles || []);
+        renderAdminUserTable();
+        showStatus(`Role ${shortRole} removed`, 'success');
+    } catch (err) {
+        showStatus('Error: ' + err.message, 'error');
+    }
+}
+
+// ---- Password Reset Modal ----
+
+let passwordModalUserId = null;
+
+function openPasswordModal(userId) {
+    passwordModalUserId = userId;
+    const user = adminUsers.find(u => u.id === userId);
+    if (!user) return;
+    document.getElementById('passwordModalTitle').textContent = `Reset Password \u2014 ${user.username || user.email}`;
+    document.getElementById('newPasswordInput').value = '';
+    document.getElementById('confirmPasswordInput').value = '';
+    document.getElementById('passwordModalError').style.display = 'none';
+    document.getElementById('passwordModal').style.display = 'flex';
+    document.getElementById('newPasswordInput').focus();
+}
+
+function closePasswordModal() {
+    document.getElementById('passwordModal').style.display = 'none';
+    passwordModalUserId = null;
+}
+
+async function submitPasswordReset() {
+    const pw = document.getElementById('newPasswordInput').value;
+    const confirm = document.getElementById('confirmPasswordInput').value;
+    const errorDiv = document.getElementById('passwordModalError');
+
+    if (!pw || pw.length < 8) {
+        errorDiv.textContent = 'Password must be at least 8 characters.';
+        errorDiv.style.display = 'block';
+        return;
+    }
+    if (pw !== confirm) {
+        errorDiv.textContent = 'Passwords do not match.';
+        errorDiv.style.display = 'block';
+        return;
+    }
+    errorDiv.style.display = 'none';
+
+    try {
+        const resp = await fetch(`/api/admin/users/${passwordModalUserId}/password`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ password: pw })
+        });
+        if (!resp.ok) {
+            const err = await resp.json();
+            throw new Error(err.error || 'Request failed');
+        }
+        closePasswordModal();
+        showStatus('Password reset successfully', 'success');
+    } catch (err) {
+        errorDiv.textContent = err.message;
+        errorDiv.style.display = 'block';
+    }
 }

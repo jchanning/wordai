@@ -171,6 +171,28 @@ public class UserService {
                 .collect(Collectors.toList());
     }
     
+    @Transactional
+    public UserDto resetPassword(Long userId, String newPassword) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        
+        if (!"local".equals(user.getProvider())) {
+            throw new IllegalStateException("Cannot reset password for OAuth users");
+        }
+        
+        if (newPassword == null || newPassword.length() < 8) {
+            throw new IllegalArgumentException("Password must be at least 8 characters");
+        }
+        
+        user.setPassword(passwordEncoder.encode(newPassword));
+        User savedUser = userRepository.save(user);
+        return convertToDto(savedUser);
+    }
+    
+    public boolean existsByEmail(String email) {
+        return userRepository.existsByEmail(email);
+    }
+    
     private UserDto convertToDto(User user) {
         return new UserDto(
                 user.getId(),

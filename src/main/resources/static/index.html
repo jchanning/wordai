@@ -11,7 +11,7 @@
     <meta http-equiv="Expires" content="0">
     <title>WordAI Game - Web Interface</title>
     <link rel="icon" href="data:,">
-    <link rel="stylesheet" href="css/style.css?v=20260125_0600">
+    <link rel="stylesheet" href="css/style.css?v=20260215_2000">
 </head>
 <body>
     <div class="header-bar">
@@ -444,20 +444,92 @@
             </div>
         </section>
 
-        <!-- Screen: Admin (placeholder) -->
+        <!-- Screen: Admin -->
         <section id="screen-admin" class="screen" hidden>
             <div class="screen-toolbar">
                 <div class="screen-toolbar-left">
                     <h2 class="screen-title">Admin</h2>
-                    <div class="screen-subtitle">Not yet implemented.</div>
+                    <div class="screen-subtitle" id="adminSubtitle">User Management</div>
                 </div>
                 <div class="screen-toolbar-right">
+                    <button class="btn btn-secondary" onclick="refreshAdminUsers()">Refresh</button>
                     <button class="btn btn-secondary" onclick="checkHealth()">Server Status</button>
                 </div>
             </div>
-            <div class="panel placeholder-panel">
-                <h3>Coming soon</h3>
-                <p>Administrative features are currently under development.</p>
+
+            <!-- Not authorised message (shown to non-admins) -->
+            <div id="adminNoAccess" class="panel placeholder-panel" style="display: none;">
+                <h3>Access Denied</h3>
+                <p>You must be signed in with an administrator account to access this page.</p>
+            </div>
+
+            <!-- Admin content (shown to admins) -->
+            <div id="adminContent" style="display: none;">
+                <!-- User list table -->
+                <div class="panel admin-panel">
+                    <div class="admin-table-wrap">
+                        <table class="admin-table" id="adminUserTable">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Username</th>
+                                    <th>Email</th>
+                                    <th>Full Name</th>
+                                    <th>Provider</th>
+                                    <th>Roles</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="adminUserTableBody">
+                                <tr><td colspan="8" class="admin-table-empty">Loading users...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Role modal -->
+            <div id="roleModal" class="admin-modal-overlay" style="display: none;">
+                <div class="admin-modal">
+                    <div class="admin-modal-header">
+                        <h3 id="roleModalTitle">Manage Roles</h3>
+                        <button class="admin-modal-close" onclick="closeRoleModal()">&times;</button>
+                    </div>
+                    <div class="admin-modal-body">
+                        <div id="roleModalCurrentRoles" class="admin-role-list"></div>
+                        <div class="admin-role-add">
+                            <select id="roleModalSelect" class="admin-select">
+                                <option value="">Add a role...</option>
+                                <option value="ADMIN">ADMIN</option>
+                                <option value="MODERATOR">MODERATOR</option>
+                            </select>
+                            <button class="btn btn-success btn-sm" onclick="addSelectedRole()">Add</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Password reset modal -->
+            <div id="passwordModal" class="admin-modal-overlay" style="display: none;">
+                <div class="admin-modal">
+                    <div class="admin-modal-header">
+                        <h3 id="passwordModalTitle">Reset Password</h3>
+                        <button class="admin-modal-close" onclick="closePasswordModal()">&times;</button>
+                    </div>
+                    <div class="admin-modal-body">
+                        <div class="admin-form-group">
+                            <label for="newPasswordInput">New Password</label>
+                            <input type="password" id="newPasswordInput" class="admin-input" placeholder="Minimum 8 characters" minlength="8" autocomplete="new-password">
+                        </div>
+                        <div class="admin-form-group">
+                            <label for="confirmPasswordInput">Confirm Password</label>
+                            <input type="password" id="confirmPasswordInput" class="admin-input" placeholder="Re-enter password" autocomplete="new-password">
+                        </div>
+                        <div id="passwordModalError" class="admin-modal-error" style="display: none;"></div>
+                        <button class="btn btn-success" onclick="submitPasswordReset()" style="width: 100%;">Reset Password</button>
+                    </div>
+                </div>
             </div>
         </section>
 
@@ -490,7 +562,7 @@
     <footer class="app-footer">
         <div class="footer-content">
             <div class="footer-copyright">
-                © 2026 FistralTech Ltd | v1.5.2
+                © 2026 FistralTech Ltd | v1.6.0
             </div>
             <nav class="footer-links" aria-label="Footer navigation">
                 <a href="https://fistraltech.com" target="_blank" rel="noopener noreferrer" class="footer-link">fistraltech.com</a>
@@ -502,6 +574,6 @@
         </div>
     </footer>
 
-    <script src="js/game.js?v=20260125_0600"></script>
+    <script src="js/game.js?v=20260215_2000"></script>
 </body>
 </html>
