@@ -2114,15 +2114,20 @@ select:focus {
         grid-template-columns: 1fr;
     }
     
-    /* Keep analytics sections open by default on desktop */
+    /* Keep analytics sections always open on medium screens — hide the toggle */
     .analytics-collapsible {
         background: transparent;
         border: none;
         padding: 0;
     }
     
+    .analytics-collapsible[open] {
+        display: block;
+    }
+    
     .analytics-summary {
         display: none;
+        pointer-events: none;
     }
     
     .analytics-content {
@@ -2326,6 +2331,16 @@ select:focus {
     
     .analytics-content {
         padding: var(--padding-md);
+    }
+    
+    /* Restore scrolling on analytics right col (overridden by 1024px block) */
+    .analytics-right-col {
+        overflow: visible;
+    }
+    
+    .analytics-right-col > .analytics-content {
+        overflow-y: auto;
+        overflow-x: hidden;
     }
     
     /* Collapse stats by default on mobile to save space */

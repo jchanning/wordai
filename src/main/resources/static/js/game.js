@@ -562,7 +562,7 @@ function showStatus(message, type = 'info', options = {}) {
         }
     };
 
-    const autoHideMs = Number.isFinite(options.autoHideMs) ? options.autoHideMs : 0;
+    const autoHideMs = Number.isFinite(options.autoHideMs) ? options.autoHideMs : defaultAutoHideMs(type);
     if (autoHideMs > 0) {
         statusHideTimer = setTimeout(() => hideStatus(), autoHideMs);
     }
@@ -653,7 +653,8 @@ async function newGame() {
         document.getElementById('attempts').textContent = '0';
         document.getElementById('maxAttempts').textContent = data.maxAttempts;
         document.getElementById('guessHistory').innerHTML = '';
-        document.getElementById('guessBtn').disabled = false;
+        const guessBtnNew = document.getElementById('guessBtn');
+        if (guessBtnNew) guessBtnNew.disabled = false;
         
         // Initialize analytics panel with initial dictionary metrics
         if (data.dictionaryMetrics) {
@@ -674,6 +675,9 @@ async function newGame() {
         
         // Set the strategy for the new game based on dropdown selection
         await changeStrategy();
+
+        // On mobile, always navigate to the game panel when starting a new game
+        if (window.innerWidth <= 768) switchMobileView('game');
     } catch (error) {
         console.error('Failed to create new game:', error);
     }
@@ -762,7 +766,8 @@ async function makeGuess() {
         if (data.gameWon) {
             gameEnded = true;
             disableLetterInputs();
-            document.getElementById('guessBtn').disabled = true;
+            const guessBtnWon = document.getElementById('guessBtn');
+            if (guessBtnWon) guessBtnWon.disabled = true;
             showStatus('🎉 Congratulations! You won!', 'success');
             updateAssistant('won', data.attemptNumber);
             // Save game result
@@ -770,7 +775,8 @@ async function makeGuess() {
         } else if (data.gameOver) {
             gameEnded = true;
             disableLetterInputs();
-            document.getElementById('guessBtn').disabled = true;
+            const guessBtnOver = document.getElementById('guessBtn');
+            if (guessBtnOver) guessBtnOver.disabled = true;
             // Fetch game status to get target word and update status
             fetchTargetWordAndSave(data.attemptNumber);
         } else {
@@ -3545,7 +3551,7 @@ function initMobileViewSwitcher() {
 }
 
 function handleMobilePanelMode() {
-    if (window.innerWidth > 768) {
+    if (window.innerWidth >= 769) {
         showAllPanels();
         return;
     }
@@ -3558,7 +3564,7 @@ function handleMobilePanelMode() {
 }
 
 function switchMobileView(view) {
-    if (window.innerWidth > 768) {
+    if (window.innerWidth >= 769) {
         // Don't switch on desktop, show all panels
         return;
     }
@@ -3590,7 +3596,7 @@ function switchMobileView(view) {
 }
 
 function showAllPanels() {
-    if (window.innerWidth <= 768) {
+    if (window.innerWidth < 769) {
         return;
     }
 
