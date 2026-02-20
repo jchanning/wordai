@@ -968,13 +968,15 @@ function updateOccurrenceTable(occurrenceData) {
         return;
     }
     
-    // Create table
-    const table = document.createElement('table');
-    table.style.cssText = 'width: 100%; border-collapse: collapse; font-size: 0.85em; font-family: monospace; table-layout: fixed;';
-    
     // Get number of positions from first entry
     const firstKey = Object.keys(occurrenceData)[0];
     const numPositions = occurrenceData[firstKey] ? occurrenceData[firstKey].length : 5;
+
+    // Create table
+    // width: 100% fills the right column; the min-width on each header cell
+    // (44px per position) ensures columns are readable for any word length.
+    const table = document.createElement('table');
+    table.style.cssText = 'width: 100%; border-collapse: collapse; font-size: 0.85em; font-family: monospace;';
     
     // Create header row
     const thead = document.createElement('thead');
@@ -991,7 +993,7 @@ function updateOccurrenceTable(occurrenceData) {
         const posHeader = document.createElement('th');
         posHeader.textContent = `P${i + 1}`;
         posHeader.className = 'pos-label';
-        posHeader.style.cssText = 'padding: 6px 4px; text-align: center; border-bottom: 2px solid var(--text-secondary); position: sticky; top: 0; background: var(--bg-primary); z-index: 1;';
+        posHeader.style.cssText = 'padding: 6px 6px; text-align: center; border-bottom: 2px solid var(--text-secondary); position: sticky; top: 0; background: var(--bg-primary); z-index: 1; min-width: 44px;';
         headerRow.appendChild(posHeader);
     }
     
@@ -1056,7 +1058,7 @@ function updateOccurrenceTable(occurrenceData) {
                 textStyle = 'color: var(--text-primary); font-weight: 500;';
             }
             
-            countCell.style.cssText = `padding: 6px 4px; text-align: center; ${textStyle} ${bgColor}`;
+            countCell.style.cssText = `padding: 6px 6px; text-align: center; white-space: nowrap; ${textStyle} ${bgColor}`;
             row.appendChild(countCell);
         }
         
@@ -2224,17 +2226,32 @@ function initializeKeyboard() {
             rowDiv.appendChild(button);
         });
         
-        // Add special keys to bottom row if needed, 
-        // but for now we rely on explicit Backspace/Guess buttons in UI
+        // Add special keys to bottom row
         if (rowIndex === 2) {
-             const backspaceBtn = document.createElement('button');
-             backspaceBtn.className = 'game-key wide-key';
-             backspaceBtn.innerHTML = '⌫'; // Backspace symbol
-             backspaceBtn.onclick = function(e) {
-                 e.preventDefault();
-                 if (!gameEnded) deleteLastLetter();
-             };
-             rowDiv.appendChild(backspaceBtn);
+            // ENTER key on the left — also serves as the Make Guess button
+            const enterBtn = document.createElement('button');
+            enterBtn.id = 'guessBtn';
+            enterBtn.type = 'button';
+            enterBtn.className = 'game-key wide-key enter-key';
+            enterBtn.textContent = 'ENTER';
+            enterBtn.setAttribute('aria-label', 'Enter / Make Guess');
+            enterBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                if (!this.disabled && !gameEnded) makeGuess();
+            });
+            rowDiv.insertBefore(enterBtn, rowDiv.firstChild);
+
+            // Backspace on the right
+            const backspaceBtn = document.createElement('button');
+            backspaceBtn.type = 'button';
+            backspaceBtn.className = 'game-key wide-key';
+            backspaceBtn.innerHTML = '⌫';
+            backspaceBtn.setAttribute('aria-label', 'Backspace');
+            backspaceBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                if (!gameEnded) deleteLastLetter();
+            });
+            rowDiv.appendChild(backspaceBtn);
         }
         
         keyboardContainer.appendChild(rowDiv);

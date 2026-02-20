@@ -132,13 +132,11 @@
                 <div class="letter-inputs" id="letterInputs">
                     <!-- Letter inputs will be dynamically generated based on selected dictionary -->
                 </div>
-                <button id="guessBtn" onclick="makeGuess()">Make Guess</button>
             </div>
             
             <div class="guess-history" id="guessHistory"></div>
             
             <div class="keyboard-container">
-                <h4>Keyboard</h4>
                 <div class="keyboard" id="gameKeyboard">
                     <!-- On-screen keyboard buttons will be generated dynamically -->
                 </div>
@@ -162,64 +160,65 @@
             </div>
             
             <div class="analytics-grid">
-                <!-- Left Column: Stats -->
-                <details class="analytics-col analytics-col-sm analytics-collapsible" open>
-                    <summary class="analytics-summary">Key Statistics</summary>
-                    <div class="analytics-content">
-                        <div class="info-section">
-                            <div class="info-label">Word Count:</div>
-                            <div class="info-value" id="totalWords">2315</div>
-                        </div>
-                        
-                        <div class="info-section">
-                            <div class="info-label">Remaining:</div>
-                            <div class="info-value" id="remainingWords">2315</div>
-                        </div>
-                        
-                        <div class="info-section">
-                            <div class="info-label">Eliminated:</div>
-                            <div class="info-value" id="eliminatedWords">0</div>
-                        </div>
-                        
-                        <div class="info-section">
-                            <div class="info-label">Reduction %:</div>
-                            <div class="info-value" id="reductionPercent">0%</div>
-                        </div>
-                        
-                        <div class="info-section">
-                            <div class="info-label">Unique Letters:</div>
-                            <div class="info-value" id="uniqueLetters">26</div>
-                        </div>
-                        
-                        <div class="info-section">
-                            <div class="info-label">Total Letter Count:</div>
-                            <div class="info-value" id="letterCount">-</div>
-                        </div>
-                    </div>
-                </details>
-                
-                <!-- Middle Column: Charts -->
-                <details class="analytics-col analytics-col-md analytics-collapsible" open>
-                    <summary class="analytics-summary">Visual Analysis</summary>
-                    <div class="analytics-content">
-                        <div class="analytics-section">
-                            <h4 class="analytics-section-title">Total Letters by Position</h4>
-                            <div id="columnLengthsChart" class="bar-chart-box">
-                                <!-- Bar chart will be dynamically generated here -->
+                <!-- Left Column: Key Statistics + Visual Analysis -->
+                <div class="analytics-left-col">
+                    <details class="analytics-collapsible" open>
+                        <summary class="analytics-summary">Key Statistics</summary>
+                        <div class="analytics-content">
+                            <div class="info-section">
+                                <div class="info-label">Word Count:</div>
+                                <div class="info-value" id="totalWords">2315</div>
+                            </div>
+                            
+                            <div class="info-section">
+                                <div class="info-label">Remaining:</div>
+                                <div class="info-value" id="remainingWords">2315</div>
+                            </div>
+                            
+                            <div class="info-section">
+                                <div class="info-label">Eliminated:</div>
+                                <div class="info-value" id="eliminatedWords">0</div>
+                            </div>
+                            
+                            <div class="info-section">
+                                <div class="info-label">Reduction %:</div>
+                                <div class="info-value" id="reductionPercent">0%</div>
+                            </div>
+                            
+                            <div class="info-section">
+                                <div class="info-label">Unique Letters:</div>
+                                <div class="info-value" id="uniqueLetters">26</div>
+                            </div>
+                            
+                            <div class="info-section">
+                                <div class="info-label">Total Letter Count:</div>
+                                <div class="info-value" id="letterCount">-</div>
                             </div>
                         </div>
-                        
-                        <div class="analytics-section">
-                            <h4 class="analytics-section-title">Most Common Letters</h4>
-                            <div id="mostFrequentTable" class="analytics-box">
-                                <!-- Table will be dynamically generated here -->
+                    </details>
+                    
+                    <details class="analytics-collapsible" open>
+                        <summary class="analytics-summary">Visual Analysis</summary>
+                        <div class="analytics-content">
+                            <div class="analytics-section">
+                                <h4 class="analytics-section-title">Total Letters by Position</h4>
+                                <div id="columnLengthsChart" class="bar-chart-box">
+                                    <!-- Bar chart will be dynamically generated here -->
+                                </div>
+                            </div>
+                            
+                            <div class="analytics-section">
+                                <h4 class="analytics-section-title">Most Common Letters</h4>
+                                <div id="mostFrequentTable" class="analytics-box">
+                                    <!-- Table will be dynamically generated here -->
+                                </div>
                             </div>
                         </div>
-                    </div>
-                </details>
+                    </details>
+                </div>
                 
                 <!-- Right Column: Letters by Position -->
-                <details class="analytics-col analytics-col-lg analytics-collapsible" open>
+                <details class="analytics-collapsible analytics-right-col" open>
                     <summary class="analytics-summary">Letters by Position</summary>
                     <div class="analytics-content">
                         <div class="analytics-section">
@@ -490,7 +489,7 @@
     <footer class="app-footer">
         <div class="footer-content">
             <div class="footer-copyright">
-                © 2026 FistralTech Ltd | v1.5.2
+                © 2026 FistralTech Ltd | v1.6.1
             </div>
             <nav class="footer-links" aria-label="Footer navigation">
                 <a href="https://fistraltech.com" target="_blank" rel="noopener noreferrer" class="footer-link">fistraltech.com</a>

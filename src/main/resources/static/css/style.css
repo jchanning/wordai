@@ -450,7 +450,7 @@ body {
 
 .analytics-grid {
     display: grid;
-    grid-template-columns: 1fr 1fr 1fr;
+    grid-template-columns: 1fr 1.4fr;
     gap: var(--padding-lg);
     flex: 1;
     min-height: 0;
@@ -459,6 +459,30 @@ body {
 .analytics-col {
     display: flex;
     flex-direction: column;
+    min-height: 0;
+}
+
+/* Left column: stacks Key Statistics above Visual Analysis */
+.analytics-left-col {
+    display: flex;
+    flex-direction: column;
+    gap: var(--padding-md);
+    min-height: 0;
+    overflow-y: auto;
+}
+
+/* Right column: Letters by Position panel fills the column height */
+.analytics-right-col {
+    display: flex !important;
+    flex-direction: column;
+    min-height: 0;
+    overflow: hidden;
+}
+
+.analytics-right-col > .analytics-content {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
     min-height: 0;
 }
 
@@ -543,6 +567,10 @@ body {
     background: var(--bg-primary);
     border-radius: 6px;
     padding: 10px;
+}
+
+#occurrenceTable {
+    overflow-x: visible;
 }
 
 /* Shared label utilities for analytics tables/charts */
@@ -802,6 +830,15 @@ body {
 @media (max-width: 1024px) {
     .analytics-grid {
         grid-template-columns: 1fr;
+    }
+    .analytics-left-col {
+        overflow-y: visible;
+    }
+    .analytics-right-col {
+        overflow: visible;
+    }
+    .analytics-right-col > .analytics-content {
+        overflow-y: visible;
     }
 }
 
@@ -1458,18 +1495,6 @@ h3 {
     color: white;
 }
 .btn-info:hover { background-color: var(--accent-hover); }
-
-#guessBtn {
-    width: 100%;
-    max-width: 200px;
-    padding: var(--padding-sm);
-    font-size: 1rem;
-    background-color: var(--accent-primary);
-    color: white;
-    margin-top: var(--padding-xs);
-}
-#guessBtn:hover { background-color: var(--accent-hover); }
-#guessBtn:disabled { background-color: var(--bg-tertiary); cursor: not-allowed; opacity: 0.7; }
 
 /* --- Selectors --- */
 select {
@@ -2405,13 +2430,6 @@ select:focus {
         min-height: 48px;
     }
     
-    #guessBtn {
-        width: 100%;
-        font-size: var(--font-size-h2);
-        padding: 1rem;
-        min-height: 48px;
-    }
-    
     .screen-title {
         font-size: var(--font-size-h2);
     }
@@ -2995,6 +3013,23 @@ select:focus {
 .game-key.wide-key {
     flex: 1.5;
     font-size: 1.25rem; /* Larger icon for backspace */
+}
+
+.game-key.enter-key {
+    background-color: var(--accent-primary);
+    color: white;
+    font-size: 0.85rem;
+    letter-spacing: 0.05em;
+}
+
+.game-key.enter-key:hover:not(:disabled) {
+    background-color: var(--accent-hover);
+}
+
+.game-key.enter-key:disabled {
+    background-color: var(--bg-tertiary);
+    color: var(--text-secondary);
+    opacity: 0.6;
 }
 
 /* Key Colors */
