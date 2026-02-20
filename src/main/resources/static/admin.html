@@ -68,6 +68,54 @@
         </div>
     </div>
 
+    <!-- Role Management Modal -->
+    <div class="admin-modal-overlay" id="roleModal" style="display: none;">
+        <div class="admin-modal">
+            <div class="admin-modal-header">
+                <h3>Manage Roles</h3>
+                <button class="admin-modal-close" onclick="closeRoleModal()">&times;</button>
+            </div>
+            <div class="admin-modal-body">
+                <p>User: <strong id="roleModalUser"></strong></p>
+                <div id="roleModalCurrent" style="margin: 10px 0;"></div>
+                <div class="admin-form-group">
+                    <label>Add Role:</label>
+                    <select id="roleToAdd">
+                        <option value="">Select a role...</option>
+                        <option value="ROLE_USER">User</option>
+                        <option value="ROLE_PREMIUM">Premium</option>
+                        <option value="ROLE_ADMIN">Admin</option>
+                    </select>
+                    <button class="btn-sm btn-edit" onclick="addRole()" style="margin-left: 8px;">Add</button>
+                </div>
+                <div class="admin-modal-error" id="roleModalError"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Password Reset Modal -->
+    <div class="admin-modal-overlay" id="passwordModal" style="display: none;">
+        <div class="admin-modal">
+            <div class="admin-modal-header">
+                <h3>Reset Password</h3>
+                <button class="admin-modal-close" onclick="closePasswordModal()">&times;</button>
+            </div>
+            <div class="admin-modal-body">
+                <p>User: <strong id="passwordModalUser"></strong></p>
+                <div class="admin-form-group">
+                    <label for="newPassword">New Password (min 8 characters):</label>
+                    <input type="password" id="newPassword" class="admin-input" minlength="8" required>
+                </div>
+                <div class="admin-form-group">
+                    <label for="confirmPassword">Confirm Password:</label>
+                    <input type="password" id="confirmPassword" class="admin-input" minlength="8" required>
+                </div>
+                <div class="admin-modal-error" id="passwordModalError"></div>
+                <button class="btn-sm btn-edit" onclick="submitPasswordReset()" style="margin-top: 12px;">Reset Password</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         let currentPage = 0;
         let totalPages = 1;
@@ -164,7 +212,8 @@
                 <td>${lastLogin}</td>
                 <td>
                     <div class="action-buttons">
-                        <button class="btn-sm btn-edit" onclick="editUser(${user.id})">Edit</button>
+                        <button class="btn-sm btn-edit" onclick="openRoleModal(${user.id}, '${user.username}')">Roles</button>
+                        ${user.provider === 'local' ? `<button class="btn-sm btn-edit" onclick="openPasswordModal(${user.id}, '${user.username}')">Reset PW</button>` : ''}
                         ${user.enabled ? 
                             `<button class="btn-sm btn-disable" onclick="toggleUserStatus(${user.id}, false)">Disable</button>` :
                             `<button class="btn-sm btn-enable" onclick="toggleUserStatus(${user.id}, true)">Enable</button>`
@@ -209,9 +258,114 @@
             }
         }
 
-        function editUser(userId) {
-            // This would open a modal or navigate to an edit page
-            alert(`Edit user functionality would be implemented here for user ID: ${userId}`);
+        let roleModalUserId = null;
+        let passwordModalUserId = null;
+
+        function openRoleModal(userId, username) {
+            roleModalUserId = userId;
+            document.getElementById('roleModalUser').textContent = username;
+            document.getElementById('roleModalError').textContent = '';
+            document.getElementById('roleModal').style.display = 'flex';
+            refreshRoleModal(userId);
+        }
+
+        function closeRoleModal() {
+            document.getElementById('roleModal').style.display = 'none';
+            roleModalUserId = null;
+        }
+
+        async function refreshRoleModal(userId) {
+            try {
+                const response = await fetch(`/api/admin/users/${userId}`);
+                if (!response.ok) throw new Error('Failed to load user');
+                const user = await response.json();
+                const container = document.getElementById('roleModalCurrent');
+                container.innerHTML = '<strong>Current roles:</strong><br>' +
+                    (user.roles || []).map(role => {
+                        const roleText = role.replace('ROLE_', '').toLowerCase();
+                        const displayText = roleText === 'user' ? 'registered' : roleText;
+                        return `<span class="role-badge role-${roleText}">${displayText} <a href="#" onclick="removeRole(${userId}, '${role}'); return false;" style="color: #ff6b6b; text-decoration: none; margin-left: 4px;">&times;</a></span>`;
+                    }).join(' ');
+            } catch (e) {
+                document.getElementById('roleModalError').textContent = e.message;
+            }
+        }
+
+        async function addRole() {
+            const role = document.getElementById('roleToAdd').value;
+            if (!role) return;
+            try {
+                const response = await fetch(`/api/admin/users/${roleModalUserId}/roles/${role.replace('ROLE_', '')}`, { method: 'POST' });
+                if (!response.ok) {
+                    const err = await response.json();
+                    throw new Error(err.error || 'Failed to add role');
+                }
+                document.getElementById('roleToAdd').value = '';
+                refreshRoleModal(roleModalUserId);
+                loadUsers(currentPage);
+                loadUserStats();
+            } catch (e) {
+                document.getElementById('roleModalError').textContent = e.message;
+            }
+        }
+
+        async function removeRole(userId, role) {
+            try {
+                const response = await fetch(`/api/admin/users/${userId}/roles/${role.replace('ROLE_', '')}`, { method: 'DELETE' });
+                if (!response.ok) {
+                    const err = await response.json();
+                    throw new Error(err.error || 'Failed to remove role');
+                }
+                refreshRoleModal(userId);
+                loadUsers(currentPage);
+                loadUserStats();
+            } catch (e) {
+                document.getElementById('roleModalError').textContent = e.message;
+            }
+        }
+
+        function openPasswordModal(userId, username) {
+            passwordModalUserId = userId;
+            document.getElementById('passwordModalUser').textContent = username;
+            document.getElementById('newPassword').value = '';
+            document.getElementById('confirmPassword').value = '';
+            document.getElementById('passwordModalError').textContent = '';
+            document.getElementById('passwordModal').style.display = 'flex';
+        }
+
+        function closePasswordModal() {
+            document.getElementById('passwordModal').style.display = 'none';
+            passwordModalUserId = null;
+        }
+
+        async function submitPasswordReset() {
+            const password = document.getElementById('newPassword').value;
+            const confirm = document.getElementById('confirmPassword').value;
+            const errorDiv = document.getElementById('passwordModalError');
+
+            if (password.length < 8) {
+                errorDiv.textContent = 'Password must be at least 8 characters';
+                return;
+            }
+            if (password !== confirm) {
+                errorDiv.textContent = 'Passwords do not match';
+                return;
+            }
+            try {
+                const response = await fetch(`/api/admin/users/${passwordModalUserId}/password`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ password })
+                });
+                if (!response.ok) {
+                    const err = await response.json();
+                    throw new Error(err.error || 'Failed to reset password');
+                }
+                closePasswordModal();
+                showError('Password reset successfully');
+            } catch (e) {
+                errorDiv.textContent = e.message;
+            }
         }
 
         function showError(message) {

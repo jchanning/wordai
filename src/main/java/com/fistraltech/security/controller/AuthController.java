@@ -11,6 +11,8 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.web.bind.annotation.*;
 
+import jakarta.validation.Valid;
+
 import java.util.HashMap;
 import java.util.Map;
 
@@ -25,7 +27,7 @@ public class AuthController {
     }
     
     @PostMapping("/register")
-    public ResponseEntity<?> register(@RequestBody UserRegistrationDto registrationDto) {
+    public ResponseEntity<?> register(@Valid @RequestBody UserRegistrationDto registrationDto) {
         try {
             UserDto userDto = userService.registerUser(registrationDto);
             return ResponseEntity.ok(userDto);

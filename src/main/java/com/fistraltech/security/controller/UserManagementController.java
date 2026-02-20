@@ -188,4 +188,29 @@ public class UserManagementController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
         }
     }
+    
+    /**
+     * Reset user password (local users only)
+     * PUT /api/admin/users/{id}/password
+     */
+    @PutMapping("/{id}/password")
+    public ResponseEntity<?> resetPassword(@PathVariable Long id, @RequestBody Map<String, String> body) {
+        String newPassword = body.get("password");
+        if (newPassword == null || newPassword.isBlank()) {
+            Map<String, String> error = new HashMap<>();
+            error.put("error", "password is required");
+            return ResponseEntity.badRequest().body(error);
+        }
+        try {
+            UserDto updated = userService.resetPassword(id, newPassword);
+            Map<String, Object> response = new HashMap<>();
+            response.put("message", "Password reset successfully");
+            response.put("user", updated);
+            return ResponseEntity.ok(response);
+        } catch (RuntimeException e) {
+            Map<String, String> error = new HashMap<>();
+            error.put("error", e.getMessage());
+            return ResponseEntity.badRequest().body(error);
+        }
+    }
 }
