@@ -11,7 +11,7 @@
     <meta http-equiv="Expires" content="0">
     <title>WordAI Game - Web Interface</title>
     <link rel="icon" href="data:,">
-    <link rel="stylesheet" href="css/style.css?v=20260215_2000">
+    <link rel="stylesheet" href="css/style.css?v=20260221_1">
 </head>
 <body>
     <div class="header-bar">
@@ -58,57 +58,66 @@
             <div class="main-layout" id="gameView">
         <!-- Left Column: Game History -->
             <div class="history-panel panel play-panel">
-            <div class="panel-header-row">
-                <h3>Session</h3>
-                <div class="panel-header-actions">
-                    <button class="btn btn-success btn-md" onclick="newSession()">New</button>
-                    <button class="btn btn-secondary btn-md" onclick="showSessionViewer()">View</button>
+            <!-- Panel 5: Session Stats -->
+            <div data-mobile-panel="5">
+                <div class="panel-header-row">
+                    <h3>Session</h3>
+                    <div class="panel-header-actions">
+                        <button class="btn btn-success btn-md" onclick="newSession()">New</button>
+                        <button class="btn btn-secondary btn-md" onclick="showSessionViewer()">View</button>
+                    </div>
+                </div>
+                <div class="win-rate-stat">
+                    <div class="win-rate-label">Win Rate</div>
+                    <div class="win-rate-value" id="stat-winrate">0%</div>
+                </div>
+                <div class="stats-grid">
+                    <!-- Row 1: Total, Won, Lost -->
+                    <div class="stat-item">
+                        <div class="stat-label">Total</div>
+                        <div class="stat-value" id="stat-total">0</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">Won</div>
+                        <div class="stat-value" id="stat-won">0</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">Lost</div>
+                        <div class="stat-value" id="stat-lost">0</div>
+                    </div>
+                    <!-- Row 2: Min, Max, Avg -->
+                    <div class="stat-item">
+                        <div class="stat-label">Min</div>
+                        <div class="stat-value" id="stat-min">-</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">Max</div>
+                        <div class="stat-value" id="stat-max">-</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">Avg</div>
+                        <div class="stat-value" id="stat-avg">-</div>
+                    </div>
                 </div>
             </div>
-            <div class="win-rate-stat">
-                <div class="win-rate-label">Win Rate</div>
-                <div class="win-rate-value" id="stat-winrate">0%</div>
-            </div>
-            <div class="stats-grid">
-                <!-- Row 1: Total, Won, Lost -->
-                <div class="stat-item">
-                    <div class="stat-label">Total</div>
-                    <div class="stat-value" id="stat-total">0</div>
-                </div>
-                <div class="stat-item">
-                    <div class="stat-label">Won</div>
-                    <div class="stat-value" id="stat-won">0</div>
-                </div>
-                <div class="stat-item">
-                    <div class="stat-label">Lost</div>
-                    <div class="stat-value" id="stat-lost">0</div>
-                </div>
-                <!-- Row 2: Min, Max, Avg -->
-                <div class="stat-item">
-                    <div class="stat-label">Min</div>
-                    <div class="stat-value" id="stat-min">-</div>
-                </div>
-                <div class="stat-item">
-                    <div class="stat-label">Max</div>
-                    <div class="stat-value" id="stat-max">-</div>
-                </div>
-                <div class="stat-item">
-                    <div class="stat-label">Avg</div>
-                    <div class="stat-value" id="stat-avg">-</div>
+
+            <!-- Panel 6: Guess Distribution -->
+            <div data-mobile-panel="6">
+                <h3>Guess Distribution</h3>
+                <div id="attemptsDistribution" class="surface-box surface-box-md">
+                    <p class="muted-center muted-small">No games played yet</p>
                 </div>
             </div>
-            
-            <h3>Guess Distribution</h3>
-            <div id="attemptsDistribution" class="surface-box surface-box-md">
-                <p class="muted-center muted-small">No games played yet</p>
-            </div>
-            
-            <div class="panel-header-row">
-                <h3>Recent Games</h3>
-                <button class="btn btn-success btn-xs" onclick="exportSessionGamesToCSV()" title="Export all session games to CSV" data-role="premium">Export CSV</button>
-            </div>
-            <div class="game-history" id="game-history">
-                <p class="empty-history-msg muted-center">No games played yet</p>
+
+            <!-- Panel 7: Recent Games -->
+            <div data-mobile-panel="7">
+                <div class="panel-header-row">
+                    <h3>Recent Games</h3>
+                    <button class="btn btn-success btn-xs" onclick="exportSessionGamesToCSV()" title="Export all session games to CSV" data-role="premium">Export CSV</button>
+                </div>
+                <div class="game-history" id="game-history">
+                    <p class="empty-history-msg muted-center">No games played yet</p>
+                </div>
             </div>
         </div>
         
@@ -162,7 +171,8 @@
             <div class="analytics-grid">
                 <!-- Left Column: Key Statistics + Visual Analysis -->
                 <div class="analytics-left-col">
-                    <details class="analytics-collapsible" open>
+                    <!-- Panel 2: Key Statistics -->
+                    <details class="analytics-collapsible" data-mobile-panel="2" open>
                         <summary class="analytics-summary">Key Statistics</summary>
                         <div class="analytics-content">
                             <div class="info-section">
@@ -197,7 +207,8 @@
                         </div>
                     </details>
                     
-                    <details class="analytics-collapsible" open>
+                    <!-- Panel 3: Visual Analysis -->
+                    <details class="analytics-collapsible" data-mobile-panel="3" open>
                         <summary class="analytics-summary">Visual Analysis</summary>
                         <div class="analytics-content">
                             <div class="analytics-section">
@@ -217,8 +228,8 @@
                     </details>
                 </div>
                 
-                <!-- Right Column: Letters by Position -->
-                <details class="analytics-collapsible analytics-right-col" open>
+                <!-- Right Column: Letters by Position (Panel 4) -->
+                <details class="analytics-collapsible analytics-right-col" data-mobile-panel="4" open>
                     <summary class="analytics-summary">Letters by Position</summary>
                     <div class="analytics-content">
                         <div class="analytics-section">
@@ -236,19 +247,54 @@
 
         </section>
 
-        <!-- Mobile Bottom Navigation -->
+        <!-- Mobile Bottom Navigation (7 panels) -->
         <nav class="mobile-bottom-nav" id="mobileBottomNav">
-            <button class="mobile-nav-btn" data-view="session" onclick="switchMobileView('session')" aria-label="Session view">
-                <span class="mobile-nav-icon">📊</span>
-                <span class="mobile-nav-label">Session</span>
+            <!-- Panel 1: Game Board -->
+            <button class="mobile-nav-btn active" data-panel="1" onclick="switchMobilePanel(1)" aria-label="Game board" title="Game">
+                <svg class="mobile-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/>
+                    <rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>
+                </svg>
             </button>
-            <button class="mobile-nav-btn active" data-view="game" onclick="switchMobileView('game')" aria-label="Game view">
-                <span class="mobile-nav-icon">🎮</span>
-                <span class="mobile-nav-label">Game</span>
+            <!-- Panel 2: Key Statistics -->
+            <button class="mobile-nav-btn" data-panel="2" onclick="switchMobilePanel(2)" aria-label="Key statistics" title="Key Stats">
+                <svg class="mobile-nav-icon" viewBox="0 0 24 24" fill="currentColor">
+                    <rect x="3" y="11" width="4" height="10" rx="1"/><rect x="10" y="7" width="4" height="14" rx="1"/><rect x="17" y="4" width="4" height="17" rx="1"/>
+                </svg>
             </button>
-            <button class="mobile-nav-btn" data-view="assistant" onclick="switchMobileView('assistant')" aria-label="Assistant view">
-                <span class="mobile-nav-icon">🤖</span>
-                <span class="mobile-nav-label">Assistant</span>
+            <!-- Panel 3: Visual Analysis -->
+            <button class="mobile-nav-btn" data-panel="3" onclick="switchMobilePanel(3)" aria-label="Visual analysis" title="Visual Analysis">
+                <svg class="mobile-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="3,17 7,11 11,14 15,7 19,10"/><line x1="3" y1="21" x2="21" y2="21"/>
+                </svg>
+            </button>
+            <!-- Panel 4: Letters by Position -->
+            <button class="mobile-nav-btn" data-panel="4" onclick="switchMobilePanel(4)" aria-label="Letters by position" title="By Position">
+                <svg class="mobile-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                    <rect x="3" y="3" width="18" height="18" rx="2"/>
+                    <line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/>
+                    <line x1="9" y1="3" x2="9" y2="21"/><line x1="15" y1="3" x2="15" y2="21"/>
+                </svg>
+            </button>
+            <!-- Panel 5: Session Stats -->
+            <button class="mobile-nav-btn" data-panel="5" onclick="switchMobilePanel(5)" aria-label="Session stats" title="Session">
+                <svg class="mobile-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M6 3h12l-1.5 8a5 5 0 0 1-9 0Z"/><path d="M6 3H4a1 1 0 0 0-1 1v1a4 4 0 0 0 3.5 3.97"/>
+                    <path d="M18 3h2a1 1 0 0 1 1 1v1a4 4 0 0 1-3.5 3.97"/><line x1="12" y1="15" x2="12" y2="19"/><line x1="9" y1="21" x2="15" y2="21"/>
+                </svg>
+            </button>
+            <!-- Panel 6: Guess Distribution -->
+            <button class="mobile-nav-btn" data-panel="6" onclick="switchMobilePanel(6)" aria-label="Guess distribution" title="Distribution">
+                <svg class="mobile-nav-icon" viewBox="0 0 24 24" fill="currentColor">
+                    <rect x="2" y="16" width="3" height="5" rx="1"/><rect x="7" y="11" width="3" height="10" rx="1"/>
+                    <rect x="12" y="6" width="3" height="15" rx="1"/><rect x="17" y="9" width="3" height="12" rx="1"/>
+                </svg>
+            </button>
+            <!-- Panel 7: Recent Games -->
+            <button class="mobile-nav-btn" data-panel="7" onclick="switchMobilePanel(7)" aria-label="Recent games" title="History">
+                <svg class="mobile-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="9"/><polyline points="12,7 12,12 15,15"/>
+                </svg>
             </button>
         </nav>
 
@@ -298,7 +344,6 @@
                             <option value="4">4 Letters</option>
                             <option value="5" selected>5 Letters</option>
                             <option value="6">6 Letters</option>
-                            <option value="7">7 Letters</option>
                         </select>
                     </div>
                     <div class="form-group">
@@ -561,7 +606,7 @@
     <footer class="app-footer">
         <div class="footer-content">
             <div class="footer-copyright">
-                © 2026 FistralTech Ltd | v1.6.1
+                © 2026 FistralTech Ltd | v1.7.0
             </div>
             <nav class="footer-links" aria-label="Footer navigation">
                 <a href="https://fistraltech.com" target="_blank" rel="noopener noreferrer" class="footer-link">fistraltech.com</a>

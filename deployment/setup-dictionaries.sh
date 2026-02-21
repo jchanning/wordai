@@ -1,5 +1,5 @@
 #!/bin/bash
-# Extract dictionary files from JAR for cloud deployment
+# Extract dictionary files from JAR for cloud deployment to Oracle Cloud Infrastructure (OCI)
 # This script should be run on the server after uploading the JAR
 
 echo "=== Setting up WordAI Dictionaries ==="
@@ -17,7 +17,6 @@ echo "Extracting dictionaries from JAR..."
 jar xf wordai-1.0-SNAPSHOT.jar BOOT-INF/classes/dictionaries/4_letter_words.txt
 jar xf wordai-1.0-SNAPSHOT.jar BOOT-INF/classes/dictionaries/5_letter_words.txt
 jar xf wordai-1.0-SNAPSHOT.jar BOOT-INF/classes/dictionaries/6_letter_words.txt
-jar xf wordai-1.0-SNAPSHOT.jar BOOT-INF/classes/dictionaries/7_letter_words.txt
 
 # Move to dictionaries folder
 echo "Moving dictionaries to dictionaries/ folder..."

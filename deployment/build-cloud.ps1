@@ -12,7 +12,7 @@ if ($LASTEXITCODE -eq 0) {
     Write-Host ""
     Write-Host "Build successful!" -ForegroundColor Green
     Write-Host ""
-    Write-Host "JAR location: target\wordai-1.6.1.jar" -ForegroundColor Cyan
+    Write-Host "JAR location: target\wordai-1.7.0.jar" -ForegroundColor Cyan
     Write-Host "Target Java version: 17" -ForegroundColor Cyan
     Write-Host ""
     Write-Host "Next steps:" -ForegroundColor Yellow

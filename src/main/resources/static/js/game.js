@@ -2,7 +2,8 @@ const API_BASE = '/api/wordai';
 let currentGameId = null;
 let gameEnded = false;
 let currentView = 'play';
-let currentMobileView = 'game'; // Track which mobile panel is visible (game, assistant, session)
+let currentMobileView = 'game'; // Legacy alias — kept for external callers
+let currentMobilePanel = 1;     // Active panel 1-7 (1 = game board)
 let currentWordLength = 5; // Track the current game's word length
 let currentDictionarySize = 2315; // Track the current dictionary's total word count
 let helpUsedCount = 0; // Track how many times help has been used in this game
@@ -3537,11 +3538,11 @@ function closeMobileNav() {
    ======================================== */
 
 function initMobileViewSwitcher() {
-    const navBtns = document.querySelectorAll('.mobile-nav-btn');
+    const navBtns = document.querySelectorAll('.mobile-nav-btn[data-panel]');
     navBtns.forEach(btn => {
         btn.addEventListener('click', function() {
-            const view = this.getAttribute('data-view');
-            switchMobileView(view);
+            const panel = parseInt(this.getAttribute('data-panel'), 10);
+            if (!isNaN(panel)) switchMobilePanel(panel);
         });
     });
 
@@ -3555,57 +3556,86 @@ function handleMobilePanelMode() {
         showAllPanels();
         return;
     }
-
-    if (!currentMobileView) {
-        currentMobileView = 'game';
-    }
-
-    switchMobileView(currentMobileView);
+    switchMobilePanel(currentMobilePanel);
 }
 
-function switchMobileView(view) {
-    if (window.innerWidth >= 769) {
-        // Don't switch on desktop, show all panels
-        return;
-    }
+/**
+ * Switch to one of the 7 mobile panels.
+ *   1 → game board
+ *   2 → key statistics (info-panel sub-panel)
+ *   3 → visual analysis (info-panel sub-panel)
+ *   4 → letters by position (info-panel sub-panel)
+ *   5 → session stats (history-panel sub-panel)
+ *   6 → guess distribution (history-panel sub-panel)
+ *   7 → recent games (history-panel sub-panel)
+ */
+function switchMobilePanel(n) {
+    if (window.innerWidth >= 769) return;
 
-    currentMobileView = view;
+    currentMobilePanel = n;
+    currentMobileView = (n === 1) ? 'game' : (n <= 4) ? 'assistant' : 'session'; // keep legacy in sync
 
-    // Update button states
-    document.querySelectorAll('.mobile-nav-btn').forEach(btn => {
-        const isActive = btn.getAttribute('data-view') === view;
+    // Update nav button active states
+    document.querySelectorAll('.mobile-nav-btn[data-panel]').forEach(btn => {
+        const isActive = parseInt(btn.getAttribute('data-panel'), 10) === n;
         btn.classList.toggle('active', isActive);
         btn.setAttribute('aria-current', isActive ? 'page' : 'false');
     });
 
-    // Remove mobile-active from ALL panels first
-    document.querySelector('.history-panel')?.classList.remove('mobile-active');
-    document.querySelector('.game-container')?.classList.remove('mobile-active');
-    document.querySelector('.info-panel')?.classList.remove('mobile-active');
+    // Clear all column panel active states
+    const historyPanel   = document.querySelector('.history-panel');
+    const gameContainer  = document.querySelector('.game-container');
+    const infoPanel      = document.querySelector('.info-panel');
+    historyPanel?.classList.remove('mobile-active');
+    gameContainer?.classList.remove('mobile-active');
+    infoPanel?.classList.remove('mobile-active');
 
-    // Then add mobile-active to the selected panel only
-    const panelMap = {
-        session: document.querySelector('.history-panel'),
-        game: document.querySelector('.game-container'),
-        assistant: document.querySelector('.info-panel')
+    // Clear all sub-panel active states
+    document.querySelectorAll('[data-mobile-panel]').forEach(el => {
+        el.classList.remove('mobile-panel-active');
+    });
+
+    // Activate parent column panel
+    const parentMap = {
+        1: gameContainer,
+        2: infoPanel, 3: infoPanel, 4: infoPanel,
+        5: historyPanel, 6: historyPanel, 7: historyPanel
     };
+    const parent = parentMap[n];
+    if (parent) {
+        parent.classList.add('mobile-active');
+        parent.scrollTop = 0;
+    }
 
-    if (panelMap[view]) {
-        panelMap[view].classList.add('mobile-active');
+    // Activate sub-panel (panels 2-7 each have a [data-mobile-panel] section)
+    if (n >= 2) {
+        const subPanel = document.querySelector(`[data-mobile-panel="${n}"]`);
+        if (subPanel) {
+            subPanel.classList.add('mobile-panel-active');
+            subPanel.scrollTop = 0;
+        }
     }
 }
 
-function showAllPanels() {
-    if (window.innerWidth < 769) {
-        return;
-    }
+/** Backward-compat alias — kept so any external/legacy call still works. */
+function switchMobileView(view) {
+    const viewToPanel = { game: 1, assistant: 2, session: 5 };
+    const panel = viewToPanel[view] ?? 1;
+    switchMobilePanel(panel);
+}
 
-    // Remove mobile-active classes and show all panels normally
+function showAllPanels() {
+    if (window.innerWidth < 769) return;
+
+    // Remove mobile-active and sub-panel-active classes for desktop
     document.querySelectorAll('.history-panel, .game-container, .info-panel').forEach(panel => {
         panel.classList.remove('mobile-active');
     });
+    document.querySelectorAll('[data-mobile-panel]').forEach(el => {
+        el.classList.remove('mobile-panel-active');
+    });
 
-    // Reset button states
+    // Reset nav button states
     document.querySelectorAll('.mobile-nav-btn').forEach(btn => {
         btn.classList.remove('active');
     });

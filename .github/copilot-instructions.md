@@ -3,6 +3,9 @@
 WordAI is a Wordle-like simulation and analysis system. This guide equips AI agents to make correct, fast changes aligned with project conventions.
 
 ## Architecture Map
+See [docs/ARCHITECTURE.md](../docs/ARCHITECTURE.md) for the full architecture reference including layer rules, data flow, invariants, and known violations.
+
+Quick summary:
 - `com.fistraltech.core`: Game primitives
 	- `WordGame`: Applies a guess to a target; produces `Response` of per-position codes: `G` (green), `A` (amber), `R` (red), `X` (excess).
 	- `Dictionary`: Word set, word length, column stats (`Column`), and helpers.

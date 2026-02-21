@@ -2143,35 +2143,16 @@ select:focus {
     }
     
     .header-bar {
-        position: sticky;
+        position: fixed;
         top: 0;
-        z-index: 100;
+        left: 0;
+        right: 0;
+        z-index: 200;  /* above content, below mobile nav (2000) */
     }
-    
-    .app-header {
-        padding: var(--padding-sm) var(--padding-md);
-        gap: var(--padding-sm);
-        flex-wrap: nowrap; /* Keep on one line */
-    }
-    
-    .app-header-left {
-        width: auto;
-        flex: 1;
-        order: 0;
-        justify-content: flex-start;
-        gap: var(--padding-sm);
-    }
-    
-    .app-header-right {
-        width: auto;
-        order: 0;
-        justify-content: flex-end;
-        gap: var(--padding-sm);
-    }
-    
-    .header-title {
-        font-size: var(--font-size-h2);
-        gap: 0.25rem;
+
+    /* Push all content below the fixed header */
+    body {
+        padding-top: 60px;
     }
     
     /* Compact user info on mobile */
@@ -2209,29 +2190,28 @@ select:focus {
         flex-shrink: 0;
     }
 
-    /* Mobile Header Layout */
+    /* Mobile Header — single enforcement block (removes earlier duplicate) */
     .app-header {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        flex-wrap: nowrap; /* Prevent wrapping so sign-in stays right */
+        flex-wrap: nowrap;
         padding: var(--padding-sm) var(--padding-md);
         gap: var(--padding-sm);
-        height: 60px; /* Enforce height */
+        height: 60px;
+        overflow: hidden; /* clip anything that exceeds 60px */
     }
 
-    /* Adjust Title Size on Mobile */
     .header-title {
         font-size: 1.15rem;
     }
 
-    /* Ensure left side doesn't grow too much, but allow title to show */
     .app-header-left {
         display: flex;
         align-items: center;
         gap: var(--padding-sm);
-        flex: 1; /* Allow it to take available space */
-        min-width: 0; /* Allow shrinking */
+        flex: 1;
+        min-width: 0;
     }
     
     /* Mobile navigation */
@@ -3364,6 +3344,14 @@ select:focus {
 
 /* Hide all panels by default on mobile */
 @media (max-width: 768px) {
+    /* Issues 1-3: Remove redundant headings; free vertical space for keyboard */
+    #screen-play .screen-toolbar {
+        display: none !important; /* removes "Interactive Play" */
+    }
+    .game-container .panel-header-row h3 {
+        display: none !important; /* removes "Game" label; keeps selector + New btn */
+    }
+
     /* Main Layout Reset for Mobile */
     .main-layout {
         display: block !important; /* Switch from grid to block for simpler visibility control */
@@ -3478,6 +3466,53 @@ select:focus {
         height: 3.5rem !important; /* Taller touch targets */
         font-size: 1.1rem;
     }
+
+    /* ---- Sub-panel navigation (7-panel system) ---- */
+
+    /* Ensure analytics wrappers are visible when info-panel is the active parent */
+    .info-panel.mobile-active .analytics-grid {
+        display: flex !important;
+        flex-direction: column;
+        width: 100%;
+        gap: 0;
+    }
+
+    .info-panel.mobile-active .analytics-left-col {
+        width: 100% !important;
+        display: flex;
+        flex-direction: column;
+    }
+
+    /* Hide ALL tagged sub-panels by default when their parent is mobile-active */
+    .info-panel.mobile-active [data-mobile-panel],
+    .history-panel.mobile-active [data-mobile-panel] {
+        display: none !important;
+    }
+
+    /* Show only the designated active sub-panel */
+    .info-panel.mobile-active [data-mobile-panel].mobile-panel-active,
+    .history-panel.mobile-active [data-mobile-panel].mobile-panel-active {
+        display: block !important;
+        width: 100% !important;
+        overflow-y: auto;
+        padding: var(--padding-sm) var(--padding-md);
+        animation: fadeIn 0.15s ease-out;
+    }
+
+    /* When a <details> is the full panel, remove the disclosure arrow */
+    .info-panel.mobile-active [data-mobile-panel].mobile-panel-active > summary::marker,
+    .info-panel.mobile-active [data-mobile-panel].mobile-panel-active > summary::-webkit-details-marker {
+        display: none;
+    }
+    .info-panel.mobile-active [data-mobile-panel].mobile-panel-active > summary {
+        font-size: 1rem;
+        font-weight: 700;
+        cursor: default;
+        padding-bottom: var(--padding-sm);
+        border-bottom: 1px solid var(--border-color);
+        margin-bottom: var(--padding-sm);
+        list-style: none;
+    }
 }
 
 @keyframes fadeIn {
@@ -3535,11 +3570,16 @@ select:focus {
         display: flex !important;
     }
 
-    /* Adjust main layout to account for bottom nav */
+    /* Lock app-main to viewport minus header — prevents page-level scroll
+       that would unanchor the sticky header and push the keyboard off-screen.
+       Scoped to play screen only; other screens scroll normally. */
+    body:has(#screen-play:not([hidden])) .app-main {
+        overflow: hidden;
+        height: calc(100dvh - 60px); /* 60px = header-bar */
+    }
     .app-main {
         max-width: 100%;
         padding: 0;
-        padding-bottom: calc(70px + env(safe-area-inset-bottom, 0px));
     }
 }
 
@@ -3557,7 +3597,7 @@ select:focus {
     color: var(--text-secondary);
     font-size: 0.75rem;
     font-weight: 600;
-    width: 33.333%;
+    width: 14.285%;
     min-width: 0;
     transition: all 0.2s ease;
     border-top: 3px solid transparent;
@@ -3580,11 +3620,16 @@ select:focus {
 }
 
 .mobile-nav-icon {
-    font-size: 1.25rem;
+    font-size: 1.25rem; /* fallback for emoji */
+    width: 22px;
+    height: 22px;
+    display: block;
+    flex-shrink: 0;
 }
 
 .mobile-nav-label {
     font-size: 0.65rem;
+    display: none; /* symbol-only nav */
 }
 
 @media (max-width: 480px) {
@@ -3605,8 +3650,9 @@ select:focus {
         height: 56px;
     }
 
-    .app-main {
-        padding-bottom: 66px;
+    body:has(#screen-play:not([hidden])) .app-main {
+        height: calc(100dvh - 60px); /* keep locked height at smaller nav size too */
+        overflow: hidden;
     }
 
     /* Footer mobile adjustments */
