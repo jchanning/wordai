@@ -2269,7 +2269,13 @@ select:focus {
         background: rgba(59, 130, 246, 0.15);
     }
     
-    /* Mobile overlay when menu is open */
+    /* Mobile overlay when menu is open.
+       z-index MUST be lower than .header-bar (z-index:200) which creates a
+       stacking context.  .app-nav lives inside that context at z-index:2000,
+       so its effective root-level order equals header-bar's 200.  If the
+       overlay were above 200 it would intercept all taps on the nav links.
+       Setting it to 150 keeps the overlay above plain page content while
+       leaving the header-bar (and the nav drawer inside it) on top. */
     .mobile-nav-overlay {
         position: fixed;
         top: 0;
@@ -2277,7 +2283,7 @@ select:focus {
         width: 100vw;
         height: 100vh;
         background: rgba(0, 0, 0, 0.5);
-        z-index: 1500; /* Below nav, above content */
+        z-index: 150; /* Must stay below header-bar (z-index:200) so nav links remain tappable */
         opacity: 0;
         pointer-events: none;
         transition: opacity 0.3s ease;
@@ -3344,6 +3350,88 @@ select:focus {
 
 /* Hide all panels by default on mobile */
 @media (max-width: 768px) {
+    /* ---- Desktop-only nav items ---- */
+    .desktop-only {
+        display: none !important;
+    }
+
+    /* ---- Non-play screens: scroll naturally under fixed header ----
+       app-main is overflow:hidden only on the play screen (body:has rule below).
+       For all other screens, content just flows and app-main scrolls. */
+    #screen-dictionary,
+    #screen-help,
+    #screen-session,
+    #screen-admin {
+        display: block;
+        width: 100%;
+        box-sizing: border-box;
+        padding-bottom: var(--padding-lg);
+    }
+
+    /* ---- Dictionary: single-column stacked layout ---- */
+    #screen-dictionary .screen-toolbar {
+        position: sticky;
+        top: 0;
+        background: var(--bg-primary);
+        z-index: 10;
+        padding: var(--padding-sm) 0;
+        margin-bottom: var(--padding-sm);
+        border-bottom: 1px solid var(--border-color);
+    }
+
+    #screen-dictionary .dictionary-grid {
+        grid-template-columns: 1fr;
+        gap: var(--padding-md);
+    }
+
+    #screen-dictionary .dictionary-col {
+        width: 100%;
+    }
+
+    /* Clip tall scroll areas so panels don't exceed half the viewport */
+    #screen-dictionary .dictionary-freq-scroll,
+    #screen-dictionary .dictionary-words-scroll {
+        max-height: 40vh;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    /* ---- Help: clean presentation ---- */
+    #screen-help .screen-toolbar {
+        position: sticky;
+        top: 0;
+        background: var(--bg-primary);
+        z-index: 10;
+        padding: var(--padding-sm) 0;
+        margin-bottom: var(--padding-sm);
+        border-bottom: 1px solid var(--border-color);
+    }
+
+    #screen-help .panel {
+        border: none;
+        background: transparent;
+        box-shadow: none;
+        padding: 0;
+    }
+
+    #screen-help .help-content {
+        padding: var(--padding-sm) 0 !important;
+        font-size: 0.95rem;
+        line-height: 1.6;
+    }
+
+    #screen-help .help-content table {
+        display: block;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        font-size: 0.85rem;
+    }
+
+    #screen-help .help-content pre {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        font-size: 0.8rem;
+    }
     /* Issues 1-3: Remove redundant headings; free vertical space for keyboard */
     #screen-play .screen-toolbar {
         display: none !important; /* removes "Interactive Play" */

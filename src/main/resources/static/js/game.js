@@ -3474,11 +3474,17 @@ function initMobileNavigation() {
         closeMobileNav();
     });
     
-    // Close menu when a nav link is clicked
+    // Close menu and navigate when a nav link is clicked
     const navLinks = appNav.querySelectorAll('.nav-link');
     navLinks.forEach(link => {
-        link.addEventListener('click', function() {
+        link.addEventListener('click', function(e) {
+            const nav = this.getAttribute('data-nav');
             closeMobileNav();
+            if (nav) {
+                e.preventDefault(); // don't let the browser handle the hash change
+                window.location.hash = '#/' + nav;
+                setView(nav);      // drive navigation explicitly
+            }
         });
     });
     
@@ -3554,6 +3560,18 @@ function initMobileViewSwitcher() {
 function handleMobilePanelMode() {
     if (window.innerWidth >= 769) {
         showAllPanels();
+        return;
+    }
+    // Only activate play-screen panels when actually on the play screen.
+    // On all other screens the !important display rules would bleed game panels
+    // over the target screen content, blocking interaction.
+    if (currentView !== 'play') {
+        document.querySelectorAll('.history-panel, .game-container, .info-panel').forEach(el => {
+            el.classList.remove('mobile-active');
+        });
+        document.querySelectorAll('[data-mobile-panel]').forEach(el => {
+            el.classList.remove('mobile-panel-active');
+        });
         return;
     }
     switchMobilePanel(currentMobilePanel);
