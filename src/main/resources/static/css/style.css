@@ -3368,6 +3368,13 @@ select:focus {
         padding-bottom: var(--padding-lg);
     }
 
+    /* Prevent session viewer cards from overflowing the viewport */
+    .session-viewer-panel {
+        max-width: 100%;
+        overflow-x: hidden;
+        box-sizing: border-box;
+    }
+
     /* ---- Dictionary: single-column stacked layout ---- */
     #screen-dictionary .screen-toolbar {
         position: sticky;

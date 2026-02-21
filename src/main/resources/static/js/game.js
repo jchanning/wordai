@@ -2486,7 +2486,7 @@ function renderSessionDetails() {
         const formattedDate = date.toLocaleString();
 
         html += `
-            <div style="background: white; color: var(--bg-primary); border-radius: 12px; padding: 20px; margin-bottom: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); border-left: 5px solid ${game.won ? 'var(--success-green)' : 'var(--error-red)'};">
+            <div style="background: white; color: var(--bg-primary); border-radius: 12px; padding: 20px; margin-bottom: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); border-left: 5px solid ${game.won ? 'var(--success-green)' : 'var(--error-red)'}; max-width: 100%; overflow: hidden; box-sizing: border-box;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
                     <div>
                         <h4 style="margin: 0; color: var(--bg-primary);">Game #${gameNumber}: ${game.targetWord.toUpperCase()}</h4>
@@ -2506,14 +2506,15 @@ function renderSessionDetails() {
             html += `
                 <div style="margin-top: 20px;">
                     <h5 style="color: var(--bg-primary); margin-bottom: 10px;">Guess History:</h5>
-                    <table style="width: 100%; border-collapse: collapse;">
+                    <div style="overflow-x: auto; -webkit-overflow-scrolling: touch; width: 100%;">
+                    <table style="width: 100%; min-width: 340px; border-collapse: collapse;">
                         <thead>
-                            <tr style="background: #f1f5f9; color: var(--bg-primary); font-size: 0.85em; text-transform: uppercase;">
-                                <th style="padding: 10px; text-align: left; border-bottom: 2px solid #cbd5e1;">Attempt</th>
-                                <th style="padding: 10px; text-align: left; border-bottom: 2px solid #cbd5e1;">Guess</th>
-                                <th style="padding: 10px; text-align: left; border-bottom: 2px solid #cbd5e1;">Response</th>
-                                <th style="padding: 10px; text-align: right; border-bottom: 2px solid #cbd5e1;">Remaining Words</th>
-                                <th style="padding: 10px; text-align: right; border-bottom: 2px solid #cbd5e1;">Reduction %</th>
+                            <tr style="background: #f1f5f9; color: var(--bg-primary); font-size: 0.8em; text-transform: uppercase;">
+                                <th style="padding: 6px 8px; text-align: left; border-bottom: 2px solid #cbd5e1; white-space: nowrap;">#</th>
+                                <th style="padding: 6px 8px; text-align: left; border-bottom: 2px solid #cbd5e1; white-space: nowrap;">Guess</th>
+                                <th style="padding: 6px 8px; text-align: left; border-bottom: 2px solid #cbd5e1; white-space: nowrap;">Response</th>
+                                <th style="padding: 6px 8px; text-align: right; border-bottom: 2px solid #cbd5e1; white-space: nowrap;">Rem.</th>
+                                <th style="padding: 6px 8px; text-align: right; border-bottom: 2px solid #cbd5e1; white-space: nowrap;">Red.%</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -2531,17 +2532,17 @@ function renderSessionDetails() {
                     if (result.status === 'G') bgColor = '#6aaa64'; // Green
                     else if (result.status === 'A') bgColor = '#c9b458'; // Amber
                     
-                    responseHtml += `<div style="width: 30px; height: 30px; background: ${bgColor}; color: white; display: flex; align-items: center; justify-content: center; border-radius: 4px; font-weight: 700; font-family: var(--font-mono);">${result.letter}</div>`;
+                    responseHtml += `<div style="width: 24px; height: 24px; background: ${bgColor}; color: white; display: flex; align-items: center; justify-content: center; border-radius: 3px; font-weight: 700; font-size: 0.75em; font-family: var(--font-mono);">${result.letter}</div>`;
                 });
                 responseHtml += '</div>';
 
                 html += `
                     <tr style="border-bottom: 1px solid #e2e8f0; color: var(--bg-primary);">
-                        <td style="padding: 12px; font-weight: 700; color: var(--bg-primary);">#${guessData.attempt}</td>
-                        <td style="padding: 12px; font-family: var(--font-mono); font-weight: 700; font-size: 1.1em;">${guessData.guess.toUpperCase()}</td>
-                        <td style="padding: 12px;">${responseHtml}</td>
-                        <td style="padding: 12px; text-align: right; font-family: var(--font-mono); font-weight: 600;">${guessData.remainingWords || 'N/A'}</td>
-                        <td style="padding: 12px; text-align: right; font-family: var(--font-mono); font-weight: 600; color: var(--success-green);">${reductionPercent}%</td>
+                        <td style="padding: 6px 8px; font-weight: 700; color: var(--bg-primary); white-space: nowrap;">#${guessData.attempt}</td>
+                        <td style="padding: 6px 8px; font-family: var(--font-mono); font-weight: 700; font-size: 1em; white-space: nowrap;">${guessData.guess.toUpperCase()}</td>
+                        <td style="padding: 6px 8px;">${responseHtml}</td>
+                        <td style="padding: 6px 8px; text-align: right; font-family: var(--font-mono); font-weight: 600; white-space: nowrap;">${guessData.remainingWords || 'N/A'}</td>
+                        <td style="padding: 6px 8px; text-align: right; font-family: var(--font-mono); font-weight: 600; color: var(--success-green); white-space: nowrap;">${reductionPercent}%</td>
                     </tr>
                 `;
 
@@ -2549,11 +2550,11 @@ function renderSessionDetails() {
                 if (guessData.dictionaryMetrics) {
                     html += `
                         <tr style="background: rgba(33, 150, 243, 0.05);">
-                            <td colspan="5" style="padding: 10px 12px; font-size: 0.85em;">
+                            <td colspan="5" style="padding: 6px 8px; font-size: 0.8em; word-break: break-word; overflow-wrap: anywhere;">
                                 <strong>Metrics:</strong> 
-                                Unique Letters: ${guessData.dictionaryMetrics.uniqueCharacters || 'N/A'} | 
-                                Total Letter Count: ${guessData.dictionaryMetrics.letterCount || 'N/A'}
-                                ${guessData.dictionaryMetrics.columnLengths ? ' | Column Lengths: [' + guessData.dictionaryMetrics.columnLengths.join(', ') + ']' : ''}
+                                Unique: ${guessData.dictionaryMetrics.uniqueCharacters || 'N/A'} | 
+                                Letters: ${guessData.dictionaryMetrics.letterCount || 'N/A'}
+                                ${guessData.dictionaryMetrics.columnLengths ? ' | Cols: [' + guessData.dictionaryMetrics.columnLengths.join(', ') + ']' : ''}
                             </td>
                         </tr>
                     `;
@@ -2563,6 +2564,7 @@ function renderSessionDetails() {
             html += `
                         </tbody>
                     </table>
+                    </div>
                 </div>
             `;
         } else {
