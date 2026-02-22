@@ -260,7 +260,7 @@ function onRouteChange() {
 
 function setView(view) {
     currentView = view;
-    const viewIds = ['play', 'session', 'bot-demo', 'bot-performance', 'dictionary', 'admin', 'help'];
+    const viewIds = ['play', 'session', 'bot-demo', 'bot-performance', 'dictionary', 'admin', 'help', 'about'];
     viewIds.forEach(v => {
         const section = document.getElementById(`screen-${v}`);
         if (section) {
@@ -290,6 +290,7 @@ function setView(view) {
             populateDictionarySelector();
         }
         refreshDictionaryScreen();
+        switchDictTab('frequency');
     } else if (view === 'play' && availableDictionaries.length > 0) {
         const selector = document.getElementById('dictionarySelector');
         if (selector && selector.options.length === 0) {
@@ -304,6 +305,35 @@ function setView(view) {
     if (view === 'admin') {
         loadAdminScreen();
     }
+}
+
+function switchDictTab(tab) {
+    if (window.innerWidth > 768) return;
+    currentDictTab = tab;
+    const leftCol = document.querySelector('#screen-dictionary .dictionary-col-left');
+    const rightCol = document.querySelector('#screen-dictionary .dictionary-col-right');
+    const complexityPanel = document.getElementById('dict-panel-complexity');
+    const wordsPanel = document.getElementById('dict-panel-words');
+    if (!leftCol || !rightCol) return;
+
+    if (tab === 'frequency') {
+        leftCol.style.display = 'flex';
+        rightCol.style.display = 'none';
+    } else if (tab === 'complexity') {
+        leftCol.style.display = 'none';
+        rightCol.style.display = 'flex';
+        if (complexityPanel) complexityPanel.style.display = 'block';
+        if (wordsPanel) wordsPanel.style.display = 'none';
+    } else if (tab === 'words') {
+        leftCol.style.display = 'none';
+        rightCol.style.display = 'flex';
+        if (complexityPanel) complexityPanel.style.display = 'none';
+        if (wordsPanel) wordsPanel.style.display = 'flex';
+    }
+
+    document.querySelectorAll('#dictBottomNav .mobile-nav-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.getAttribute('data-tab') === tab);
+    });
 }
 
 function updateMobileBottomNavVisibility(view) {
@@ -1634,16 +1664,16 @@ function onDictionaryChange() {
     const selector = document.getElementById('dictionarySelector');
     const selectorDict = document.getElementById('dictionarySelectorDict');
     
-    // Determine which selector was changed by checking event.target or use the first non-null value
+    // When on the dictionary page, prefer the dict-page selector; otherwise use the play-page selector
     let selectedId = null;
-    if (selector && selector.value) {
-        selectedId = selector.value;
-        // Sync the dictionary page selector
-        if (selectorDict) selectorDict.value = selectedId;
-    } else if (selectorDict && selectorDict.value) {
+    if (currentView === 'dictionary' && selectorDict && selectorDict.value) {
         selectedId = selectorDict.value;
         // Sync the play page selector
         if (selector) selector.value = selectedId;
+    } else if (selector && selector.value) {
+        selectedId = selector.value;
+        // Sync the dictionary page selector
+        if (selectorDict) selectorDict.value = selectedId;
     }
     
     const selectedDict = availableDictionaries.find(d => d.id === selectedId);
@@ -1653,6 +1683,8 @@ function onDictionaryChange() {
         adjustLetterInputGrid(selectedDict.wordLength);
 
         if (currentView === 'dictionary') {
+            // Reset debounce guard so the new selection always triggers a reload
+            dictionaryScreenState.dictionaryId = null;
             refreshDictionaryScreen();
         } else if (currentView === 'play') {
             // Automatically start a new game when dictionary changes on play screen
@@ -1669,6 +1701,7 @@ let dictionaryScreenState = {
     loading: false,
     dictionaryId: null
 };
+let currentDictTab = 'frequency';
 
 function setDictionaryScreenPlaceholders(message) {
     const nameEl = document.getElementById('dictionaryName');
@@ -1765,6 +1798,11 @@ async function loadDictionaryScreenData(dictionaryId, dictionaryName) {
     renderDictionaryLetterFrequency(words, wordLength);
     renderDictionaryComplexity(words, wordLength);
     renderDictionaryWords(words, wordLength, entropyMap);
+
+    // Restore active tab on mobile after re-render wipes inline styles
+    if (window.innerWidth <= 768) {
+        switchDictTab(currentDictTab);
+    }
 }
 
 // State for letter frequency table sorting
@@ -2166,6 +2204,9 @@ function filterDictionaryWords() {
 }
 
 function matchDictionaryColumnHeights() {
+    // Not needed on mobile — tab layout handles column visibility
+    if (window.innerWidth <= 768) return;
+
     const leftPanel = document.querySelector('.dictionary-col-left .dictionary-panel');
     const rightCol = document.querySelector('.dictionary-col-right');
     
