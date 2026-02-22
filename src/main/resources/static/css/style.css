@@ -904,7 +904,7 @@ option.disabled-option:disabled {
 .btn:focus-visible,
 #guessBtn:focus-visible,
 select:focus-visible,
-.status-dismiss:focus-visible,
+.toast-dismiss:focus-visible,
 summary:focus-visible {
     outline: none;
     border-color: var(--accent-primary);
@@ -1187,28 +1187,32 @@ summary:focus-visible {
     }
 }
 
-/* Mobile: Single column stack */
+/* Mobile: Single compact header row */
 @media (max-width: 768px) {
     .app-header {
-        padding: var(--padding-sm) var(--padding-md);
-        flex-direction: column;
-        align-items: stretch;
+        padding: 0.4rem var(--padding-sm);
+        flex-direction: row;
+        align-items: center;
         gap: var(--padding-sm);
+        flex-wrap: nowrap;
     }
 
     .app-header-left {
-        flex-direction: column;
+        flex-direction: row;
         align-items: center;
         gap: var(--padding-sm);
+        flex: 1;
+        min-width: 0;
     }
 
     .header-title {
-        font-size: var(--font-size-h1);
-        justify-content: center;
+        font-size: 1.1rem;
+        justify-content: flex-start;
     }
 
     .app-header-right {
-        justify-content: center;
+        justify-content: flex-end;
+        flex-shrink: 0;
     }
 
     .app-main {
@@ -1327,6 +1331,19 @@ h3 {
     color: var(--text-secondary);
     font-size: 0.9rem;
     margin-bottom: var(--padding-md);
+}
+
+.attempts-counter {
+    font-family: var(--font-mono);
+    color: var(--text-secondary);
+    font-size: var(--font-size-caption);
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+/* Push New button to the right edge of the game panel header */
+.game-container .panel-header-actions .btn {
+    margin-left: auto;
 }
 
 .guess-container {
@@ -1558,30 +1575,38 @@ select:focus {
 }
 
 /* --- Status Messages --- */
-.status-bar-shell {
-    width: 100%;
-    background: var(--bg-secondary);
-    border-top: 1px solid var(--border-color);
-    box-shadow: var(--shadow-top);
-    display: flex;
-    justify-content: center;
+/* --- Toast Notification --- */
+.toast {
+    position: fixed;
+    top: 64px;
+    left: 50%;
+    transform: translateX(-50%) translateY(-8px);
+    z-index: 9000;
+    min-width: 240px;
+    max-width: min(420px, 90vw);
+    padding: 0.7rem 1rem;
+    border-radius: 0.6rem;
+    font-weight: 600;
+    font-size: 0.9rem;
+    display: none;
+    align-items: center;
+    gap: 0.6rem;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+    opacity: 0;
+    transition: opacity 0.2s ease, transform 0.2s ease;
+    pointer-events: none;
 }
 
-.status {
-    position: static;
-    width: 100%;
-    max-width: 1600px;
-    margin: 0 auto;
-    padding: var(--padding-md);
-    border-radius: 0;
-    font-weight: 600;
-    font-size: 0.95rem;
+.toast.toast-visible {
     display: flex;
-    align-items: center;
-    gap: var(--padding-sm);
-    box-shadow: none;
-    border: none;
-    background: transparent;
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+    pointer-events: auto;
+}
+
+.toast.toast-hiding {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-8px);
 }
 
 /* --- Footer --- */
@@ -1648,44 +1673,40 @@ select:focus {
     }
 }
 
-.status-message {
+.toast-message {
     flex: 1;
     min-width: 0;
-    text-align: left;
+    text-align: center;
     overflow-wrap: anywhere;
 }
 
-.status-dismiss {
+.toast-dismiss {
     appearance: none;
     border: 1px solid transparent;
     background: transparent;
     color: currentColor;
     cursor: pointer;
     border-radius: 0.4rem;
-    width: 2rem;
-    height: 2rem;
+    width: 1.8rem;
+    height: 1.8rem;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    font-size: 1.2rem;
+    font-size: 1.1rem;
     line-height: 1;
     flex: 0 0 auto;
+    opacity: 0.7;
 }
 
-.status-dismiss:hover {
-    border-color: rgba(255, 255, 255, 0.2);
-    background: rgba(255, 255, 255, 0.08);
+.toast-dismiss:hover {
+    opacity: 1;
+    background: rgba(255, 255, 255, 0.1);
 }
 
-.status-dismiss:focus {
-    outline: none;
-    border-color: var(--accent-primary);
-}
-
-.status.success { background: rgba(34, 197, 94, 0.2); color: #4ade80; border: 1px solid rgba(34, 197, 94, 0.3); }
-.status.error { background: rgba(239, 68, 68, 0.2); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3); }
-.status.info { background: rgba(59, 130, 246, 0.2); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.3); }
-.status.warning { background: rgba(234, 179, 8, 0.2); color: var(--warning); color: color-mix(in srgb, var(--warning) 65%, white); border: 1px solid rgba(234, 179, 8, 0.3); }
+.toast.success { background: rgba(22, 101, 52, 0.95); color: #86efac; border: 1px solid rgba(34, 197, 94, 0.5); }
+.toast.error   { background: rgba(127, 29, 29, 0.95); color: #fca5a5; border: 1px solid rgba(239, 68, 68, 0.5); }
+.toast.info    { background: rgba(30, 58, 138, 0.95); color: #93c5fd; border: 1px solid rgba(59, 130, 246, 0.5); }
+.toast.warning { background: rgba(113, 63, 18, 0.95); color: #fde68a; border: 1px solid rgba(234, 179, 8, 0.5); }
 
 /* --- Animations --- */
 @keyframes pop {
@@ -2174,16 +2195,6 @@ select:focus {
         padding: 0.2rem 0.35rem;
     }
     
-    /* Status message layout for mobile */
-    .status {
-        position: static;
-        width: 100%;
-        max-width: 100%;
-        padding: var(--padding-sm);
-        font-size: 0.875rem;
-        margin: 0 auto;
-    }
-    
     /* Show hamburger menu on mobile */
     .hamburger-menu {
         display: flex !important;
@@ -2433,16 +2444,6 @@ select:focus {
     
     .screen-title {
         font-size: var(--font-size-h2);
-    }
-    
-    /* Compact status message on small screens */
-    .status {
-        position: static;
-        width: 100%;
-        max-width: 100%;
-        font-size: var(--font-size-caption);
-        padding: var(--padding-sm);
-        margin: 0 auto;
     }
     
     .user-info {
@@ -3500,11 +3501,9 @@ select:focus {
         margin: 0;
     }
 
-    /* Game Info (Attempts) compacting */
-    .game-container.mobile-active .game-info {
-        margin: 0.25rem 0;
-        padding: 0;
-        font-size: 0.8rem;
+    /* Attempts counter (now inline in panel-header-row) */
+    .game-container.mobile-active .attempts-counter {
+        font-size: 0.75rem;
     }
 
     /* GUESS HISTORY (Scrollable Area) */

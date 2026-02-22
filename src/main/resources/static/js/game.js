@@ -539,31 +539,31 @@ function showStatus(message, type = 'info', options = {}) {
         statusDiv.textContent = message;
     }
 
-    statusDiv.className = `status ${type}`;
+    statusDiv.className = `toast ${type} toast-visible`;
 
     // Accessibility: errors/warnings should be more assertive
     const isAlert = type === 'error' || type === 'warning';
     statusDiv.setAttribute('role', isAlert ? 'alert' : 'status');
     statusDiv.setAttribute('aria-live', isAlert ? 'assertive' : 'polite');
 
-    statusDiv.style.display = 'flex';
-
     const defaultAutoHideMs = (t) => {
         switch (t) {
-            case 'success':
-                return 3500;
-            case 'info':
-                return 5000;
-            case 'warning':
-                return 8000;
-            case 'error':
-                return 0;
-            default:
-                return 5000;
+            case 'success': return 3500;
+            case 'info':    return 5000;
+            case 'warning': return 8000;
+            case 'error':   return 0;
+            default:        return 5000;
         }
     };
 
     const autoHideMs = Number.isFinite(options.autoHideMs) ? options.autoHideMs : defaultAutoHideMs(type);
+
+    // Only show dismiss button for persistent messages (errors that don't auto-hide)
+    const dismissBtn = document.getElementById('statusDismiss');
+    if (dismissBtn) {
+        dismissBtn.style.display = autoHideMs === 0 ? 'inline-flex' : 'none';
+    }
+
     if (autoHideMs > 0) {
         statusHideTimer = setTimeout(() => hideStatus(), autoHideMs);
     }
@@ -571,19 +571,20 @@ function showStatus(message, type = 'info', options = {}) {
 
 function hideStatus() {
     const statusDiv = document.getElementById('status');
-    if (!statusDiv) {
-        return;
-    }
+    if (!statusDiv) return;
     if (statusHideTimer) {
         clearTimeout(statusHideTimer);
         statusHideTimer = null;
     }
-    const msgEl = document.getElementById('statusMessage');
-    if (msgEl) {
-        msgEl.textContent = '';
-    }
-    statusDiv.className = 'status';
-    statusDiv.style.display = 'flex';
+    // Fade out, then fully hide
+    statusDiv.classList.add('toast-hiding');
+    statusDiv.classList.remove('toast-visible');
+    setTimeout(() => {
+        const msgEl = document.getElementById('statusMessage');
+        if (msgEl) msgEl.textContent = '';
+        statusDiv.className = 'toast';
+        statusDiv.classList.remove('toast-hiding');
+    }, 220);
 }
 
 function updateHelpCounter() {
@@ -786,6 +787,7 @@ async function makeGuess() {
 
     } catch (error) {
         console.error('Error making guess:', error);
+        showStatus(error.message || 'Guess failed — please try again.', 'error');
     }
 }
 
@@ -1506,15 +1508,15 @@ async function loadDictionaries() {
     } catch (error) {
         console.error('Failed to load dictionaries:', error);
         
-        // Fallback to default option for both selectors
+        // Fallback: show error state in both selectors
         const selector = document.getElementById('dictionarySelector');
         const selectorDict = document.getElementById('dictionarySelectorDict');
         
         if (selector) {
-            selector.innerHTML = '<option value="">Standard (5 Letters)</option>';
+            selector.innerHTML = '<option value="" disabled>Unable to load dictionaries</option>';
         }
         if (selectorDict) {
-            selectorDict.innerHTML = '<option value="">Standard (5 Letters)</option>';
+            selectorDict.innerHTML = '<option value="" disabled>Unable to load dictionaries</option>';
         }
     }
 }
@@ -1574,6 +1576,23 @@ function populateDictionarySelector() {
         if (selectorDict) selectorDict.value = defaultDict.id;
         // Adjust the letter input grid for the selected dictionary's word length
         adjustLetterInputGrid(defaultDict.wordLength);
+    }
+
+    // Populate autoplay word-length selector from available dictionaries
+    const autoplayWordLength = document.getElementById('autoplayWordLength');
+    if (autoplayWordLength) {
+        const currentVal = autoplayWordLength.value;
+        autoplayWordLength.innerHTML = '';
+        const uniqueLengths = [...new Set(availableDictionaries.filter(d => d.available).map(d => d.wordLength))].sort((a, b) => a - b);
+        uniqueLengths.forEach(len => {
+            const option = document.createElement('option');
+            option.value = String(len);
+            option.textContent = `${len} Letters`;
+            autoplayWordLength.appendChild(option);
+        });
+        // Restore previous selection, or default to the 5-letter length if available
+        const defaultLength = uniqueLengths.includes(5) ? '5' : String(uniqueLengths[0] || '');
+        autoplayWordLength.value = uniqueLengths.includes(parseInt(currentVal)) ? currentVal : defaultLength;
     }
 
     // Populate Bot Performance dictionary selector
@@ -2592,7 +2611,10 @@ function showAutoplayModal() {
     // Screen-based UI: keep user selections; ensure dictionaries are populated
     const wordLengthEl = document.getElementById('autoplayWordLength');
     if (wordLengthEl && !wordLengthEl.value) {
-        wordLengthEl.value = '5';
+        // Default to the word length of the first available dictionary if none selected
+        const defaultDict = availableDictionaries.find(d => d.available && d.wordLength === 5)
+            || availableDictionaries.find(d => d.available);
+        if (defaultDict) wordLengthEl.value = String(defaultDict.wordLength);
     }
     filterAutoplayDictionaries();
 }

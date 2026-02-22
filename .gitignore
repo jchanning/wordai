@@ -86,6 +86,11 @@ ehthumbs.db
 Desktop.ini
 $RECYCLE.BIN/
 
+# H2 database files
+*.mv.db
+*.trace.db
+data/
+
 # Application-specific
 wordai.properties
 *.csv

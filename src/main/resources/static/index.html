@@ -12,7 +12,7 @@
     <meta http-equiv="Expires" content="0">
     <title>WordAI Game - Web Interface</title>
     <link rel="icon" href="data:,">
-    <link rel="stylesheet" href="css/style.css?v=20260221_5">
+    <link rel="stylesheet" href="css/style.css?v=20260222_3">
 </head>
 <body>
     <div class="header-bar">
@@ -130,12 +130,9 @@
                     <select id="dictionarySelector" class="dictionary-selector" onchange="onDictionaryChange()">
                         <option value="">Loading dictionaries...</option>
                     </select>
+                    <span class="attempts-counter">Attempts: <span id="attempts">0</span>/<span id="maxAttempts">6</span></span>
                     <button class="btn btn-success btn-md" onclick="newGame()">New</button>
                 </div>
-            </div>
-            
-            <div class="game-info">
-                <div>Attempts: <span id="attempts">0</span>/<span id="maxAttempts">6</span></div>
             </div>
             
             <div class="guess-container">
@@ -342,9 +339,7 @@
                     <div class="form-group">
                         <label for="autoplayWordLength">Word Length</label>
                         <select id="autoplayWordLength" class="form-input" onchange="filterAutoplayDictionaries()">
-                            <option value="4">4 Letters</option>
-                            <option value="5" selected>5 Letters</option>
-                            <option value="6">6 Letters</option>
+                            <!-- Populated dynamically from availableDictionaries -->
                         </select>
                     </div>
                     <div class="form-group">
@@ -597,17 +592,15 @@
         </section>
     </main>
 
-    <div class="status-bar-shell">
-        <div id="status" class="status" role="status" aria-live="polite" aria-atomic="true">
-            <span id="statusMessage" class="status-message"></span>
-            <button type="button" id="statusDismiss" class="status-dismiss" aria-label="Clear message" onclick="hideStatus()">×</button>
-        </div>
+    <div id="status" class="toast" role="status" aria-live="polite" aria-atomic="true">
+        <span id="statusMessage" class="toast-message"></span>
+        <button type="button" id="statusDismiss" class="toast-dismiss" aria-label="Clear message" onclick="hideStatus()">×</button>
     </div>
 
     <footer class="app-footer">
         <div class="footer-content">
             <div class="footer-copyright">
-                © 2026 FistralTech Ltd | v1.8.1
+                © 2026 FistralTech Ltd | v1.8.2
             </div>
             <nav class="footer-links" aria-label="Footer navigation">
                 <a href="https://fistraltech.com" target="_blank" rel="noopener noreferrer" class="footer-link">fistraltech.com</a>
@@ -619,6 +612,6 @@
         </div>
     </footer>
 
-    <script src="js/game.js?v=20260221_3"></script>
+    <script src="js/game.js?v=20260222_3"></script>
 </body>
 </html>
