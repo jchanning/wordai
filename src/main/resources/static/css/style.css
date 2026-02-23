@@ -495,39 +495,14 @@ body {
 }
 
 .analytics-summary {
-    cursor: pointer;
     padding: var(--padding-md);
     font-weight: 700;
     font-size: 1rem;
     color: var(--text-primary);
     background: var(--bg-tertiary);
     border-bottom: 1px solid var(--border-color);
-    list-style: none;
-    user-select: none;
-    transition: background-color 0.2s;
     display: flex;
     align-items: center;
-    justify-content: space-between;
-}
-
-.analytics-summary::-webkit-details-marker,
-.analytics-summary::marker {
-    display: none;
-}
-
-.analytics-summary::after {
-    content: '▼';
-    font-size: 0.75rem;
-    transition: transform 0.2s;
-    color: var(--text-secondary);
-}
-
-.analytics-collapsible[open] .analytics-summary::after {
-    transform: rotate(180deg);
-}
-
-.analytics-summary:hover {
-    background: rgba(71, 85, 105, 0.8);
 }
 
 .analytics-content {
@@ -2136,20 +2111,15 @@ select:focus {
         grid-template-columns: 1fr;
     }
     
-    /* Keep analytics sections always open on medium screens — hide the toggle */
+    /* Analytics sections — no toggle on medium screens */
     .analytics-collapsible {
         background: transparent;
         border: none;
         padding: 0;
     }
     
-    .analytics-collapsible[open] {
-        display: block;
-    }
-    
     .analytics-summary {
         display: none;
-        pointer-events: none;
     }
     
     .analytics-content {
@@ -2316,7 +2286,7 @@ select:focus {
         grid-template-columns: 1fr !important;
     }
     
-    /* Enable collapsible analytics on mobile */
+    /* Analytics panels on mobile */
     .analytics-collapsible {
         background: var(--bg-secondary);
         border: 1px solid var(--border-color);
@@ -2324,7 +2294,7 @@ select:focus {
     }
     
     .analytics-summary {
-        display: flex !important;
+        display: flex;
     }
     
     .analytics-content {
@@ -3818,7 +3788,8 @@ select:focus {
         padding-bottom: 60px;
     }
 
-    .dict-bottom-nav .mobile-nav-label {
+    .dict-bottom-nav .mobile-nav-label,
+    .mobile-bottom-nav .mobile-nav-label {
         display: block;
     }
 }
