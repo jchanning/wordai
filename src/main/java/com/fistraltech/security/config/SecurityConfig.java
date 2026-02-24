@@ -35,7 +35,9 @@ public class SecurityConfig {
             )
             .authorizeHttpRequests(auth -> auth
                 // Public endpoints
-                .requestMatchers("/", "/index.html", "/login.html", "/help.html", "/register", 
+                .requestMatchers("/", "/index.html", "/login.html", "/help.html",
+                               "/privacy", "/terms", "/cookies", "/terms-sale",
+                               "/privacy.html", "/terms.html", "/cookies.html", "/terms-sale.html", "/register",
                                "/api/auth/register", "/api/auth/login", "/api/auth/check",
                                "/css/**", "/js/**", "/h2-console/**", "/error", "/static/**").permitAll()
                 // Guest access - basic game functionality

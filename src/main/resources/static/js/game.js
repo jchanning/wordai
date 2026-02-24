@@ -260,7 +260,7 @@ function onRouteChange() {
 
 function setView(view) {
     currentView = view;
-    const viewIds = ['play', 'session', 'bot-demo', 'bot-performance', 'dictionary', 'admin', 'help', 'about'];
+    const viewIds = ['play', 'session', 'bot-demo', 'bot-performance', 'dictionary', 'admin', 'help', 'about', 'privacy', 'terms', 'cookies', 'terms-sale'];
     viewIds.forEach(v => {
         const section = document.getElementById(`screen-${v}`);
         if (section) {
