@@ -3469,10 +3469,15 @@ select:focus {
         animation: fadeIn 0.15s ease-out;
     }
 
-    /* Specific fix for Game Container to enable sticky keyboard */
+    /* Specific fix for Game Container to enable sticky keyboard.
+       Height = full viewport
+         - header  (~60px, baked into the -120px below)
+         - bottom-nav (60px, baked in)
+         - keyboard (~185px: 3 rows × 56px + 2px × 2 gaps + 8px padding + 9px buffer)
+       Total deduction: 305px */
     .game-container.mobile-active {
         overflow: hidden !important; /* Let children handle scrolling */
-        height: calc(100dvh - 120px) !important;
+        height: calc(100dvh - 305px) !important;
         padding: 0 !important;
     }
 
@@ -3494,15 +3499,20 @@ select:focus {
 
     /* GUESS HISTORY (Scrollable Area) */
     .game-container.mobile-active .guess-history {
-        flex: 1 1 auto; /* Grow to fill space */
-        overflow-y: auto; /* Internal scrolling */
+        flex: 1 1 auto; /* Grow to fill remaining space between entry row and end of container */
+        min-height: 0;   /* Allow flex child to shrink below natural size */
+        overflow-y: auto; /* Allow scrolling on very small screens, but hide the bar */
+        scrollbar-width: none; /* Firefox — no visible scrollbar */
         width: 100%;
         padding: 0.25rem;
         gap: 0.25rem;
-        margin-top: 0;       /* Remove base rule's 1rem gap — results start right after entry row */
+        margin-top: 0;
         margin-bottom: 0;
-        /* Scrollbar styling */
-        scrollbar-width: thin;
+    }
+
+    /* Chrome/Safari — hide scrollbar track while keeping scroll behaviour */
+    .game-container.mobile-active .guess-history::-webkit-scrollbar {
+        display: none;
     }
 
     /* CURRENT GUESS ROW */
@@ -3536,13 +3546,18 @@ select:focus {
         gap: 4px;
     }
 
-    /* KEYBOARD (Fixed at bottom of container) */
+    /* KEYBOARD — fixed just above the bottom nav so it never scrolls or shifts.
+       bottom = bottom-nav height (60px) + safe-area inset (notch/home bar). */
     .game-container.mobile-active .keyboard-container {
-        flex: 0 0 auto;
+        position: fixed;
+        bottom: calc(60px + env(safe-area-inset-bottom, 0px));
+        left: 0;
+        right: 0;
         width: 100%;
+        z-index: 200;
         padding: 0.25rem;
-        margin-top: auto; /* Push to bottom */
         background: var(--bg-primary);
+        border-top: 1px solid var(--border-color);
     }
 
     .game-container.mobile-active .keyboard {
