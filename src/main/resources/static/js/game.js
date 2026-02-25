@@ -2940,9 +2940,6 @@ async function runAutoplayGames(dictionaryId, strategy, wordLength, guessDelay =
                 resetAnalytics();
             }
             
-            const strategyName = getStrategyDisplayName(strategy);
-            showStatus(`${strategyName}, Game ${i + 1}/${autoplayState.gameCount}`, 'info');
-            
             await playAutoplayGame(gameId, strategy, guessDelay);
 
             autoplayState.gamesCompleted = i + 1;
