@@ -1491,7 +1491,7 @@ async function getSuggestion() {
                 inputs[i].classList.add('filled');
             }
             
-            showStatus(`Suggestion populated: ${suggestion} (${data.strategy})`, 'success');
+            switchMobilePanel(1);
         } else if (response.ok && !data.suggestion) {
             showStatus('No valid words remaining', 'error');
         } else {
@@ -3682,7 +3682,7 @@ function switchMobilePanel(n) {
     const parentMap = {
         1: gameContainer,
         2: infoPanel, 3: infoPanel, 4: infoPanel,
-        5: historyPanel, 6: historyPanel, 7: historyPanel
+        5: historyPanel, 6: historyPanel
     };
     const parent = parentMap[n];
     if (parent) {
@@ -3690,7 +3690,7 @@ function switchMobilePanel(n) {
         parent.scrollTop = 0;
     }
 
-    // Activate sub-panel (panels 2-7 each have a [data-mobile-panel] section)
+    // Activate sub-panel (panels 2-6 each have a [data-mobile-panel] section)
     if (n >= 2) {
         const subPanel = document.querySelector(`[data-mobile-panel="${n}"]`);
         if (subPanel) {

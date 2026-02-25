@@ -12,7 +12,7 @@
     <meta http-equiv="Expires" content="0">
     <title>WordAI Game - Web Interface</title>
     <link rel="icon" href="data:,">
-    <link rel="stylesheet" href="css/style.css?v=20260222_6">
+    <link rel="stylesheet" href="css/style.css?v=20260225_2">
 </head>
 <body>
     <div class="header-bar">
@@ -101,18 +101,16 @@
                         <div class="stat-value" id="stat-avg">-</div>
                     </div>
                 </div>
-            </div>
-
-            <!-- Panel 6: Guess Distribution -->
-            <div data-mobile-panel="6">
-                <h3>Guess Distribution</h3>
+                
+                <!-- Guess Distribution (merged into Session) -->
+                <h3 style="margin-top: 24px;">Guess Distribution</h3>
                 <div id="attemptsDistribution" class="surface-box surface-box-md">
                     <p class="muted-center muted-small">No games played yet</p>
                 </div>
             </div>
 
-            <!-- Panel 7: Recent Games -->
-            <div data-mobile-panel="7">
+            <!-- Panel 6: Recent Games (renumbered from 7) -->
+            <div data-mobile-panel="6">
                 <div class="panel-header-row">
                     <h3>Recent Games</h3>
                     <button class="btn btn-success btn-xs" onclick="exportSessionGamesToCSV()" title="Export all session games to CSV" data-role="premium">Export CSV</button>
@@ -250,13 +248,14 @@
                     <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/>
                     <rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>
                 </svg>
+                <span class="mobile-nav-label">Play</span>
             </button>
             <!-- Panel 2: Key Statistics -->
-            <button class="mobile-nav-btn" data-panel="2" onclick="switchMobilePanel(2)" aria-label="Dictionary" title="Dictionary">
+            <button class="mobile-nav-btn" data-panel="2" onclick="switchMobilePanel(2)" aria-label="Assist" title="Assist">
                 <svg class="mobile-nav-icon" viewBox="0 0 24 24" fill="currentColor">
                     <rect x="3" y="11" width="4" height="10" rx="1"/><rect x="10" y="7" width="4" height="14" rx="1"/><rect x="17" y="4" width="4" height="17" rx="1"/>
                 </svg>
-                <span class="mobile-nav-label">Dictionary</span>
+                <span class="mobile-nav-label">Assist</span>
             </button>
             <!-- Panel 3: Visual Analysis -->
             <button class="mobile-nav-btn" data-panel="3" onclick="switchMobilePanel(3)" aria-label="Letters" title="Letters">
@@ -274,7 +273,7 @@
                 </svg>
                 <span class="mobile-nav-label">Matrix</span>
             </button>
-            <!-- Panel 5: Session Stats -->
+            <!-- Panel 5: Session (combined with Distribution) -->
             <button class="mobile-nav-btn" data-panel="5" onclick="switchMobilePanel(5)" aria-label="Session" title="Session">
                 <svg class="mobile-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M6 3h12l-1.5 8a5 5 0 0 1-9 0Z"/><path d="M6 3H4a1 1 0 0 0-1 1v1a4 4 0 0 0 3.5 3.97"/>
@@ -282,16 +281,8 @@
                 </svg>
                 <span class="mobile-nav-label">Session</span>
             </button>
-            <!-- Panel 6: Guess Distribution -->
-            <button class="mobile-nav-btn" data-panel="6" onclick="switchMobilePanel(6)" aria-label="Distribution" title="Distribution">
-                <svg class="mobile-nav-icon" viewBox="0 0 24 24" fill="currentColor">
-                    <rect x="2" y="16" width="3" height="5" rx="1"/><rect x="7" y="11" width="3" height="10" rx="1"/>
-                    <rect x="12" y="6" width="3" height="15" rx="1"/><rect x="17" y="9" width="3" height="12" rx="1"/>
-                </svg>
-                <span class="mobile-nav-label">Distribution</span>
-            </button>
-            <!-- Panel 7: Recent Games -->
-            <button class="mobile-nav-btn" data-panel="7" onclick="switchMobilePanel(7)" aria-label="History" title="History">
+            <!-- Panel 6: Recent Games (renumbered from 7) -->
+            <button class="mobile-nav-btn" data-panel="6" onclick="switchMobilePanel(6)" aria-label="History" title="History">
                 <svg class="mobile-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <circle cx="12" cy="12" r="9"/><polyline points="12,7 12,12 15,15"/>
                 </svg>
