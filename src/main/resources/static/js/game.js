@@ -225,12 +225,6 @@ function displayUserInfo() {
             adminNavLink.style.display = isAdmin ? '' : 'none';
         }
 
-        // Show player history section and fetch from server
-        const playerHistorySection = document.getElementById('player-history-section');
-        if (playerHistorySection) {
-            playerHistorySection.style.display = 'block';
-            loadPlayerHistory();
-        }
     }
 }
 
@@ -254,12 +248,6 @@ function showGuestOptions() {
     }
     if (signInLinkDrawer) {
         signInLinkDrawer.style.display = 'flex';
-    }
-
-    // Hide player history section for guests
-    const playerHistorySection = document.getElementById('player-history-section');
-    if (playerHistorySection) {
-        playerHistorySection.style.display = 'none';
     }
 }
 
@@ -3975,115 +3963,4 @@ async function submitPasswordReset() {
     }
 }
 
-/* ========================================
-   PLAYER HISTORY (Persistent Game Records)
-   ======================================== */
-
-/**
- * Fetches the signed-in player's game history from the server and renders it
- * inside #player-history-list.
- */
-async function loadPlayerHistory() {
-    const container = document.getElementById('player-history-list');
-    if (!container) return;
-
-    container.innerHTML = '<p class="muted-center muted-small">Loading&hellip;</p>';
-
-    try {
-        const resp = await fetch(`${API_BASE}/history`, { credentials: 'include' });
-
-        if (resp.status === 401) {
-            container.innerHTML = '<p class="muted-center muted-small">Sign in to see your history.</p>';
-            return;
-        }
-
-        if (!resp.ok) {
-            container.innerHTML = '<p class="muted-center muted-small" style="color:var(--error)">Could not load history.</p>';
-            return;
-        }
-
-        const data = await resp.json();
-        const games = data.games || [];
-
-        if (games.length === 0) {
-            container.innerHTML = '<p class="muted-center muted-small">No completed games yet.</p>';
-            return;
-        }
-
-        renderPlayerHistory(container, games);
-
-    } catch (err) {
-        console.error('Error loading player history:', err);
-        container.innerHTML = '<p class="muted-center muted-small" style="color:var(--error)">Error loading history.</p>';
-    }
-}
-
-/**
- * Renders a list of persisted game records into the given container.
- * @param {HTMLElement} container
- * @param {Array} games  – array of GameHistoryDto objects from the server
- */
-function renderPlayerHistory(container, games) {
-    let html = '';
-
-    games.forEach(game => {
-        const won = game.result === 'WON';
-        const resultColour = won ? 'var(--success)' : 'var(--error)';
-        const dateStr = game.completedAt ? formatHistoryDate(game.completedAt) : '';
-
-        html += `<div class="ph-card">`;
-        html += `<div class="ph-card-header">`;
-        html += `<span class="ph-target" title="Target word">${(game.targetWord || '').toUpperCase()}</span>`;
-        html += `<span class="ph-meta">${game.attemptsUsed}/${game.maxAttempts} &bull; <span style="color:${resultColour};font-weight:700">${game.result}</span></span>`;
-        html += `</div>`;
-
-        if (dateStr) {
-            html += `<div class="ph-date">${dateStr}</div>`;
-        }
-
-        // Render each guess row as colour-coded tiles
-        const guesses = game.guesses || [];
-        const responses = game.responses || [];
-        if (guesses.length > 0) {
-            html += `<div class="ph-guesses">`;
-            guesses.forEach((word, gi) => {
-                const codes = responses[gi] || '';
-                html += `<div class="ph-guess-row">`;
-                for (let ci = 0; ci < word.length; ci++) {
-                    const letter = word[ci].toUpperCase();
-                    const code = codes[ci] || '';
-                    let cls = 'ph-tile';
-                    if (code === 'G') cls += ' ph-tile-green';
-                    else if (code === 'A') cls += ' ph-tile-amber';
-                    else cls += ' ph-tile-grey';
-                    html += `<span class="${cls}">${letter}</span>`;
-                }
-                html += `</div>`;
-            });
-            html += `</div>`;
-        }
-
-        html += `</div>`; // ph-card
-    });
-
-    container.innerHTML = html;
-}
-
-/**
- * Formats an ISO-8601 LocalDateTime string for display.
- * @param {string} isoStr  e.g. "2025-02-27T14:30:00"
- * @returns {string}  e.g. "27 Feb 2025 14:30"
- */
-function formatHistoryDate(isoStr) {
-    try {
-        const d = new Date(isoStr);
-        if (isNaN(d.getTime())) return isoStr;
-        return d.toLocaleString(undefined, {
-            day: '2-digit', month: 'short', year: 'numeric',
-            hour: '2-digit', minute: '2-digit'
-        });
-    } catch (e) {
-        return isoStr;
-    }
-}
 
