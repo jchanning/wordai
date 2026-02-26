@@ -3493,11 +3493,12 @@ select:focus {
        Height = full viewport
          - header  (~60px, baked into the -120px below)
          - bottom-nav (60px, baked in)
-         - keyboard (~181px: 3 rows × 56px + 2px × 2 gaps + 4px top-padding + 1px border)
-       Total deduction: 301px */
+         - keyboard (~165px: 3 rows × 52px + 2px × 2 gaps + 4px top-padding + 1px border)
+         - env(safe-area-inset-bottom): compensates for gesture-nav bar pushing keyboard up
+       Total deduction: 285px + safe-area-inset-bottom */
     .game-container.mobile-active {
         overflow: hidden !important; /* Let children handle scrolling */
-        height: calc(100dvh - 301px) !important;
+        height: calc(100dvh - 285px - env(safe-area-inset-bottom, 0px)) !important;
         padding: 0 !important;
         gap: 0 !important; /* Override play-panel gap — saves ~1rem for game real estate */
     }
@@ -3534,7 +3535,7 @@ select:focus {
         scrollbar-width: none; /* Firefox — no visible scrollbar */
         width: 100%;
         padding: 0.25rem;
-        gap: 0.25rem;
+        gap: 4px; /* px not rem — avoids font-scale inflation on Android */
         margin-top: 0;
         margin-bottom: 0;
     }
@@ -3564,10 +3565,10 @@ select:focus {
 
     .game-container.mobile-active .letter-input,
     .game-container.mobile-active .letter-box {
-        width: 14vw;
-        height: 14vw;
-        max-width: 3.25rem;
-        max-height: 3.25rem;
+        width: 13vw;
+        height: 13vw;
+        max-width: 51px;  /* px cap — rem would inflate on high-font-size Android devices */
+        max-height: 51px;
         font-size: 1.5rem;
     }
 
@@ -3595,7 +3596,7 @@ select:focus {
     }
     
     .game-key {
-        height: 3.5rem !important; /* Taller touch targets */
+        height: 52px !important; /* Fixed px — avoids font-scale inflation on Samsung/Android devices */
         font-size: 1.1rem;
     }
 
