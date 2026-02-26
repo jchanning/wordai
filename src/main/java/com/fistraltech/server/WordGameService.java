@@ -119,6 +119,7 @@ public class WordGameService {
         
         // Create and store session
         GameSession session = new GameSession(gameId, wordGame, gameConfig, gameDictionary);
+        session.setDictionaryId(effectiveDictionaryId);
         
         // Set cached WordEntropy for fast entropy-based suggestions
         com.fistraltech.analysis.WordEntropy cachedEntropy = dictionaryService.getWordEntropy(effectiveDictionaryId);

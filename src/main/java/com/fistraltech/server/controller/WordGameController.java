@@ -10,6 +10,7 @@ import java.util.logging.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -24,12 +25,16 @@ import com.fistraltech.analysis.WordEntropy;
 import com.fistraltech.core.Dictionary;
 import com.fistraltech.core.InvalidWordException;
 import com.fistraltech.core.Response;
+import com.fistraltech.security.model.User;
+import com.fistraltech.security.repository.UserRepository;
 import com.fistraltech.server.AlgorithmFeatureService;
 import com.fistraltech.server.DictionaryService;
+import com.fistraltech.server.PlayerGameService;
 import com.fistraltech.server.WordGameService;
 import com.fistraltech.server.dto.CreateGameRequest;
 import com.fistraltech.server.dto.CreateGameResponse;
 import com.fistraltech.server.dto.DictionaryOption;
+import com.fistraltech.server.dto.GameHistoryDto;
 import com.fistraltech.server.dto.GameResponse;
 import com.fistraltech.server.dto.GuessRequest;
 import com.fistraltech.server.model.GameSession;
@@ -93,10 +98,16 @@ public class WordGameController {
     
     @Autowired
     private WordGameService gameService;
-    
+
     @Autowired
     private AlgorithmFeatureService algorithmFeatureService;
-    
+
+    @Autowired
+    private PlayerGameService playerGameService;
+
+    @Autowired
+    private UserRepository userRepository;
+
     /**
      * Health check endpoint
      * GET /api/wordai/health
@@ -236,7 +247,8 @@ public class WordGameController {
      * POST /api/wordai/games/{gameId}/guess
      */
     @PostMapping("/games/{gameId}/guess")
-    public ResponseEntity<?> makeGuess(@PathVariable String gameId, @RequestBody GuessRequest request) {
+    public ResponseEntity<?> makeGuess(@PathVariable String gameId, @RequestBody GuessRequest request,
+            Authentication authentication) {
         try {
             if (request.getWord() == null || request.getWord().trim().isEmpty()) {
                 Map<String, String> error = new HashMap<>();
@@ -275,6 +287,15 @@ public class WordGameController {
             metrics.setMostFrequentCharByPosition(analyser.getMostFrequentCharByPosition());
             response.setDictionaryMetrics(metrics);
             
+            // Persist the completed game if a registered user is playing
+            if (session.isGameEnded() && authentication != null && authentication.isAuthenticated()) {
+                String principal = authentication.getName();
+                userRepository.findByUsername(principal)
+                        .or(() -> userRepository.findByEmail(principal))
+                        .map(User::getId)
+                        .ifPresent(uid -> playerGameService.saveGame(uid, session, session.getDictionaryId()));
+            }
+
             logger.info("Guess made for game " + gameId + ": " + request.getWord());
             return ResponseEntity.ok(response);
             
@@ -544,6 +565,40 @@ public class WordGameController {
         return ResponseEntity.ok(algorithms);
     }
     
+    /**
+     * Get the authenticated player's persistent game history.
+     * GET /api/wordai/history
+     *
+     * <p>Returns up to 100 most-recent completed games, newest first.
+     * Requires an authenticated (non-guest) user.
+     */
+    @GetMapping("/history")
+    public ResponseEntity<?> getPlayerHistory(Authentication authentication) {
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("error", "Authentication required"));
+        }
+        try {
+            String principal = authentication.getName();
+            return userRepository.findByUsername(principal)
+                    .or(() -> userRepository.findByEmail(principal))
+                    .<ResponseEntity<?>>map(user -> {
+                        List<GameHistoryDto> history = playerGameService.getHistory(user.getId());
+                        Map<String, Object> response = new HashMap<>();
+                        response.put("games", history);
+                        response.put("total", history.size());
+                        response.put("username", user.getUsername());
+                        return ResponseEntity.ok(response);
+                    })
+                    .orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND)
+                            .body(Map.of("error", "User not found")));
+        } catch (Exception e) {
+            logger.log(Level.SEVERE, "Error retrieving player history", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "Failed to retrieve game history"));
+        }
+    }
+
     private Map<String, String> createAlgorithmInfo(String id, String name, String description) {
         Map<String, String> info = new HashMap<>();
         info.put("id", id);

@@ -3924,3 +3924,72 @@ select:focus {
     padding-top: var(--padding-sm);
     border-top: 1px solid var(--border-color);
 }
+
+/* ============================================================
+   PLAYER HISTORY CARDS  (#player-history-section)
+   ============================================================ */
+
+.ph-card {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 0.5rem;
+    padding: 0.6rem 0.75rem;
+    margin-bottom: 0.5rem;
+}
+
+.ph-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.2rem;
+}
+
+.ph-target {
+    font-family: var(--font-mono);
+    font-weight: 700;
+    font-size: 1rem;
+    color: var(--text-primary);
+    letter-spacing: 0.05em;
+}
+
+.ph-meta {
+    font-size: 0.78rem;
+    color: var(--text-secondary);
+}
+
+.ph-date {
+    font-size: 0.72rem;
+    color: var(--text-tertiary);
+    margin-bottom: 0.35rem;
+}
+
+.ph-guesses {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    margin-top: 0.3rem;
+}
+
+.ph-guess-row {
+    display: flex;
+    gap: 3px;
+}
+
+.ph-tile {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    border-radius: 3px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    font-family: var(--font-mono);
+    color: #ffffff;
+    flex-shrink: 0;
+}
+
+.ph-tile-green  { background-color: var(--correct); }
+.ph-tile-amber  { background-color: var(--present); }
+.ph-tile-grey   { background-color: var(--absent); }
+

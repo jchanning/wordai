@@ -48,6 +48,8 @@ public class GameSession {
     private final Dictionary originalDictionary;
     private final Filter wordFilter;
     private boolean gameEnded = false;
+    /** Dictionary identifier this session was created with (e.g. {@code "default"}, {@code "easy"}). */
+    private String dictionaryId = "default";
     // Only valid in auto-play mode. In user interactive mode, strategy is chosen per guess.
     private String selectedStrategy = "RANDOM"; // Default strategy
     
@@ -85,7 +87,15 @@ public class GameSession {
     public void setGameEnded(boolean gameEnded) {
         this.gameEnded = gameEnded;
     }
-    
+
+    public String getDictionaryId() {
+        return dictionaryId;
+    }
+
+    public void setDictionaryId(String dictionaryId) {
+        this.dictionaryId = dictionaryId;
+    }
+
     public int getCurrentAttempts() {
         return wordGame.getNoOfAttempts();
     }
