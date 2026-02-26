@@ -1309,11 +1309,19 @@ h3 {
 }
 
 .attempts-counter {
+    display: inline-flex;
+    align-items: center;
+    align-self: stretch;
     font-family: var(--font-mono);
+    font-size: 0.9rem;
+    font-weight: 600;
     color: var(--text-secondary);
-    font-size: var(--font-size-caption);
     white-space: nowrap;
     flex-shrink: 0;
+    padding: 0 0.55rem;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    border-radius: 0.375rem;
 }
 
 /* Push New button to the right edge of the game panel header */
@@ -3479,11 +3487,12 @@ select:focus {
         overflow: hidden !important; /* Let children handle scrolling */
         height: calc(100dvh - 305px) !important;
         padding: 0 !important;
+        gap: 0 !important; /* Override play-panel gap — saves ~1rem for game real estate */
     }
 
     /* Game Header compacting */
     .game-container.mobile-active .panel-header-row {
-        padding: 0.25rem 0.5rem;
+        padding: 0.3rem 0.5rem;  /* Match guess-container vertical padding for symmetric border spacing */
         min-height: auto;
     }
 
@@ -3495,6 +3504,14 @@ select:focus {
     /* Attempts counter (now inline in panel-header-row) */
     .game-container.mobile-active .attempts-counter {
         font-size: 0.75rem;
+    }
+
+    /* Match Sign In and New button widths for visual alignment */
+    .nav-link-signin,
+    .game-container.mobile-active .panel-header-row .btn-md {
+        width: 90px;
+        min-width: 90px;
+        justify-content: center;
     }
 
     /* GUESS HISTORY (Scrollable Area) */
@@ -3518,7 +3535,7 @@ select:focus {
     /* CURRENT GUESS ROW */
     .game-container.mobile-active .guess-container {
         flex: 0 0 auto;
-        padding: 0.25rem 0.25rem 0;   /* No bottom padding — border acts as separator */
+        padding: 0.3rem 0.25rem;      /* Equal top/bottom for symmetric spacing around border lines */
         margin-bottom: 0;
         background: var(--bg-primary); /* Stickiness background */
         z-index: 10;
@@ -3675,6 +3692,9 @@ select:focus {
     /* Lock app-main to viewport minus header — prevents page-level scroll
        that would unanchor the sticky header and push the keyboard off-screen.
        Scoped to play screen only; other screens scroll normally. */
+    body:has(#screen-play:not([hidden])) {
+        overflow: hidden; /* Prevent scrollbar gutter reserving space and appearing as white strip */
+    }
     body:has(#screen-play:not([hidden])) .app-main {
         overflow: hidden;
         height: calc(100dvh - 60px); /* 60px = header-bar */
