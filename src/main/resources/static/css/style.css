@@ -3493,11 +3493,11 @@ select:focus {
        Height = full viewport
          - header  (~60px, baked into the -120px below)
          - bottom-nav (60px, baked in)
-         - keyboard (~185px: 3 rows × 56px + 2px × 2 gaps + 8px padding + 9px buffer)
-       Total deduction: 305px */
+         - keyboard (~181px: 3 rows × 56px + 2px × 2 gaps + 4px top-padding + 1px border)
+       Total deduction: 301px */
     .game-container.mobile-active {
         overflow: hidden !important; /* Let children handle scrolling */
-        height: calc(100dvh - 305px) !important;
+        height: calc(100dvh - 301px) !important;
         padding: 0 !important;
         gap: 0 !important; /* Override play-panel gap — saves ~1rem for game real estate */
     }
@@ -3576,7 +3576,8 @@ select:focus {
     }
 
     /* KEYBOARD — fixed just above the bottom nav so it never scrolls or shifts.
-       bottom = bottom-nav height (60px) + safe-area inset (notch/home bar). */
+       bottom = bottom-nav height (60px) + safe-area inset (notch/home bar).
+       padding-bottom: 0 so the last key row sits flush against the nav border. */
     .game-container.mobile-active .keyboard-container {
         position: fixed;
         bottom: calc(60px + env(safe-area-inset-bottom, 0px));
@@ -3584,7 +3585,7 @@ select:focus {
         right: 0;
         width: 100%;
         z-index: 200;
-        padding: 0.25rem;
+        padding: 0.25rem 0.25rem 0;
         background: var(--bg-primary);
         border-top: 1px solid var(--border-color);
     }
