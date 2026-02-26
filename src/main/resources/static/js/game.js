@@ -204,6 +204,7 @@ function displayUserInfo() {
         const userNameElement = document.getElementById('userName');
         const userInfoElement = document.getElementById('userInfo');
         const signInLink = document.getElementById('signInLink');
+        const signInLinkDrawer = document.getElementById('signInLinkDrawer');
         
         if (userNameElement && userInfoElement) {
             userNameElement.textContent = currentUser.fullName || currentUser.username || currentUser.email;
@@ -212,6 +213,9 @@ function displayUserInfo() {
         
         if (signInLink) {
             signInLink.style.display = 'none';
+        }
+        if (signInLinkDrawer) {
+            signInLinkDrawer.style.display = 'none';
         }
         
         // Show or hide Admin nav link based on roles
@@ -226,6 +230,7 @@ function displayUserInfo() {
 function showGuestOptions() {
     const userInfoElement = document.getElementById('userInfo');
     const signInLink = document.getElementById('signInLink');
+    const signInLinkDrawer = document.getElementById('signInLinkDrawer');
     
     if (userInfoElement) {
         userInfoElement.style.display = 'none';
@@ -239,6 +244,9 @@ function showGuestOptions() {
     
     if (signInLink) {
         signInLink.style.display = 'inline-flex';
+    }
+    if (signInLinkDrawer) {
+        signInLinkDrawer.style.display = 'flex';
     }
 }
 

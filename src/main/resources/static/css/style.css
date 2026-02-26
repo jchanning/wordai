@@ -3328,10 +3328,22 @@ select:focus {
    MOBILE VIEW SWITCHING - PROGRESSIVE DISCLOSURE
    ======================================== */
 
+/* Mobile-nav-only items: hidden on desktop, JS-controlled on mobile */
+@media (min-width: 769px) {
+    .mobile-nav-signin {
+        display: none !important;
+    }
+}
+
 /* Hide all panels by default on mobile */
 @media (max-width: 768px) {
     /* ---- Desktop-only nav items ---- */
     .desktop-only {
+        display: none !important;
+    }
+
+    /* ---- Header sign-in hidden on mobile (drawer version used instead) ---- */
+    .app-header-right .nav-link-signin {
         display: none !important;
     }
 
