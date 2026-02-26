@@ -1,5 +1,6 @@
 #!/bin/bash
-# Server-side preparation script for WordAI deployment
+# Oracle Cloud Infrastructure (OCI) deployment script for WordAI 
+Server-side preparation script for WordAI deployment
 # Run this script on the OCI instance to prepare for deployment
 
 echo "=== Preparing Instance for WordAI Deployment ==="

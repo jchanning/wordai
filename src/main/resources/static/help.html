@@ -10,7 +10,7 @@
 <div class="help-content">
     <h1>WordAI User Guide</h1>
     
-    <p>Welcome to <strong>WordAI</strong> - A sophisticated Wordle-like game with advanced bot analysis and dictionary exploration tools.</p>
+    <p>Welcome to <strong>WordAI</strong> - A sophisticated word game with advanced bot analysis and dictionary exploration tools.</p>
     
     <div class="toc">
         <h3 style="margin-top: 0;">Table of Contents</h3>
@@ -49,7 +49,7 @@
         <li>6 attempts to guess the word</li>
         <li>Color-coded feedback after each guess</li>
         <li>Real-time dictionary validation</li>
-        <li>Get assistance by getting a suggestion based on one of the algorithmic strategies (Random, Letter Frequency, etc.)</li>
+        <li>Get assistance by getting a suggestion based on one of the algorithmic strategies</li>
     </ul>
     
     <h3>Auto Mode (Bot Demo)</h3>
@@ -181,8 +181,6 @@
     <h3>Game Controls</h3>
     <ul>
         <li><strong>New Game</strong>: Start a fresh game with a new target word</li>
-        <li><strong>Give Up</strong>: Reveal the target word and end the current game</li>
-        <li><strong>Change Strategy</strong>: Switch bot strategy mid-game (Play mode)</li>
     </ul>
     
     <hr>
@@ -240,7 +238,7 @@
     <h3>Viewing Words</h3>
     <ol>
         <li>Navigate to <strong>Dictionary</strong> mode</li>
-        <li>Select word length (4, 5, 6, or 7 letters) from dropdown</li>
+        <li>Select word length (4, 5, or 6 letters) from dropdown</li>
         <li>Browse the complete list of valid words</li>
     </ol>
     
@@ -249,7 +247,7 @@
     <p><strong>Sort Options:</strong></p>
     <ul>
         <li>Click column headers to sort</li>
-        <li>Sort by: Word, Position 1-7 letters, Frequency</li>
+        <li>Sort by: Word, Position 1-6 letters, Frequency</li>
         <li>Click again to reverse sort order</li>
     </ul>
     
@@ -288,10 +286,8 @@
     
     <h3>Viewing Visualizations</h3>
     <ul>
-        <li>Click <strong>"Show Charts"</strong> to see letter frequency bar charts</li>
         <li>Visual representation of letter distribution by position</li>
         <li>Helps identify optimal starting words</li>
-        <li>Click <strong>"Hide Charts"</strong> to collapse</li>
     </ul>
     
     <hr>
@@ -401,13 +397,12 @@
     <ol>
         <li><strong>Test Multiple Strategies</strong>
             <ul>
-                <li>No single strategy wins every game</li>
                 <li>Compare results across 1000+ games for accuracy</li>
             </ul>
         </li>
         <li><strong>Understand Entropy</strong>
             <ul>
-                <li>Maximize Entropy finds optimal guesses</li>
+                <li>Maximize Entropy finds optimal guesses but is limited to guesses that can win</li>
                 <li>Balances information gain with risk</li>
             </ul>
         </li>
@@ -526,7 +521,7 @@ wordai.dictionary.7letter=path/to/7_letter_words.txt</code></pre>
     
     <div style="text-align: center; padding: 2rem 0; color: #64748b;">
         <p><strong>Happy Word Guessing!</strong></p>
-        <p style="font-size: 0.875rem;">WordAI is inspired by the popular Wordle game, enhanced with AI analysis and educational tools for studying word-guessing strategies.</p>
+        <p style="font-size: 0.875rem;">WordAI is a word game, enhanced with AI analysis and educational tools for studying word-guessing strategies.</p>
     </div>
 </div>
 
