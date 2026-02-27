@@ -98,3 +98,6 @@ output/
 
 # Test output
 surefire-reports/
+
+# Claude Code temporary files
+tmpclaude-*
