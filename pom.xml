@@ -6,7 +6,7 @@
 
     <groupId>com.fistraltech</groupId>
     <artifactId>wordai</artifactId>
-    <version>1.9.0</version>
+    <version>1.10.0</version>
     <packaging>jar</packaging>
 
     <properties>
@@ -143,6 +143,20 @@
             <groupId>org.springdoc</groupId>
             <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
             <version>2.6.0</version>
+        </dependency>
+
+        <!-- Caffeine cache — session TTL / memory-leak fix -->
+        <dependency>
+            <groupId>com.github.ben-manes.caffeine</groupId>
+            <artifactId>caffeine</artifactId>
+            <version>3.1.8</version>
+        </dependency>
+
+        <!-- Flyway — versioned schema migration (replaces ddl-auto=update in production) -->
+        <dependency>
+            <groupId>org.flywaydb</groupId>
+            <artifactId>flyway-core</artifactId>
+            <version>9.22.3</version>
         </dependency>
     </dependencies>
 

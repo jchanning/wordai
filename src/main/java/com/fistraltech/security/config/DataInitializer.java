@@ -1,7 +1,8 @@
 package com.fistraltech.security.config;
 
-import com.fistraltech.security.model.User;
-import com.fistraltech.security.repository.UserRepository;
+import java.time.LocalDateTime;
+import java.util.Optional;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -10,8 +11,8 @@ import org.springframework.boot.ApplicationRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
-import java.time.LocalDateTime;
-import java.util.Optional;
+import com.fistraltech.security.model.User;
+import com.fistraltech.security.repository.UserRepository;
 
 @Component
 public class DataInitializer implements ApplicationRunner {
@@ -21,16 +22,16 @@ public class DataInitializer implements ApplicationRunner {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
 
-    @Value("${wordai.admin.email:admin@wordai.local}")
+    @Value("${wordai.admin.email}")
     private String adminEmail;
 
-    @Value("${wordai.admin.username:admin}")
+    @Value("${wordai.admin.username}")
     private String adminUsername;
 
-    @Value("${wordai.admin.password:ChangeMe123!}")
+    @Value("${wordai.admin.password}")
     private String adminPassword;
 
-    @Value("${wordai.admin.fullName:System Administrator}")
+    @Value("${wordai.admin.fullName}")
     private String adminFullName;
 
     public DataInitializer(UserRepository userRepository, PasswordEncoder passwordEncoder) {

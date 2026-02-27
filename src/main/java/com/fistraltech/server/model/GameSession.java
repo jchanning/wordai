@@ -35,7 +35,10 @@ import com.fistraltech.util.Config;
  *   <li>{@link #suggestWord()} uses the current strategy to propose a next guess based on the filtered dictionary.</li>
  * </ul>
  *
- * <p><strong>Thread safety</strong>: sessions are not thread-safe; treat each {@code gameId} as single-writer.
+ * <p><strong>Thread safety</strong>: {@link #suggestWord()} and {@link #setSelectedStrategy(String)}
+ * are {@code synchronized} on {@code this}.  Combined with the {@code synchronized(session)} block
+ * in {@link com.fistraltech.server.WordGameService#makeGuess}, all mutating operations on a session
+ * use the same intrinsic lock, preventing concurrent guess / suggestion / strategy-change races.
  *
  * @author Fistral Technologies
  */
@@ -125,7 +128,7 @@ public class GameSession {
         return selectedStrategy;
     }
     
-    public void setSelectedStrategy(String strategy) {
+    public synchronized void setSelectedStrategy(String strategy) {
         this.selectedStrategy = strategy;
     }
     
@@ -163,7 +166,7 @@ public class GameSession {
      *
      * @return a suggested word, or {@code null} if no valid words remain
      */
-    public String suggestWord() {
+    public synchronized String suggestWord() {
         Dictionary filteredDictionary = getFilteredDictionary();
         
         if (filteredDictionary.getWordCount() == 0) {

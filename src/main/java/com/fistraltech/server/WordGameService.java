@@ -1,9 +1,15 @@
 package com.fistraltech.server;
 
-import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
+import com.github.benmanes.caffeine.cache.RemovalCause;
 
 import org.springframework.stereotype.Service;
 
@@ -35,7 +41,8 @@ import com.fistraltech.util.Config;
  *
  * <p><strong>Thread safety</strong>
  * <ul>
- *   <li>The session map uses {@link java.util.concurrent.ConcurrentHashMap} for safe concurrent access.</li>
+ *   <li>The session store is a Caffeine {@link com.github.benmanes.caffeine.cache.Cache} which is
+ *       thread-safe for concurrent reads and writes across different game IDs.</li>
  *   <li>Individual sessions ({@link WordGame}/{@link Filter}) are not designed for concurrent mutation.
  *       The REST API assumes a single caller at a time per {@code gameId}.</li>
  * </ul>
@@ -47,21 +54,52 @@ import com.fistraltech.util.Config;
 @Service
 public class WordGameService {
     private static final Logger logger = Logger.getLogger(WordGameService.class.getName());
-    
-    private final Map<String, GameSession> activeSessions = new ConcurrentHashMap<>();
+
+    private final Cache<String, GameSession> activeSessions;
     private final DictionaryService dictionaryService;
     private final Config config;
     
     /**
-     * Constructor with dependency injection of DictionaryService.
-     * 
+     * Production constructor — Spring injects both the dictionary service and the TTL setting.
+     *
      * @param dictionaryService the dictionary service for cached dictionary access
+     * @param sessionTtlMinutes idle-timeout for game sessions (default 30). Sessions that have
+     *                          not been accessed for this long are evicted automatically to
+     *                          prevent unbounded heap growth.
      */
-    public WordGameService(DictionaryService dictionaryService) {
+    @Autowired
+    public WordGameService(DictionaryService dictionaryService,
+                           @Value("${wordai.session.ttl-minutes:30}") int sessionTtlMinutes) {
         logger.info("Initializing WordGameService...");
         this.dictionaryService = dictionaryService;
         this.config = dictionaryService.getConfig();
-        logger.info("WordGameService initialized with DictionaryService");
+        this.activeSessions = Caffeine.newBuilder()
+                .expireAfterAccess(sessionTtlMinutes, TimeUnit.MINUTES)
+                .maximumSize(10_000)
+                .removalListener((String gameId, GameSession session, RemovalCause cause) -> {
+                    if (cause.wasEvicted()) {
+                        logger.info(() -> "Game session evicted due to inactivity: "
+                                + gameId + " (cause=" + cause + ")");
+                    }
+                })
+                .build();
+        logger.info(() -> "WordGameService initialised — session TTL: "
+                + sessionTtlMinutes + " min, max sessions: 10 000");
+    }
+
+    /**
+     * Package-private constructor for unit tests.
+     *
+     * <p>Accepts a pre-built {@link Cache} so that tests can inject a
+     * {@code FakeTicker}-backed cache and advance time without {@code Thread.sleep}.
+     *
+     * @param dictionaryService mocked or real dictionary service
+     * @param sessionCache      pre-configured Caffeine cache
+     */
+    WordGameService(DictionaryService dictionaryService, Cache<String, GameSession> sessionCache) {
+        this.dictionaryService = dictionaryService;
+        this.config = dictionaryService.getConfig();
+        this.activeSessions = sessionCache;
     }
     
     /**
@@ -170,34 +208,43 @@ public class WordGameService {
      *
      * <p>The returned {@link Response} includes remaining-words count derived from the session filter.
      *
+     * <p><strong>Thread safety:</strong> the entire check-then-act sequence
+     * (isGameEnded → guess → filter-update → setGameEnded) is executed inside a
+     * {@code synchronized(session)} block.  This uses the session's intrinsic lock,
+     * which is the same lock acquired by {@link GameSession#suggestWord()}, ensuring
+     * that a concurrent suggestion request cannot observe a half-updated filter.
+     *
      * @throws InvalidWordException if the session does not exist, the game already ended, or the guess is invalid.
      */
     public Response makeGuess(String gameId, String word) throws InvalidWordException {
-        GameSession session = activeSessions.get(gameId);
+        GameSession session = activeSessions.getIfPresent(gameId);
         if (session == null) {
             throw new InvalidWordException("Game session not found: " + gameId);
         }
-        
-        if (session.isGameEnded()) {
-            throw new InvalidWordException("Game has already ended");
+
+        synchronized (session) {
+            if (session.isGameEnded()) {
+                throw new InvalidWordException("Game has already ended");
+            }
+
+            Response response = session.getWordGame().guess(word.toLowerCase());
+
+            // Update the filter based on the response
+            updateFilterBasedOnResponse(session.getWordFilter(), response);
+
+            // Set remaining words count in response
+            response.setRemainingWordsCount(session.getRemainingWordsCount());
+
+            // Check if game should end
+            if (response.getWinner() || session.isMaxAttemptsReached()) {
+                session.setGameEnded(true);
+                logger.info(() -> "Game session ended: " + gameId + " (Winner: " + response.getWinner() + ")");
+            }
+
+            return response;
         }
-        
-        Response response = session.getWordGame().guess(word.toLowerCase());
-        
-        // Update the filter based on the response
-        updateFilterBasedOnResponse(session.getWordFilter(), response);
-        
-        // Set remaining words count in response
-        response.setRemainingWordsCount(session.getRemainingWordsCount());
-        
-        // Check if game should end
-        if (response.getWinner() || session.isMaxAttemptsReached()) {
-            session.setGameEnded(true);
-            logger.info(() -> "Game session ended: " + gameId + " (Winner: " + response.getWinner() + ")");
-        }
-        
-        return response;
     }
+
     
     /**
      * Gets the game session by ID
@@ -205,25 +252,25 @@ public class WordGameService {
      * @return The game session or null if not found
      */
     public GameSession getGameSession(String gameId) {
-        return activeSessions.get(gameId);
+        return activeSessions.getIfPresent(gameId);
     }
-    
+
     /**
      * Removes a game session (cleanup)
      * @param gameId The game session ID
      */
     public void removeGameSession(String gameId) {
-        activeSessions.remove(gameId);
+        activeSessions.invalidate(gameId);
         logger.info(() -> "Removed game session: " + gameId);
     }
-    
+
     /**
      * Gets the number of active game sessions.
-     * 
+     *
      * @return The number of active sessions
      */
     public int getActiveSessionCount() {
-        return activeSessions.size();
+        return (int) activeSessions.estimatedSize();
     }
     
     /**

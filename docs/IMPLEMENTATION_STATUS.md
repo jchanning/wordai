@@ -2,7 +2,7 @@
 
 Single source of truth for what is built, what is in progress, and what is planned. Update this file when completing or starting any significant piece of work.
 
-*Last updated: February 2026*
+*Last updated: February 2026 — CORS policy centralised (improvement #5)*
 
 ---
 
@@ -29,6 +29,11 @@ Single source of truth for what is built, what is in progress, and what is plann
 | Dictionaries | 4, 5, 6 letter word files in `src/main/resources/dictionaries/` |
 | Cloud deployment | Oracle Cloud / OCI scripts in `deployment/` |
 | Javadoc | Comprehensive on core, bot, server packages (see Documentation section below) |
+| **Session TTL (memory-leak fix)** | `WordGameService` now uses a Caffeine cache with 30-min idle TTL and 10 000-session cap. Configurable via `wordai.session.ttl-minutes`. See `docs/features/session-ttl.spec.md`. |
+| **Per-session concurrency fix** | `synchronized(session)` block in `WordGameService.makeGuess()`; `synchronized` on `GameSession.suggestWord()` and `setSelectedStrategy()`. Prevents concurrent guess/suggestion/strategy-change races. See `docs/features/session-concurrency.spec.md`. |
+| **Admin credentials security hardening** | Removed hardcoded defaults from `DataInitializer.java` `@Value` annotations. `application.properties` now reads from env vars (`WORDAI_ADMIN_EMAIL`, `WORDAI_ADMIN_PASSWORD`) with safe dev fallbacks. `application-prod.properties` requires env vars with no fallback (Spring aborts startup if absent). `AdminCredentialsValidator` adds defence-in-depth: rejects blank or known-default credentials when the `prod` profile is active. See `docs/features/admin-credentials.spec.md`. |
+| **Flyway schema migration** | Replaced `ddl-auto=update` in production with `ddl-auto=validate`. Flyway manages all schema changes via versioned migration scripts. `V1__baseline.sql` captures the current three-table schema (`users`, `user_roles`, `player_games`). `baseline-on-migrate=true` protects the existing production database. Dev still uses `ddl-auto=update` for fast iteration. See `docs/features/flyway-schema-migration.spec.md`. |
+| **CORS policy centralisation** | Removed `@CrossOrigin(origins="*")` from all 5 controllers. Replaced with a single `CorsConfigurationSource` bean in `SecurityConfig`. Allowed origins are driven by `wordai.cors.allowed-origins`: `*` in dev (backward-compatible), `${WORDAI_CORS_ALLOWED_ORIGINS:http://localhost:8080}` in production. `setAllowedOriginPatterns` is used to support both wildcards and credential-bearing requests. See `docs/features/cors-policy.spec.md`. |
 
 ### 🔲 Planned / Backlog
 
@@ -68,10 +73,11 @@ Use [refactor.prompt.md](../.github/prompts/refactor.prompt.md) to action any of
 | `bot` | `WordGamePlayerTest` | 11 |
 | `analysis` | `DictionaryAnalyticsTest`, `ResponseCacheTest`, `ResponseMatrixTest`, `WordEntropyLazyTest`, `WordIdSetTest` | ~70 |
 | `game` | `GameControllerTest` | 12 |
-| `security` | `UserManagementControllerTest`, `UserServiceTest` | 20+ |
+| `security` | `UserManagementControllerTest`, `UserServiceTest`, `AdminCredentialsValidatorTest`, `CorsConfigTest` | 20+ |
 | `util` | `ConfigManagerTest` | 6 |
-| `(root)` | `ArchitectureFitnessTest` | 6 (4 skipped — known violations) |
-| **Total** | | **219 pass, 4 skipped** |
+| `(root)` | `ArchitectureFitnessTest`, `FlywayMigrationTest` | 10 (4 skipped — known violations) |
+| `server` | `SessionTtlTest`, `SessionConcurrencyTest` | 9 |
+| **Total** | | **239 pass, 4 skipped** |
 
 Run the full suite: `mvn clean test`
 
