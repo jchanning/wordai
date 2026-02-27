@@ -6,6 +6,10 @@ After=network.target
 Type=simple
 User=opc
 WorkingDirectory=/home/opc/wordai-app
+# Credentials and runtime config are read from a restricted env file (chmod 600, root-owned).
+# Create/update: sudo nano /etc/sysconfig/wordai  (required keys: WORDAI_ADMIN_EMAIL, WORDAI_ADMIN_PASSWORD,
+#   WORDAI_ADMIN_USERNAME, WORDAI_ADMIN_FULLNAME, WORDAI_CORS_ALLOWED_ORIGINS)
+EnvironmentFile=/etc/sysconfig/wordai
 ExecStart=/usr/bin/java -Xmx4096m -Dspring.profiles.active=prod -jar /home/opc/wordai-app/wordai.jar
 StandardOutput=journal
 StandardError=journal
