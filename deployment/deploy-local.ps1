@@ -54,13 +54,12 @@ scp -i $KEY $jarFile.FullName "${USER}@${IP}:~/wordai-app/wordai.jar"
 Write-Host ""
 Write-Host "Step 4: Uploading configuration files..." -ForegroundColor Yellow
 scp -i $KEY deployment\wordai-local.properties "${USER}@${IP}:~/wordai-app/wordai.properties"
-scp -i $KEY deployment\setup-dictionaries.sh   "${USER}@${IP}:~/wordai-app/"
 scp -i $KEY deployment\wordai-local.service    "${USER}@${IP}:~/wordai-app/"
 
 # Step 5: Install service (if new) and restart
 Write-Host ""
 Write-Host "Step 5: Installing service and restarting..." -ForegroundColor Yellow
-ssh -i $KEY "${USER}@${IP}" "mkdir -p ~/wordai-app/logs ~/wordai-data/analysis; cd ~/wordai-app; chmod +x setup-dictionaries.sh; ./setup-dictionaries.sh; if [ -f ~/wordai-app/wordai-local.service ]; then sudo cp ~/wordai-app/wordai-local.service /etc/systemd/system/wordai.service; sudo systemctl daemon-reload; sudo systemctl enable wordai; fi; sudo systemctl restart wordai; sleep 3; sudo systemctl status wordai --no-pager"
+ssh -i $KEY "${USER}@${IP}" "mkdir -p ~/wordai-app/logs ~/wordai-app/dictionaries ~/wordai-data/analysis; cd ~/wordai-app; jar xf wordai.jar BOOT-INF/classes/dictionaries/ 2>/dev/null; mv BOOT-INF/classes/dictionaries/*.txt dictionaries/ 2>/dev/null; rm -rf BOOT-INF 2>/dev/null; echo 'Dictionaries:' && ls dictionaries/; if [ -f ~/wordai-app/wordai-local.service ]; then sudo cp ~/wordai-app/wordai-local.service /etc/systemd/system/wordai.service; sudo systemctl daemon-reload; sudo systemctl enable wordai; fi; sudo systemctl restart wordai; sleep 5; sudo systemctl status wordai --no-pager"
 
 Write-Host ""
 Write-Host "=== Deployment Complete ===" -ForegroundColor Green
