@@ -318,6 +318,10 @@ export async function loadDictionaryScreenData(dictionaryId, dictionaryName) {
     const wordLength = data.wordLength || (words[0] ? words[0].length : 0);
     const entropyMap = data.entropy || {};
 
+    state.dictionaryScreenState.words = words;
+    state.dictionaryScreenState.wordLength = wordLength;
+    state.dictionaryScreenState.entropyMap = entropyMap;
+
     const nameEl   = document.getElementById('dictionaryName');
     const lengthEl = document.getElementById('dictionaryWordLength');
     const countEl  = document.getElementById('dictionaryWordCount');
@@ -343,6 +347,13 @@ export function sortLetterFrequency(columnIndex) {
         lfs.column    = columnIndex;
         lfs.ascending = columnIndex === 0;
     }
+
+    const ds = state.dictionaryScreenState;
+    if (Array.isArray(ds.words) && ds.words.length > 0 && ds.wordLength > 0) {
+        renderDictionaryLetterFrequency(ds.words, ds.wordLength);
+        return;
+    }
+
     refreshDictionaryScreen();
 }
 

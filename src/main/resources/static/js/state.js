@@ -35,6 +35,9 @@ export const state = {
     dictionaryScreenState: {
         loading:      false,
         dictionaryId: null,
+        words:        [],
+        wordLength:   0,
+        entropyMap:   {},
         _complexity:  null,   // stored after renderDictionaryComplexity
     },
     currentDictTab: 'frequency',
