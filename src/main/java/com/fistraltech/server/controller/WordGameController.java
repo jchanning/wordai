@@ -24,16 +24,13 @@ import com.fistraltech.analysis.WordEntropy;
 import com.fistraltech.core.Dictionary;
 import com.fistraltech.core.InvalidWordException;
 import com.fistraltech.core.Response;
-import com.fistraltech.security.model.User;
-import com.fistraltech.security.repository.UserRepository;
 import com.fistraltech.server.AlgorithmFeatureService;
 import com.fistraltech.server.DictionaryService;
-import com.fistraltech.server.PlayerGameService;
+import com.fistraltech.server.GameHistoryService;
 import com.fistraltech.server.WordGameService;
 import com.fistraltech.server.dto.CreateGameRequest;
 import com.fistraltech.server.dto.CreateGameResponse;
 import com.fistraltech.server.dto.DictionaryOption;
-import com.fistraltech.server.dto.GameHistoryDto;
 import com.fistraltech.server.dto.GameResponse;
 import com.fistraltech.server.dto.GuessRequest;
 import com.fistraltech.server.model.GameSession;
@@ -101,10 +98,7 @@ public class WordGameController {
     private AlgorithmFeatureService algorithmFeatureService;
 
     @Autowired
-    private PlayerGameService playerGameService;
-
-    @Autowired
-    private UserRepository userRepository;
+    private GameHistoryService gameHistoryService;
 
     /**
      * Health check endpoint
@@ -286,13 +280,7 @@ public class WordGameController {
             response.setDictionaryMetrics(metrics);
             
             // Persist the completed game if a registered user is playing
-            if (session.isGameEnded() && authentication != null && authentication.isAuthenticated()) {
-                String principal = authentication.getName();
-                userRepository.findByUsername(principal)
-                        .or(() -> userRepository.findByEmail(principal))
-                        .map(User::getId)
-                        .ifPresent(uid -> playerGameService.saveGame(uid, session, session.getDictionaryId()));
-            }
+            gameHistoryService.saveIfEnded(session, authentication);
 
             logger.info("Guess made for game " + gameId + ": " + request.getWord());
             return ResponseEntity.ok(response);
@@ -577,15 +565,12 @@ public class WordGameController {
                     .body(Map.of("error", "Authentication required"));
         }
         try {
-            String principal = authentication.getName();
-            return userRepository.findByUsername(principal)
-                    .or(() -> userRepository.findByEmail(principal))
-                    .<ResponseEntity<?>>map(user -> {
-                        List<GameHistoryDto> history = playerGameService.getHistory(user.getId());
+            return gameHistoryService.getHistory(authentication)
+                    .<ResponseEntity<?>>map(uh -> {
                         Map<String, Object> response = new HashMap<>();
-                        response.put("games", history);
-                        response.put("total", history.size());
-                        response.put("username", user.getUsername());
+                        response.put("games", uh.getGames());
+                        response.put("total", uh.getGames().size());
+                        response.put("username", uh.getUsername());
                         return ResponseEntity.ok(response);
                     })
                     .orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND)
