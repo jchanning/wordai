@@ -1,5 +1,6 @@
 package com.fistraltech.bot;
 
+import java.util.Objects;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -12,57 +13,29 @@ import com.fistraltech.core.WordGame;
 
 /**
  * Automated player implementation for word-guessing games using pluggable strategies.
- * 
+ *
  * <p>This class implements the {@link Player} interface to provide an AI bot that can
  * play word-guessing games automatically. The bot uses a configurable {@link SelectionAlgo}
  * strategy to choose words intelligently based on game feedback.
- * 
+ *
  * <p><strong>Architecture:</strong>
  * <ul>
  *   <li><strong>Strategy Pattern:</strong> Uses pluggable {@link SelectionAlgo} implementations</li>
- *   <li><strong>Filter-based Logic:</strong> Maintains a {@link Filter} to track valid words</li>
+ *   <li><strong>Filter-based Logic:</strong> Owns a {@link Filter} to track valid words per game</li>
  *   <li><strong>History Tracking:</strong> Records dictionary states and responses for analysis</li>
  * </ul>
- * 
- * <p><strong>Game Loop:</strong><br>
- * The {@link #playGame(WordGame)} method implements the core game loop:
+ *
+ * <p><strong>Game Loop:</strong>
  * <pre>
- * 1. Select a word using the configured algorithm
- * 2. Submit the guess to the game
- * 3. Receive and record the response
- * 4. Update the filter based on feedback
- * 5. Repeat until the word is found
+ * 1. Apply filter to produce the current candidate dictionary
+ * 2. Select a word using the configured algorithm
+ * 3. Submit the guess to the game
+ * 4. Receive and record the response
+ * 5. Repeat until the word is found or max attempts reached
  * </pre>
- * 
- * <p><strong>Usage Example:</strong>
- * <pre>{@code
- * // Create a dictionary and game
- * Dictionary dict = new Dictionary(5);
- * dict.addWordsFromFile("5-letter-words.txt");
- * WordGame game = new WordGame(dict, dict, config);
- * 
- * // Create a player with a selection strategy
- * SelectionAlgo strategy = new SelectMaximumEntropy(dict);
- * WordGamePlayer player = new WordGamePlayer(game, strategy);
- * 
- * // Play the game
- * player.playGame(game);
- * }</pre>
- * 
- * <p><strong>Available Strategies:</strong>
- * <ul>
- *   <li>{@code SelectRandom} - Random word selection</li>
- *   <li>{@code SelectMaximumEntropy} - Information theory-based selection</li>
- *   <li>{@code SelectBellmanFullDictionary} - Bellman full dictionary strategy</li>
- * </ul>
- * 
- * <p><strong>Performance Tracking:</strong><br>
- * History objects track the player's performance:
- * <ul>
- *   <li>{@link DictionaryHistory} - How quickly the valid word set shrinks</li>
- *   <li>{@link ResultHistory} - Each guess and its response</li>
- * </ul>
- * 
+ *
+ * <p><strong>Thread Safety:</strong> not thread-safe; use one instance per game thread.
+ *
  * @author Fistral Technologies
  * @see Player
  * @see SelectionAlgo
@@ -73,6 +46,7 @@ public class WordGamePlayer implements Player {
     private static final Logger logger = Logger.getLogger(WordGamePlayer.class.getName());
     private final Dictionary dictionary;
     private final SelectionAlgo algo;
+    private final Filter filter;
 
     private WordGame wordGame;
 
@@ -98,28 +72,39 @@ public class WordGamePlayer implements Player {
         this.wordGame = wordGame;
         this.dictionary = wordGame.getDictionary();
         this.algo = algo;
+        this.filter = new Filter(dictionary.getWordLength());
     }
 
     public void setWordGame(WordGame wordGame){
         this.wordGame = wordGame;
     }
 
-    /** Plays a single randomly selected game*/
+    /** Plays a single randomly selected game */
     @Override
     public void playGame(WordGame wg){
+        // Reset filter state at the start of each game so previous game constraints
+        // do not bleed into the next game.
+        filter.clear();
+
         try {
-            /* For the first guess, you do not have a result yet, so the word is an empty String*/
+            /* For the first guess, you do not have a result yet, so the word is an empty String */
             Response response = new Response("");
 
             while(!response.getWinner()){
-                String selectedWord = algo.selectWord(response);
-                //logger.info("The algo selected: " + selectedWord + " from " + algo.getUpdatedDictionary().getWordCount() + " words.");
-                
+                // Determine the current candidate dictionary based on accumulated feedback.
+                Dictionary filteredDictionary;
+                if (Objects.equals(response.getWord(), "")) {
+                    filteredDictionary = dictionary;
+                } else {
+                    filter.update(response);
+                    filteredDictionary = filter.apply(dictionary);
+                }
+
+                String selectedWord = algo.selectWord(response, filteredDictionary);
                 response = wg.guess(selectedWord);
 
-                // CommandLineGame.printResult(response); // Removed - CommandLineGame class doesn't exist
                 resultHistory.add(response);
-                dictionaryHistory.add(algo.getUpdatedDictionary());
+                dictionaryHistory.add(filteredDictionary);
             }
 
         }

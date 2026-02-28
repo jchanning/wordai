@@ -45,7 +45,7 @@ class SelectionAlgoTest {
     @DisplayName("SelectRandom always returns a word from the dictionary on first call")
     void selectRandom_firstCall_returnsWordFromDictionary() {
         SelectRandom algo = new SelectRandom(dictionary);
-        String word = algo.selectWord(new Response(""));
+        String word = algo.selectWord(new Response(""), dictionary);
         assertNotNull(word, "Should return a non-null word");
         assertTrue(dictionary.getMasterSetOfWords().contains(word),
             "Word '" + word + "' should be in the dictionary");
@@ -60,7 +60,7 @@ class SelectionAlgoTest {
         single.addWords(words);
 
         SelectRandom algo = new SelectRandom(single);
-        String word = algo.selectWord(new Response(""));
+        String word = algo.selectWord(new Response(""), single);
         assertEquals("arose", word);
     }
 
@@ -77,7 +77,7 @@ class SelectionAlgoTest {
     @DisplayName("SelectMaximumEntropy returns a word from the dictionary on first call")
     void selectMaxEntropy_firstCall_returnsWordFromDictionary() {
         SelectMaximumEntropy algo = new SelectMaximumEntropy(dictionary);
-        String word = algo.selectWord(new Response(""));
+        String word = algo.selectWord(new Response(""), dictionary);
         assertNotNull(word, "Should return a non-null word");
         assertTrue(dictionary.getMasterSetOfWords().contains(word),
             "Word '" + word + "' should be in the dictionary");
@@ -92,7 +92,7 @@ class SelectionAlgoTest {
         single.addWords(words);
 
         SelectMaximumEntropy algo = new SelectMaximumEntropy(single);
-        String word = algo.selectWord(new Response(""));
+        String word = algo.selectWord(new Response(""), single);
         assertEquals("arose", word);
     }
 
@@ -109,7 +109,7 @@ class SelectionAlgoTest {
         SelectMaximumEntropy algo = new SelectMaximumEntropy(dictionary);
 
         // First call
-        String firstWord = algo.selectWord(new Response(""));
+        String firstWord = algo.selectWord(new Response(""), dictionary);
         assertNotNull(firstWord);
 
         // Evaluate against a lowercase target word and select again
@@ -119,7 +119,7 @@ class SelectionAlgoTest {
 
         // Only assert non-null if the first guess was not the target (i.e., game not won yet)
         if (!response.getWinner()) {
-            String secondWord = algo.selectWord(response);
+            String secondWord = algo.selectWord(response, dictionary);
             assertNotNull(secondWord, "Second selection should still return a word");
         }
     }
