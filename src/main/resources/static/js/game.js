@@ -438,11 +438,20 @@ async function _fetchTargetWordAndSave(attempts) {
 
 export async function checkHealth() {
     try {
+        showStatus('Checking server status...', 'info', { autoHideMs: 0 });
         const response = await apiCheckHealth();
         const data     = await response.json();
-        if (response.ok) console.log('Server is running. Active sessions:', data.activeSessions);
-        else             console.error('Server health check failed');
+        if (response.ok) {
+            const timestamp = new Date(data.timestamp).toLocaleString();
+            const message = `✓ Server is running\nActive Sessions: ${data.activeSessions || 0}\nTime: ${timestamp}`;
+            showStatus(message, 'success');
+            console.log('Server is running. Active sessions:', data.activeSessions);
+        } else {
+            showStatus('Server health check failed with status: ' + response.status, 'error');
+            console.error('Server health check failed');
+        }
     } catch (error) {
+        showStatus('Cannot connect to server: ' + error.message, 'error');
         console.error('Cannot connect to server:', error);
     }
 }
