@@ -18,6 +18,7 @@ import com.fistraltech.core.Dictionary;
 import com.fistraltech.core.InvalidWordException;
 import com.fistraltech.core.Response;
 import com.fistraltech.core.WordGame;
+import com.fistraltech.server.algo.AlgorithmRegistry;
 import com.fistraltech.server.model.GameSession;
 import com.fistraltech.util.Config;
 
@@ -58,20 +59,24 @@ public class WordGameService {
     private final Cache<String, GameSession> activeSessions;
     private final DictionaryService dictionaryService;
     private final Config config;
+    private final AlgorithmRegistry algorithmRegistry;
     
     /**
-     * Production constructor — Spring injects both the dictionary service and the TTL setting.
+     * Production constructor — Spring injects the dictionary service, algorithm registry, and TTL setting.
      *
-     * @param dictionaryService the dictionary service for cached dictionary access
-     * @param sessionTtlMinutes idle-timeout for game sessions (default 30). Sessions that have
-     *                          not been accessed for this long are evicted automatically to
-     *                          prevent unbounded heap growth.
+     * @param dictionaryService  the dictionary service for cached dictionary access
+     * @param algorithmRegistry  the algorithm registry for creating selection algorithm instances
+     * @param sessionTtlMinutes  idle-timeout for game sessions (default 30). Sessions that have
+     *                           not been accessed for this long are evicted automatically to
+     *                           prevent unbounded heap growth.
      */
     @Autowired
     public WordGameService(DictionaryService dictionaryService,
+                           AlgorithmRegistry algorithmRegistry,
                            @Value("${wordai.session.ttl-minutes:30}") int sessionTtlMinutes) {
         logger.info("Initializing WordGameService...");
         this.dictionaryService = dictionaryService;
+        this.algorithmRegistry = algorithmRegistry;
         this.config = dictionaryService.getConfig();
         this.activeSessions = Caffeine.newBuilder()
                 .expireAfterAccess(sessionTtlMinutes, TimeUnit.MINUTES)
@@ -100,6 +105,7 @@ public class WordGameService {
         this.dictionaryService = dictionaryService;
         this.config = dictionaryService.getConfig();
         this.activeSessions = sessionCache;
+        this.algorithmRegistry = AlgorithmRegistry.withDefaults();
     }
     
     /**
@@ -156,7 +162,7 @@ public class WordGameService {
         }
         
         // Create and store session
-        GameSession session = new GameSession(gameId, wordGame, gameConfig, gameDictionary);
+        GameSession session = new GameSession(gameId, wordGame, gameConfig, gameDictionary, algorithmRegistry);
         session.setDictionaryId(effectiveDictionaryId);
         
         // Set cached WordEntropy for fast entropy-based suggestions
@@ -309,7 +315,7 @@ public class WordGameService {
         
         // Create game and player with specified algorithm
         WordGame game = new WordGame(analysisDictionary, analysisDictionary, config);
-        com.fistraltech.bot.selection.SelectionAlgo selectionAlgo = createSelectionAlgorithm(algorithm, analysisDictionary);
+        com.fistraltech.bot.selection.SelectionAlgo selectionAlgo = algorithmRegistry.create(algorithm, analysisDictionary);
         com.fistraltech.bot.WordGamePlayer player = new com.fistraltech.bot.WordGamePlayer(game, selectionAlgo);
         
         // Run analysis
@@ -317,25 +323,6 @@ public class WordGameService {
             new com.fistraltech.analysis.PlayerAnalyser(player, false, null);
         
         return analyser.analyseGamePlay(maxGames);
-    }
-    
-    /**
-     * Factory for mapping API algorithm ids to concrete {@link com.fistraltech.bot.selection.SelectionAlgo}.
-     */
-    private com.fistraltech.bot.selection.SelectionAlgo createSelectionAlgorithm(String algorithmId, Dictionary dictionary) {
-        if (algorithmId == null) {
-            algorithmId = "RANDOM";
-        }
-        
-        switch (algorithmId.toUpperCase()) {
-            case "ENTROPY":
-                return new com.fistraltech.bot.selection.SelectMaximumEntropy(dictionary);
-            case "BELLMAN_FULL_DICTIONARY":
-                return new com.fistraltech.bot.selection.SelectBellmanFullDictionary(dictionary);
-            case "RANDOM":
-            default:
-                return new com.fistraltech.bot.selection.SelectRandom(dictionary);
-        }
     }
     
     /**

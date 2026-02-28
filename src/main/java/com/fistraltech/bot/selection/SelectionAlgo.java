@@ -152,11 +152,16 @@ public abstract class SelectionAlgo {
     /**
      * Selects the next word to be guessed based on the last response and the current dictionary.
      *
-     * @param lastResponse the last response received
-     * @param dictionary the current dictionary of words
+     * <p>The {@code dictionary} parameter must already be filtered to only valid candidates
+     * for the current game state. Callers that manage their own filter (e.g.
+     * {@link com.fistraltech.server.model.GameSession}) should pass the pre-filtered dictionary
+     * directly rather than relying on the single-argument template-method path.
+     *
+     * @param lastResponse the last response received (pass an empty {@link Response} for the first guess)
+     * @param dictionary   the current (pre-filtered) dictionary of candidate words
      * @return the next word to be guessed
      */
-    abstract String selectWord(Response lastResponse, Dictionary dictionary);
+    public abstract String selectWord(Response lastResponse, Dictionary dictionary);
 
     /**
      * Resets the algorithm state for a new game.

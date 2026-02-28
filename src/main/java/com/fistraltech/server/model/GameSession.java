@@ -4,12 +4,11 @@ import java.util.logging.Logger;
 
 import com.fistraltech.analysis.WordEntropy;
 import com.fistraltech.bot.filter.Filter;
-import com.fistraltech.bot.selection.SelectMaximumEntropy;
-import com.fistraltech.bot.selection.SelectRandom;
 import com.fistraltech.bot.selection.SelectionAlgo;
 import com.fistraltech.core.Dictionary;
 import com.fistraltech.core.Response;
 import com.fistraltech.core.WordGame;
+import com.fistraltech.server.algo.AlgorithmRegistry;
 import com.fistraltech.util.Config;
 
 /**
@@ -50,6 +49,7 @@ public class GameSession {
     private final Config config;
     private final Dictionary originalDictionary;
     private final Filter wordFilter;
+    private final AlgorithmRegistry algorithmRegistry;
     private boolean gameEnded = false;
     /** Dictionary identifier this session was created with (e.g. {@code "default"}, {@code "easy"}). */
     private String dictionaryId = "default";
@@ -63,12 +63,14 @@ public class GameSession {
     private SelectionAlgo cachedAlgorithm;
     private String cachedAlgorithmStrategy;
     
-    public GameSession(String gameId, WordGame wordGame, Config config, Dictionary dictionary) {
+    public GameSession(String gameId, WordGame wordGame, Config config, Dictionary dictionary,
+                       AlgorithmRegistry algorithmRegistry) {
         this.gameId = gameId;
         this.wordGame = wordGame;
         this.config = config;
         this.originalDictionary = dictionary;
         this.wordFilter = new Filter(dictionary.getWordLength());
+        this.algorithmRegistry = algorithmRegistry;
     }
     
     public String getGameId() {
@@ -168,86 +170,68 @@ public class GameSession {
      */
     public synchronized String suggestWord() {
         Dictionary filteredDictionary = getFilteredDictionary();
-        
+
         if (filteredDictionary.getWordCount() == 0) {
             return null;
         }
-        
-        String strategyUpper = selectedStrategy.toUpperCase();
-        
+
+        String strategyUpper = normalizeStrategy(selectedStrategy);
+
         // Cached values are only valid when the dictionary is unfiltered (first guess).
         // After filtering, the dictionary composition changes, so entropy/reduction/column-length
         // values must be recomputed - they depend on how the word partitions the CURRENT dictionary.
         boolean isUnfilteredDictionary = filteredDictionary.getWordCount() == originalDictionary.getWordCount();
-        
+
         if (cachedWordEntropy != null && isUnfilteredDictionary) {
             switch (strategyUpper) {
                 case "ENTROPY":
-                case "MAXIMUM_ENTROPY":
                     logger.fine(() -> "Using cached WordEntropy for first ENTROPY suggestion (full dict)");
                     return cachedWordEntropy.getMaximumEntropyWord(filteredDictionary.getMasterSetOfWords());
-                    
+
                 case "BELLMAN_FULL_DICTIONARY":
                     logger.fine(() -> "Using cached WordEntropy for first BELLMAN_FULL_DICTIONARY suggestion (full dict)");
                     return cachedWordEntropy.getWordWithMaximumReduction(filteredDictionary.getMasterSetOfWords());
             }
         }
-        
-        // Dictionary has been filtered - must recompute values based on remaining words.
-        // This is required for correctness: the metrics depend on the current dictionary.
-        SelectionAlgo algo;
-        switch (strategyUpper) {
-            case "ENTROPY":
-            case "MAXIMUM_ENTROPY":
-                logger.fine(() -> "Recomputing entropy for dictionary of " + filteredDictionary.getWordCount() + " words");
-                algo = new SelectMaximumEntropy(filteredDictionary);
-                break;
-            case "BELLMAN_FULL_DICTIONARY":
-                logger.fine(() -> "Computing Bellman full-dictionary selection for dictionary of " + filteredDictionary.getWordCount() + " words");
-                com.fistraltech.bot.selection.SelectBellmanFullDictionary bellmanAlgo = 
-                    (com.fistraltech.bot.selection.SelectBellmanFullDictionary) getCachedOrCreateAlgorithm(strategyUpper, originalDictionary, filteredDictionary);
-                return bellmanAlgo.selectWord(filteredDictionary);
-            case "RANDOM":
-            default:
-                algo = new SelectRandom(filteredDictionary);
-                break;
-        }
-        
-        // Create an empty response for the first guess
+
+        // Dictionary has been filtered — must recompute values based on remaining words.
+        // For stateful algorithms (e.g. Bellman tracks guessedWords), use a cached instance.
+        // For stateless algorithms, create a fresh instance with the filtered dictionary.
         Response emptyResponse = new Response("");
-        return algo.selectWord(emptyResponse);
+        if (algorithmRegistry.isStateful(strategyUpper)) {
+            SelectionAlgo algo = getCachedOrCreateAlgorithm(strategyUpper, originalDictionary);
+            return algo.selectWord(emptyResponse, filteredDictionary);
+        }
+
+        SelectionAlgo algo = algorithmRegistry.create(strategyUpper, filteredDictionary);
+        return algo.selectWord(emptyResponse, filteredDictionary);
     }
-    
+
+    /** Normalises strategy aliases to a canonical upper-case ID. */
+    private String normalizeStrategy(String strategy) {
+        if (strategy == null) return "RANDOM";
+        String upper = strategy.toUpperCase();
+        return "MAXIMUM_ENTROPY".equals(upper) ? "ENTROPY" : upper;
+    }
+
     /**
      * Gets or creates a cached algorithm instance for strategies that maintain state.
-     * 
+     *
      * <p>Algorithms like SelectBellmanFullDictionary track guessedWords across calls.
      * Creating a new instance per suggestion would reset this state, allowing duplicates.
      * This method caches the instance for the game's lifetime.
-     * 
-     * @param strategy the strategy identifier
-     * @param fullDict the full dictionary (for algorithms that use it)
-     * @param remainingDict the remaining dictionary after filtering
+     *
+     * @param strategy the strategy identifier (already normalised to upper-case)
+     * @param fullDict the full dictionary (for algorithms that use it across all guesses)
      * @return the cached or newly created algorithm instance
      */
-    private SelectionAlgo getCachedOrCreateAlgorithm(String strategy, Dictionary fullDict, Dictionary remainingDict) {
-        // Check if we can reuse the cached instance
+    private SelectionAlgo getCachedOrCreateAlgorithm(String strategy, Dictionary fullDict) {
         if (cachedAlgorithm != null && strategy.equals(cachedAlgorithmStrategy)) {
             logger.fine(() -> "Reusing cached algorithm instance for " + strategy);
             return cachedAlgorithm;
         }
-        
-        // Create new instance and cache it
         logger.fine(() -> "Creating new algorithm instance for " + strategy);
-        switch (strategy) {
-            case "BELLMAN_FULL_DICTIONARY":
-                cachedAlgorithm = new com.fistraltech.bot.selection.SelectBellmanFullDictionary(fullDict);
-                break;
-            default:
-                // For other strategies, don't cache (they don't maintain state)
-                return null;
-        }
-        
+        cachedAlgorithm = algorithmRegistry.create(strategy, fullDict);
         cachedAlgorithmStrategy = strategy;
         return cachedAlgorithm;
     }

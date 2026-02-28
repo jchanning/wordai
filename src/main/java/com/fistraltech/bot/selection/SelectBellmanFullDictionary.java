@@ -44,7 +44,7 @@ public class SelectBellmanFullDictionary extends SelectionAlgo {
     }
 
     @Override
-    String selectWord(Response lastResponse, Dictionary remainingDictionary) {
+    public String selectWord(Response lastResponse, Dictionary remainingDictionary) {
         if (remainingDictionary.getWordCount() == 1) {
             String finalWord = remainingDictionary.selectRandomWord();
             if (guessedWords.contains(finalWord)) {

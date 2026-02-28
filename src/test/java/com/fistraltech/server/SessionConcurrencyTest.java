@@ -22,6 +22,7 @@ import static org.mockito.Mockito.when;
 import com.fistraltech.core.Dictionary;
 import com.fistraltech.core.InvalidWordException;
 import com.fistraltech.core.WordGame;
+import com.fistraltech.server.algo.AlgorithmRegistry;
 import com.fistraltech.server.model.GameSession;
 import com.fistraltech.util.Config;
 import com.github.benmanes.caffeine.cache.Cache;
@@ -74,7 +75,7 @@ class SessionConcurrencyTest {
         WordGame game = new WordGame(dict, config);
         game.setTargetWord(target);
         String gameId = "session-" + target;
-        GameSession session = new GameSession(gameId, game, config, dict);
+        GameSession session = new GameSession(gameId, game, config, dict, AlgorithmRegistry.withDefaults());
         cache.put(gameId, session);
         return gameId;
     }

@@ -63,7 +63,7 @@ public class SelectMaximumEntropy extends SelectionAlgo {
     }
 
     @Override
-    String selectWord(Response lastResponse, Dictionary filteredDictionary) {
+    public String selectWord(Response lastResponse, Dictionary filteredDictionary) {
         // If this is the first guess (empty response), use pre-computed max entropy
         if (lastResponse == null || lastResponse.getWord() == null || lastResponse.getWord().isEmpty()) {
             return wordEntropy.getMaximumEntropyWord();

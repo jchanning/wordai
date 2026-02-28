@@ -38,7 +38,7 @@ public class SelectRandom extends SelectionAlgo {
     }
 
     @Override
-    String selectWord(Response lastResponse, Dictionary dictionary) {
+    public String selectWord(Response lastResponse, Dictionary dictionary) {
         return dictionary.selectRandomWord();
     }
 }
