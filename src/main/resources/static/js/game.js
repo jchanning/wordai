@@ -20,13 +20,18 @@ import {
     updateOccurrenceTable,
     refreshDictionaryScreen,
     sortLetterFrequency, sortDictionaryWords, filterDictionaryWords,
+    switchDictTab,
 } from './analytics.js';
 import {
-    initRouter, initMobileNavigation, switchMobileView,
+    initRouter, initMobileNavigation, switchMobileView, switchMobilePanel,
 } from './navigation.js';
-import { filterAutoplayDictionaries } from './autoplay.js';
+import { filterAutoplayDictionaries, toggleAutoplay } from './autoplay.js';
 import {
-    loadAdminScreen,
+    startPlayerAnalysis, cancelPlayerAnalysis,
+    hideAnalysisResults, downloadAnalysisSummary, downloadAnalysisDetails,
+} from './player-analysis.js';
+import {
+    loadAdminScreen, refreshAdminUsers,
     openRoleModal, closeRoleModal, addSelectedRole, removeRoleFromModal,
     openPasswordModal, closePasswordModal, submitPasswordReset,
     toggleUserEnabled,
@@ -47,20 +52,6 @@ window.addEventListener('DOMContentLoaded', function () {
     updateStats();
     updateHelpCounter();
 
-    // Dictionary selector change handlers
-    const dictSelector = document.getElementById('dictionarySelector');
-    if (dictSelector) dictSelector.addEventListener('change', onDictionaryChange);
-    const dictSelectorDict = document.getElementById('dictionarySelectorDict');
-    if (dictSelectorDict) dictSelectorDict.addEventListener('change', onDictionaryChange);
-
-    // Dictionary word search
-    const dictSearch = document.getElementById('dictionaryWordsSearch');
-    if (dictSearch) dictSearch.addEventListener('input', filterDictionaryWords);
-
-    // Status dismiss
-    const dismissBtn = document.getElementById('statusDismiss');
-    if (dismissBtn) dismissBtn.addEventListener('click', hideStatus);
-
     // ---- CustomEvent bridge from autoplay.js and other modules ----
     document.addEventListener('wordai:refreshHistory', () => {
         updateHistoryDisplay();
@@ -74,23 +65,58 @@ window.addEventListener('DOMContentLoaded', function () {
     document.addEventListener('wordai:loadAdmin', () => loadAdminScreen());
 });
 
-// ---- Functions called from dynamically generated HTML (onclick strings) ----
-window.openRoleModal       = openRoleModal;
-window.openPasswordModal   = openPasswordModal;
-window.toggleUserEnabled   = toggleUserEnabled;
-window.removeRoleFromModal = removeRoleFromModal;
-window.sortLetterFrequency = sortLetterFrequency;
-window.sortDictionaryWords = sortDictionaryWords;
+// ============================================================
+// Window exports — every function called from HTML onclick/onchange/oninput
+// must be on window because ES modules are not in global scope.
+// ============================================================
 
-// Exposed for navigation.js which calls window.populateDictionarySelector()
-// to avoid an import cycle.
+// game.js functions (defined below — hoisted function declarations)
+window.newGame                 = newGame;
+window.newSession              = newSession;
+window.makeGuess               = makeGuess;
+window.getSuggestion           = getSuggestion;
+window.changeStrategy          = changeStrategy;
+window.checkHealth             = checkHealth;
+window.logout                  = logout;
+window.showSessionViewer       = showSessionViewer;
+window.hideSessionViewer       = hideSessionViewer;
+window.exportSessionGamesToCSV = exportSessionGamesToCSV;
+window.onDictionaryChange      = onDictionaryChange;
 window.populateDictionarySelector = populateDictionarySelector;
 
-// Also expose these so they can be called from inline HTML if needed
-window.closeRoleModal     = closeRoleModal;
-window.addSelectedRole    = addSelectedRole;
-window.closePasswordModal = closePasswordModal;
-window.submitPasswordReset = submitPasswordReset;
+// ui.js
+window.hideStatus              = hideStatus;
+
+// navigation.js
+window.switchMobilePanel       = switchMobilePanel;
+
+// analytics.js
+window.sortLetterFrequency     = sortLetterFrequency;
+window.sortDictionaryWords     = sortDictionaryWords;
+window.filterDictionaryWords   = filterDictionaryWords;
+window.switchDictTab           = switchDictTab;
+
+// autoplay.js
+window.toggleAutoplay          = toggleAutoplay;
+window.filterAutoplayDictionaries = filterAutoplayDictionaries;
+
+// player-analysis.js
+window.startPlayerAnalysis     = startPlayerAnalysis;
+window.cancelPlayerAnalysis    = cancelPlayerAnalysis;
+window.hideAnalysisResults     = hideAnalysisResults;
+window.downloadAnalysisSummary = downloadAnalysisSummary;
+window.downloadAnalysisDetails = downloadAnalysisDetails;
+
+// admin.js
+window.refreshAdminUsers       = refreshAdminUsers;
+window.openRoleModal           = openRoleModal;
+window.closeRoleModal          = closeRoleModal;
+window.addSelectedRole         = addSelectedRole;
+window.removeRoleFromModal     = removeRoleFromModal;
+window.openPasswordModal       = openPasswordModal;
+window.closePasswordModal      = closePasswordModal;
+window.submitPasswordReset     = submitPasswordReset;
+window.toggleUserEnabled       = toggleUserEnabled;
 
 // ============================================================
 // Authentication
