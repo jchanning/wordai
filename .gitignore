@@ -50,6 +50,7 @@ out/
 
 # Deployment secrets (DO NOT COMMIT)
 deployment/deployment-config.ps1
+deployment/deployment-config-local.ps1
 *.key
 *.pem
 *.ppk

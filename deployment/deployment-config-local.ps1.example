@@ -1,0 +1,14 @@
+# Deployment Configuration for Local Linux Server — EXAMPLE
+# Copy this file to deployment-config-local.ps1 and update with your values.
+# DO NOT commit deployment-config-local.ps1 to git (it's in .gitignore).
+
+# Hostname or IP of the local Linux server
+$HOST = "AI-Server"
+
+# SSH username on the local server
+$USER = "YOUR_LINUX_USERNAME"
+
+# Path to the SSH private key for the local server
+# Generate with: ssh-keygen -t ed25519 -f C:\Users\YOUR_USERNAME\.ssh\zorin-wordai.key
+# Then copy to server: ssh-copy-id -i C:\Users\YOUR_USERNAME\.ssh\zorin-wordai.key.pub USER@AI-Server
+$KEY = "C:\Users\YOUR_USERNAME\.ssh\zorin-wordai.key"
