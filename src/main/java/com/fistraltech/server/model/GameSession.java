@@ -53,6 +53,8 @@ public class GameSession {
     private boolean gameEnded = false;
     /** Dictionary identifier this session was created with (e.g. {@code "default"}, {@code "easy"}). */
     private String dictionaryId = "default";
+    /** Numeric user ID of the authenticated player who owns this session; {@code null} for guests. */
+    private Long userId;
     // Only valid in auto-play mode. In user interactive mode, strategy is chosen per guess.
     private String selectedStrategy = "RANDOM"; // Default strategy
     
@@ -99,6 +101,14 @@ public class GameSession {
 
     public void setDictionaryId(String dictionaryId) {
         this.dictionaryId = dictionaryId;
+    }
+
+    public Long getUserId() {
+        return userId;
+    }
+
+    public void setUserId(Long userId) {
+        this.userId = userId;
     }
 
     public int getCurrentAttempts() {

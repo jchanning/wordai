@@ -2,6 +2,7 @@ package com.fistraltech.server;
 
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,6 +20,7 @@ import com.fistraltech.core.InvalidWordException;
 import com.fistraltech.core.Response;
 import com.fistraltech.core.WordGame;
 import com.fistraltech.server.algo.AlgorithmRegistry;
+import com.fistraltech.server.model.ActiveGameSessionEntity;
 import com.fistraltech.server.model.GameSession;
 import com.fistraltech.util.Config;
 
@@ -29,23 +31,24 @@ import com.fistraltech.util.Config;
  * it owns the in-memory session map, creates {@link WordGame} instances,
  * applies guesses, and exposes a server-side full-dictionary analysis entry point.
  *
+ * <p><strong>Session persistence</strong>: When a {@link SessionPersistenceService} bean
+ * is present (production), game sessions for authenticated users are persisted to the
+ * database and can be reconstructed after a server restart. Guest sessions are never
+ * persisted.
+ *
  * <p><strong>Conceptual model</strong>
  * <ul>
  *   <li>A {@link GameSession} represents one active game identified by a UUID-like {@code gameId}.</li>
- *   <li>Sessions are stored in-memory in {@code activeSessions}; restarting the server clears them.</li>
- *   <li>Each session owns its own {@link WordGame}, a {@link Filter}, and its dictionary/config context.</li>
+ *   <li>Sessions are stored in-memory in a Caffeine cache; restarting the server evicts them.</li>
+ *   <li>Authenticated-user sessions are mirrored to the DB and reconstructed on cache miss.</li>
  * </ul>
- *
- * <p><strong>Performance:</strong> This service uses {@link DictionaryService} to obtain
- * pre-cached dictionaries. Game creation is O(1) with no file I/O, as dictionaries
- * are cloned from the cache rather than loaded from disk.
  *
  * <p><strong>Thread safety</strong>
  * <ul>
- *   <li>The session store is a Caffeine {@link com.github.benmanes.caffeine.cache.Cache} which is
- *       thread-safe for concurrent reads and writes across different game IDs.</li>
- *   <li>Individual sessions ({@link WordGame}/{@link Filter}) are not designed for concurrent mutation.
- *       The REST API assumes a single caller at a time per {@code gameId}.</li>
+ *   <li>The session store is a Caffeine {@link Cache} which is thread-safe for concurrent
+ *       reads and writes across different game IDs.</li>
+ *   <li>Individual sessions ({@link WordGame}/{@link Filter}) are not designed for concurrent
+ *       mutation; see {@link GameSession#suggestWord()} for per-session locking.</li>
  * </ul>
  *
  * @author Fistral Technologies
@@ -60,15 +63,16 @@ public class WordGameService {
     private final DictionaryService dictionaryService;
     private final Config config;
     private final AlgorithmRegistry algorithmRegistry;
-    
+
+    /**
+     * Optional: injected only when persistence is configured (always in production,
+     * null in unit tests that use the package-private constructor).
+     */
+    @Autowired(required = false)
+    private SessionPersistenceService sessionPersistenceService;
+
     /**
      * Production constructor — Spring injects the dictionary service, algorithm registry, and TTL setting.
-     *
-     * @param dictionaryService  the dictionary service for cached dictionary access
-     * @param algorithmRegistry  the algorithm registry for creating selection algorithm instances
-     * @param sessionTtlMinutes  idle-timeout for game sessions (default 30). Sessions that have
-     *                           not been accessed for this long are evicted automatically to
-     *                           prevent unbounded heap growth.
      */
     @Autowired
     public WordGameService(DictionaryService dictionaryService,
@@ -97,9 +101,8 @@ public class WordGameService {
      *
      * <p>Accepts a pre-built {@link Cache} so that tests can inject a
      * {@code FakeTicker}-backed cache and advance time without {@code Thread.sleep}.
-     *
-     * @param dictionaryService mocked or real dictionary service
-     * @param sessionCache      pre-configured Caffeine cache
+     * {@code sessionPersistenceService} is left {@code null} — persistence is not
+     * exercised in unit tests.
      */
     WordGameService(DictionaryService dictionaryService, Cache<String, GameSession> sessionCache) {
         this.dictionaryService = dictionaryService;
@@ -107,50 +110,76 @@ public class WordGameService {
         this.activeSessions = sessionCache;
         this.algorithmRegistry = AlgorithmRegistry.withDefaults();
     }
-    
+
+    // ------------------------------------------------------------------
+    // Create
+    // ------------------------------------------------------------------
+
     /**
-     * Creates a new game session.
-     *
-     * <p>If {@code dictionaryId} is provided, the dictionary path and word length are derived from
-     * configuration. Otherwise the default dictionary and/or requested word length is used.
-     *
-     * @param targetWord optional explicit target word (lower-cased before use). 
-     * If {@code null}, a random target is chosen from the dictionary.
-     * @param wordLength optional word length. Only used when {@code dictionaryId} is not supplied.
-     * @param dictionaryId optional dictionary identifier from configuration.
-     * @return the newly created session id.
-     * @throws InvalidWordException if the dictionary id is invalid, the dictionary cannot be loaded,
-     *                              or the provided target word is invalid.
+     * Creates a new game session for a guest (no persistence).
+     * Delegates to {@link #createGame(String, Integer, String, Long)} with {@code null} userId.
      */
     public String createGame(String targetWord, Integer wordLength, String dictionaryId) throws InvalidWordException {
+        return createGame(targetWord, wordLength, dictionaryId, null);
+    }
+
+    /**
+     * Creates a new game session (backward compatibility).
+     */
+    public String createGame(String targetWord, Integer wordLength) throws InvalidWordException {
+        return createGame(targetWord, wordLength, null, null);
+    }
+
+    /**
+     * Creates (or restores) a game session for the given user.
+     *
+     * <p>If {@code userId} is non-null and an ACTIVE session for this user + dictionary
+     * already exists in the DB, the existing session is reconstructed and returned instead
+     * of creating a new game.  This lets users resume in-progress games after browser
+     * refresh or server restart.
+     *
+     * @param targetWord   optional explicit target (lower-cased). If {@code null}, a random target is chosen.
+     * @param wordLength   optional word length (only used when {@code dictionaryId} is not supplied).
+     * @param dictionaryId optional dictionary identifier from configuration.
+     * @param userId       the authenticated player's numeric user ID; {@code null} for guests.
+     * @return the game session ID (new or existing).
+     * @throws InvalidWordException if the dictionary is invalid, cannot be loaded, or the target word
+     *                              is not in the dictionary.
+     */
+    public String createGame(String targetWord, Integer wordLength, String dictionaryId, Long userId)
+            throws InvalidWordException {
+
+        String effectiveDictionaryId = (dictionaryId != null && !dictionaryId.isEmpty())
+                ? dictionaryId : "default";
+
+        // For authenticated users, check if an active session already exists for this dictionary
+        if (userId != null && sessionPersistenceService != null) {
+            String existingGameId = findOrReconstructExistingSession(userId, effectiveDictionaryId);
+            if (existingGameId != null) {
+                return existingGameId;
+            }
+        }
+
         String gameId = UUID.randomUUID().toString();
         logger.info(() -> "Creating new game session with ID: " + gameId);
-        
-        // Determine which dictionary to use
-        String effectiveDictionaryId = (dictionaryId != null && !dictionaryId.isEmpty()) 
-            ? dictionaryId 
-            : "default";
-        
+
         // Get a cloned dictionary from the cache (no file I/O!)
         Dictionary gameDictionary = dictionaryService.getDictionaryForGame(effectiveDictionaryId);
         if (gameDictionary == null) {
             logger.warning(() -> "Dictionary not found for ID: " + effectiveDictionaryId);
             throw new InvalidWordException("Dictionary not found: " + effectiveDictionaryId);
         }
-        
+
         int actualWordLength = gameDictionary.getWordLength();
-        logger.info(() -> "Using cached dictionary '" + effectiveDictionaryId + "' with " 
+        logger.info(() -> "Using cached dictionary '" + effectiveDictionaryId + "' with "
                    + gameDictionary.getWordCount() + " words");
-        
-        // Create game configuration
+
         Config gameConfig = new Config();
         gameConfig.setWordLength(actualWordLength);
         gameConfig.setMaxAttempts(config.getMaxAttempts());
-        
-        // Create the word game
+
         WordGame wordGame = new WordGame(gameDictionary, gameConfig);
-        
-        // Set target word
+
         if (targetWord != null) {
             String normalizedTarget = targetWord.toLowerCase();
             if (!gameDictionary.contains(normalizedTarget)) {
@@ -160,39 +189,140 @@ public class WordGameService {
         } else {
             wordGame.setRandomTargetWord();
         }
-        
-        // Create and store session
+
         GameSession session = new GameSession(gameId, wordGame, gameConfig, gameDictionary, algorithmRegistry);
         session.setDictionaryId(effectiveDictionaryId);
-        
+        session.setUserId(userId);
+
         // Set cached WordEntropy for fast entropy-based suggestions
         com.fistraltech.analysis.WordEntropy cachedEntropy = dictionaryService.getWordEntropy(effectiveDictionaryId);
         if (cachedEntropy != null) {
             session.setCachedWordEntropy(cachedEntropy);
             logger.fine(() -> "Set cached WordEntropy for session " + gameId);
         }
-        
+
         activeSessions.put(gameId, session);
-        
+
+        // Persist for authenticated users
+        if (userId != null && sessionPersistenceService != null) {
+            sessionPersistenceService.save(session, userId);
+        }
+
         logger.info(() -> "Created new game session: " + gameId);
         return gameId;
     }
-    
+
+    // ------------------------------------------------------------------
+    // Read
+    // ------------------------------------------------------------------
+
     /**
-     * Creates a new game session (backward compatibility)
-     * @param targetWord Optional target word. If null, a random word will be selected
-     * @param wordLength Optional word length. If null, uses default from config
-     * @return The game session ID
+     * Gets the game session by ID.  On a cache miss, attempts to reconstruct the session
+     * from the database if {@link SessionPersistenceService} is available.
+     *
+     * @param gameId the game session ID
+     * @return the session, or {@code null} if not found locally or in the DB
      */
-    public String createGame(String targetWord, Integer wordLength) throws InvalidWordException {
-        return createGame(targetWord, wordLength, null);
+    public GameSession getGameSession(String gameId) {
+        GameSession session = activeSessions.getIfPresent(gameId);
+        if (session != null || sessionPersistenceService == null) {
+            return session;
+        }
+        // Cache miss — try to reconstruct from DB
+        return sessionPersistenceService.findById(gameId)
+                .map(entity -> {
+                    GameSession reconstructed = reconstructSession(entity);
+                    if (reconstructed != null) {
+                        activeSessions.put(gameId, reconstructed);
+                    }
+                    return reconstructed;
+                })
+                .orElse(null);
     }
-    
+
+    // ------------------------------------------------------------------
+    // Guess
+    // ------------------------------------------------------------------
+
+    /**
+     * Applies a guess to the specified session and updates its filter state.
+     *
+     * <p>The entire check-then-act sequence is executed inside a {@code synchronized(session)}
+     * block to prevent concurrent races. The DB update (for authenticated sessions) is
+     * performed outside the synchronized block for performance.
+     *
+     * @throws InvalidWordException if the session does not exist, the game already ended, or the
+     *                              guess is invalid.
+     */
+    public Response makeGuess(String gameId, String word) throws InvalidWordException {
+        GameSession session = activeSessions.getIfPresent(gameId);
+        if (session == null) {
+            throw new InvalidWordException("Game session not found: " + gameId);
+        }
+
+        Response response;
+        synchronized (session) {
+            if (session.isGameEnded()) {
+                throw new InvalidWordException("Game has already ended");
+            }
+
+            response = session.getWordGame().guess(word.toLowerCase());
+            updateFilterBasedOnResponse(session.getWordFilter(), response);
+            response.setRemainingWordsCount(session.getRemainingWordsCount());
+
+            if (response.getWinner() || session.isMaxAttemptsReached()) {
+                session.setGameEnded(true);
+                logger.info(() -> "Game session ended: " + gameId + " (Winner: " + response.getWinner() + ")");
+            }
+        }
+
+        // Persist updated state for authenticated sessions (outside sync block)
+        if (session.getUserId() != null && sessionPersistenceService != null) {
+            sessionPersistenceService.update(session);
+        }
+
+        return response;
+    }
+
+    // ------------------------------------------------------------------
+    // Delete
+    // ------------------------------------------------------------------
+
+    /**
+     * Removes a game session from the in-memory cache and (for authenticated users)
+     * deletes the persisted DB row.
+     *
+     * @param gameId the game session ID
+     */
+    public void removeGameSession(String gameId) {
+        GameSession session = activeSessions.getIfPresent(gameId);
+        activeSessions.invalidate(gameId);
+        logger.info(() -> "Removed game session: " + gameId);
+        if (session != null && session.getUserId() != null && sessionPersistenceService != null) {
+            sessionPersistenceService.delete(gameId);
+        }
+    }
+
+    // ------------------------------------------------------------------
+    // Misc
+    // ------------------------------------------------------------------
+
+    /**
+     * Gets the number of active game sessions.
+     */
+    public int getActiveSessionCount() {
+        return (int) activeSessions.estimatedSize();
+    }
+
+    /**
+     * Gets the DictionaryService instance.
+     */
+    public DictionaryService getDictionaryService() {
+        return dictionaryService;
+    }
+
     /**
      * Loads a dictionary by id from the cache.
-     *
-     * <p>Returns the master (read-only) dictionary. For game sessions that need
-     * filtering, use {@link DictionaryService#getDictionaryForGame(String)} instead.
      *
      * @param dictionaryId the dictionary identifier
      * @return the cached Dictionary
@@ -204,135 +334,133 @@ public class WordGameService {
         if (dictionary == null) {
             throw new InvalidWordException("Dictionary not found: " + effectiveId);
         }
-        logger.info(() -> "Retrieved cached dictionary '" + effectiveId + "' with " 
+        logger.info(() -> "Retrieved cached dictionary '" + effectiveId + "' with "
                    + dictionary.getWordCount() + " words");
         return dictionary;
     }
-    
-    /**
-     * Applies a guess to the specified session and updates its filter state.
-     *
-     * <p>The returned {@link Response} includes remaining-words count derived from the session filter.
-     *
-     * <p><strong>Thread safety:</strong> the entire check-then-act sequence
-     * (isGameEnded → guess → filter-update → setGameEnded) is executed inside a
-     * {@code synchronized(session)} block.  This uses the session's intrinsic lock,
-     * which is the same lock acquired by {@link GameSession#suggestWord()}, ensuring
-     * that a concurrent suggestion request cannot observe a half-updated filter.
-     *
-     * @throws InvalidWordException if the session does not exist, the game already ended, or the guess is invalid.
-     */
-    public Response makeGuess(String gameId, String word) throws InvalidWordException {
-        GameSession session = activeSessions.getIfPresent(gameId);
-        if (session == null) {
-            throw new InvalidWordException("Game session not found: " + gameId);
-        }
 
-        synchronized (session) {
-            if (session.isGameEnded()) {
-                throw new InvalidWordException("Game has already ended");
-            }
-
-            Response response = session.getWordGame().guess(word.toLowerCase());
-
-            // Update the filter based on the response
-            updateFilterBasedOnResponse(session.getWordFilter(), response);
-
-            // Set remaining words count in response
-            response.setRemainingWordsCount(session.getRemainingWordsCount());
-
-            // Check if game should end
-            if (response.getWinner() || session.isMaxAttemptsReached()) {
-                session.setGameEnded(true);
-                logger.info(() -> "Game session ended: " + gameId + " (Winner: " + response.getWinner() + ")");
-            }
-
-            return response;
-        }
-    }
-
-    
-    /**
-     * Gets the game session by ID
-     * @param gameId The game session ID
-     * @return The game session or null if not found
-     */
-    public GameSession getGameSession(String gameId) {
-        return activeSessions.getIfPresent(gameId);
-    }
-
-    /**
-     * Removes a game session (cleanup)
-     * @param gameId The game session ID
-     */
-    public void removeGameSession(String gameId) {
-        activeSessions.invalidate(gameId);
-        logger.info(() -> "Removed game session: " + gameId);
-    }
-
-    /**
-     * Gets the number of active game sessions.
-     *
-     * @return The number of active sessions
-     */
-    public int getActiveSessionCount() {
-        return (int) activeSessions.estimatedSize();
-    }
-    
-    /**
-     * Gets the DictionaryService instance.
-     * 
-     * @return the dictionary service
-     */
-    public DictionaryService getDictionaryService() {
-        return dictionaryService;
-    }
-    
     /**
      * Runs a complete dictionary analysis using the specified algorithm.
-     *
-     * <p>This endpoint is server-side (one request performs the full run). It is distinct from the
-     * client-driven analysis loop used by the web UI.
-     *
-     * @param algorithm algorithm id (e.g. {@code RANDOM}, {@code ENTROPY}).
-     * @param dictionaryId dictionary id to analyse.
-     * @param maxGames optional cap on games to run; {@code null} means "all".
-     * @return an {@link com.fistraltech.server.dto.AnalysisResponse} containing summary and per-game detail.
      */
     public com.fistraltech.server.dto.AnalysisResponse runAnalysis(
             String algorithm, String dictionaryId, Integer maxGames) throws Exception {
-        
+
         String effectiveId = (dictionaryId != null && !dictionaryId.isEmpty()) ? dictionaryId : "default";
-        
-        // Get a cloned dictionary for analysis (so we don't affect the cache)
+
         Dictionary analysisDictionary = dictionaryService.getDictionaryForGame(effectiveId);
         if (analysisDictionary == null) {
             throw new InvalidWordException("Dictionary not found for analysis: " + effectiveId);
         }
-        
-        logger.info(() -> "Running analysis with " + analysisDictionary.getWordCount() 
+
+        logger.info(() -> "Running analysis with " + analysisDictionary.getWordCount()
                    + " words using algorithm: " + algorithm);
-        
-        // Create game and player with specified algorithm
+
         WordGame game = new WordGame(analysisDictionary, analysisDictionary, config);
         com.fistraltech.bot.selection.SelectionAlgo selectionAlgo = algorithmRegistry.create(algorithm, analysisDictionary);
         com.fistraltech.bot.WordGamePlayer player = new com.fistraltech.bot.WordGamePlayer(game, selectionAlgo);
-        
-        // Run analysis
-        com.fistraltech.analysis.PlayerAnalyser analyser = 
+
+        com.fistraltech.analysis.PlayerAnalyser analyser =
             new com.fistraltech.analysis.PlayerAnalyser(player, false, null);
-        
+
         return analyser.analyseGamePlay(maxGames);
     }
-    
+
+    // ------------------------------------------------------------------
+    // Private helpers
+    // ------------------------------------------------------------------
+
+    /**
+     * Looks for an existing ACTIVE session for the given user + dictionary in the DB.
+     * If found, reconstructs and caches it, then returns its game ID.
+     *
+     * @return the game ID of the reconstructed session, or {@code null} if none found
+     */
+    private String findOrReconstructExistingSession(Long userId, String dictionaryId) {
+        return sessionPersistenceService.findActiveForUser(userId, dictionaryId)
+                .map(entity -> {
+                    String existingId = entity.getGameId();
+                    // Return from cache if already loaded
+                    GameSession cached = activeSessions.getIfPresent(existingId);
+                    if (cached != null && !cached.isGameEnded()) {
+                        logger.info(() -> "Returning cached active session " + existingId + " for user " + userId);
+                        return existingId;
+                    }
+                    // Reconstruct from DB
+                    GameSession reconstructed = reconstructSession(entity);
+                    if (reconstructed != null && !reconstructed.isGameEnded()) {
+                        activeSessions.put(existingId, reconstructed);
+                        logger.info(() -> "Reconstructed active session " + existingId + " for user " + userId);
+                        return existingId;
+                    }
+                    return null;
+                })
+                .orElse(null);
+    }
+
+    /**
+     * Reconstructs a {@link GameSession} from a persisted {@link ActiveGameSessionEntity}
+     * by replaying all stored guesses.
+     *
+     * @param entity the persisted entity
+     * @return the reconstructed session, or {@code null} if reconstruction fails
+     */
+    private GameSession reconstructSession(ActiveGameSessionEntity entity) {
+        try {
+            String dictId = entity.getDictionaryId();
+            Dictionary dict = dictionaryService.getDictionaryForGame(dictId);
+            if (dict == null) {
+                logger.warning(() -> "Cannot reconstruct session " + entity.getGameId()
+                        + " — dictionary not found: " + dictId);
+                return null;
+            }
+
+            Config gameConfig = new Config();
+            gameConfig.setWordLength(dict.getWordLength());
+            gameConfig.setMaxAttempts(config.getMaxAttempts());
+
+            WordGame wordGame = new WordGame(dict, gameConfig);
+            wordGame.setTargetWord(entity.getTargetWord());
+
+            GameSession session = new GameSession(
+                    entity.getGameId(), wordGame, gameConfig, dict, algorithmRegistry);
+            session.setDictionaryId(dictId);
+            session.setUserId(entity.getUserId());
+            session.setSelectedStrategy(entity.getStrategy());
+
+            com.fistraltech.analysis.WordEntropy cachedEntropy = dictionaryService.getWordEntropy(dictId);
+            if (cachedEntropy != null) {
+                session.setCachedWordEntropy(cachedEntropy);
+            }
+
+            // Replay stored guesses to restore in-memory filter and WordGame state
+            String guessWordsStr = entity.getGuessWords();
+            if (guessWordsStr != null && !guessWordsStr.isEmpty()) {
+                for (String guess : guessWordsStr.split(",")) {
+                    if (!guess.isEmpty()) {
+                        Response response = wordGame.guess(guess);
+                        updateFilterBasedOnResponse(session.getWordFilter(), response);
+                        response.setRemainingWordsCount(session.getRemainingWordsCount());
+                        if (response.getWinner() || session.isMaxAttemptsReached()) {
+                            session.setGameEnded(true);
+                        }
+                    }
+                }
+            }
+
+            logger.info(() -> "Reconstructed session " + entity.getGameId()
+                    + " with " + session.getCurrentAttempts() + " guesses");
+            return session;
+
+        } catch (Exception e) {
+            logger.log(Level.WARNING, "Failed to reconstruct session " + entity.getGameId(), e);
+            return null;
+        }
+    }
+
     /**
      * Updates the filter based on a guess response.
-     *
-     * <p>The filter implementation handles duplicate letters, excess markers, and occurrence rules.
      */
     private void updateFilterBasedOnResponse(Filter filter, Response response) {
-        // Use the Filter's built-in update method which handles all the complex logic
-        // including duplicate letters, excess markers, and proper counting
         filter.update(response);
     }
 }

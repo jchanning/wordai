@@ -92,7 +92,7 @@ public class GameHistoryService {
      * @return empty if authentication is null, anonymous, or the principal string
      *         does not match any user
      */
-    Optional<User> resolveUser(Authentication authentication) {
+    public Optional<User> resolveUser(Authentication authentication) {
         if (authentication == null || !authentication.isAuthenticated()) {
             return Optional.empty();
         }

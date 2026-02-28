@@ -181,19 +181,21 @@ public class WordGameController {
      * POST /api/wordai/games
      */
     @PostMapping("/games")
-    public ResponseEntity<?> createGame(@RequestBody(required = false) CreateGameRequest request) {
+    public ResponseEntity<?> createGame(@RequestBody(required = false) CreateGameRequest request,
+            Authentication authentication) {
         try {
             String targetWord = null;
             Integer wordLength = null;
             String dictionaryId = null;
-            
+
             if (request != null) {
                 targetWord = request.getTargetWord();
                 wordLength = request.getWordLength();
                 dictionaryId = request.getDictionaryId();
             }
-            
-            String gameId = gameService.createGame(targetWord, wordLength, dictionaryId);
+
+            Long userId = gameHistoryService.resolveUser(authentication).map(u -> u.getId()).orElse(null);
+            String gameId = gameService.createGame(targetWord, wordLength, dictionaryId, userId);
             GameSession session = gameService.getGameSession(gameId);
             
             CreateGameResponse response = new CreateGameResponse(

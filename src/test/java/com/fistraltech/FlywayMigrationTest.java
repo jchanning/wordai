@@ -82,6 +82,17 @@ class FlywayMigrationTest {
     }
 
     // -----------------------------------------------------------------------
+    // T5 — V2 migration creates the `active_game_sessions` table
+    // -----------------------------------------------------------------------
+
+    @Test
+    @DisplayName("T5: V2 migration creates the 'active_game_sessions' table")
+    void v2Migration_createsActiveGameSessionsTable() throws Exception {
+        assertTrue(tableExists("ACTIVE_GAME_SESSIONS"),
+                "active_game_sessions table must be created by V2 migration");
+    }
+
+    // -----------------------------------------------------------------------
     // Helper
     // -----------------------------------------------------------------------
 
