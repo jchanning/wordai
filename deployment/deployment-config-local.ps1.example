@@ -3,7 +3,7 @@
 # DO NOT commit deployment-config-local.ps1 to git (it's in .gitignore).
 
 # Hostname or IP of the local Linux server
-$HOST = "AI-Server"
+$IP = "AI-Server"
 
 # SSH username on the local server
 $USER = "YOUR_LINUX_USERNAME"
