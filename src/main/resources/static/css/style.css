@@ -908,10 +908,118 @@ summary:focus-visible {
 
 .bot-demo-setup-grid {
     margin-top: var(--padding-md);
+    grid-template-columns: repeat(4, 1fr);
 }
 
-.bot-demo-setup-wide {
-    grid-column: 1 / -1;
+@media (max-width: 768px) {
+    .bot-demo-setup-grid {
+        grid-template-columns: 1fr 1fr;
+    }
+}
+
+/* Speed slider */
+.speed-slider-outer {
+    position: relative;
+}
+
+.speed-slider-wrapper {
+    /* Replicate .form-input visuals without borrowing its padding/height */
+    display: flex;
+    align-items: center;
+    width: 100%;
+    box-sizing: border-box;
+    background-color: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    border-radius: 0.5rem;
+    /* No vertical padding — height is set explicitly to match select.form-input:
+       select height = 2 × --padding-sm (0.75rem each) + ~1.25rem line content */
+    padding: 0 var(--padding-md);
+    height: calc(2 * var(--padding-sm) + 1.25rem);
+    transition: all 0.2s;
+}
+
+.speed-slider {
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    width: 100%;
+    height: 6px;
+    min-height: 0;
+    max-height: 6px;
+    border-radius: 3px;
+    outline: none;
+    cursor: pointer;
+    padding: 0;
+    margin: 0;
+    background: transparent;
+    flex-shrink: 0;
+}
+
+.speed-slider::-webkit-slider-runnable-track {
+    height: 6px;
+    background: var(--border-color);
+    border-radius: 3px;
+}
+
+.speed-slider::-moz-range-track {
+    height: 6px;
+    background: var(--border-color);
+    border-radius: 3px;
+}
+
+.speed-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 16px;
+    height: 14px;
+    background: var(--accent-primary);
+    cursor: pointer;
+    clip-path: polygon(50% 100%, 0% 0%, 100% 0%);
+    margin-top: -4px;
+}
+
+.speed-slider::-moz-range-thumb {
+    border: none;
+    border-radius: 0;
+    width: 16px;
+    height: 14px;
+    background: var(--accent-primary);
+    cursor: pointer;
+    clip-path: polygon(50% 100%, 0% 0%, 100% 0%);
+}
+
+.speed-tick-labels {
+    position: absolute;
+    top: calc(100% + 0.2rem);
+    left: var(--padding-md);
+    right: var(--padding-md);
+    display: flex;
+    justify-content: space-between;
+    pointer-events: none;
+}
+
+.speed-label {
+    font-size: 0.72rem;
+    color: var(--text-secondary);
+    white-space: nowrap;
+}
+
+/* Assistant panel in bot-demo: hide interactive controls, show strategy label */
+.auto-strategy-display {
+    display: none;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    white-space: nowrap;
+}
+
+#screen-bot-demo .auto-strategy-display {
+    display: inline-block;
+}
+
+#screen-bot-demo #strategySelector,
+#screen-bot-demo #getSuggestionBtn {
+    display: none;
 }
 
 .bot-demo-game-host {

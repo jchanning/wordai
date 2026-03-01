@@ -19,31 +19,20 @@ export function showAutoplayModal() {
             || state.availableDictionaries.find(d => d.available);
         if (defaultDict) wordLengthEl.value = String(defaultDict.wordLength);
     }
-    filterAutoplayDictionaries();
 }
 
-export function filterAutoplayDictionaries() {
-    const wordLength      = parseInt(document.getElementById('autoplayWordLength').value);
-    const dictionarySelect = document.getElementById('autoplayDictionary');
-    dictionarySelect.innerHTML = '<option value="">Use first available</option>';
-
-    const matchingDicts = state.availableDictionaries.filter(d => d.available && d.wordLength === wordLength);
-    matchingDicts.forEach(dict => {
-        const option = document.createElement('option');
-        option.value = dict.id;
-        option.textContent = dict.name;
-        if (dict.description) option.title = dict.description;
-        dictionarySelect.appendChild(option);
-    });
-
-    if (matchingDicts.length === 0) {
-        const option = document.createElement('option');
-        option.value = '';
-        option.textContent = `No ${wordLength}-letter dictionaries available`;
-        option.disabled = true;
-        dictionarySelect.appendChild(option);
+export function syncAutoStrategyDisplay() {
+    const strategyEl = document.getElementById('autoplayStrategy');
+    const displayEl  = document.getElementById('autoStrategyDisplay');
+    if (!displayEl) return;
+    if (strategyEl) {
+        const sel = strategyEl.options[strategyEl.selectedIndex];
+        displayEl.textContent = sel ? sel.textContent : '';
     }
 }
+
+// Dictionary selector has been removed; this is kept as a no-op for compatibility.
+export function filterAutoplayDictionaries() {}
 
 export function toggleAutoplay() {
     if (state.autoplayState.isRunning) {
@@ -101,20 +90,18 @@ export async function startAutoplay() {
     const gameCount  = parseInt(document.getElementById('autoplayGameCount').value);
     const strategy   = document.getElementById('autoplayStrategy').value;
     const wordLength = parseInt(document.getElementById('autoplayWordLength').value);
-    const selectedDict = document.getElementById('autoplayDictionary').value;
-    const guessDelay = parseInt(document.getElementById('autoplayDelay').value) || 1000;
+    const guessDelay = parseInt(document.getElementById('autoplaySpeed').value) || 550;
+    const selectedDict = '';
 
     if (gameCount < 1 || gameCount > 1000) {
         showStatus('Please enter a number between 1 and 1000', 'error');
         return;
     }
 
-    if (!selectedDict) {
-        const availableDict = state.availableDictionaries.find(d => d.available && d.wordLength === wordLength);
-        if (!availableDict) {
-            showStatus(`No ${wordLength}-letter dictionaries available`, 'error');
-            return;
-        }
+    const availableDict = state.availableDictionaries.find(d => d.available && d.wordLength === wordLength);
+    if (!availableDict) {
+        showStatus(`No ${wordLength}-letter dictionaries available`, 'error');
+        return;
     }
 
     try {
@@ -140,6 +127,7 @@ export async function startAutoplay() {
 
         _updateAutoplayButton(true);
         _setBotDemoRunningUi(true);
+        syncAutoStrategyDisplay();
         _updateAutoplayProgress(`Starting: 0/${gameCount} games`, 0);
         showStatus(`Starting autoplay: ${gameCount} ${wordLength}-letter games with ${strategy} strategy (${guessDelay}ms delay)`, 'success');
 

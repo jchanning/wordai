@@ -25,7 +25,7 @@ import {
 import {
     initRouter, initMobileNavigation, switchMobileView, switchMobilePanel,
 } from './navigation.js';
-import { filterAutoplayDictionaries, toggleAutoplay } from './autoplay.js';
+import { filterAutoplayDictionaries, toggleAutoplay, syncAutoStrategyDisplay } from './autoplay.js';
 import {
     startPlayerAnalysis, cancelPlayerAnalysis,
     hideAnalysisResults, downloadAnalysisSummary, downloadAnalysisDetails,
@@ -99,6 +99,7 @@ window.switchDictTab           = switchDictTab;
 // autoplay.js
 window.toggleAutoplay          = toggleAutoplay;
 window.filterAutoplayDictionaries = filterAutoplayDictionaries;
+window.syncAutoStrategyDisplay = syncAutoStrategyDisplay;
 
 // player-analysis.js
 window.startPlayerAnalysis     = startPlayerAnalysis;
@@ -872,6 +873,8 @@ function populateDictionarySelector() {
     if (document.getElementById('autoplayWordLength') && document.getElementById('autoplayDictionary')) {
         filterAutoplayDictionaries();
     }
+
+    syncAutoStrategyDisplay();
 
     if (state.currentView === 'dictionary') refreshDictionaryScreen();
 }
