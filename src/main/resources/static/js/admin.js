@@ -7,6 +7,7 @@ import { showStatus } from './ui.js';
 import {
     apiGetAdminUsers, apiSetUserEnabled,
     apiAddUserRole, apiRemoveUserRole, apiResetPassword,
+    apiGetActivityStats,
 } from './api.js';
 
 // ---- Access guard ----
@@ -28,7 +29,7 @@ export function loadAdminScreen() {
     }
     if (noAccess) noAccess.style.display = 'none';
     if (content)  content.style.display  = '';
-    refreshAdminUsers();
+    switchAdminTab(state.adminTab || 'users');
 }
 
 export async function refreshAdminUsers() {
@@ -231,4 +232,121 @@ export async function submitPasswordReset() {
         errorDiv.textContent   = err.message;
         errorDiv.style.display = 'block';
     }
+}
+
+// ===========================================================
+// Admin tabs
+// ===========================================================
+
+/**
+ * Switch between the Users and Activity tabs in the admin screen.
+ * @param {'users'|'activity'} tab
+ */
+export function switchAdminTab(tab) {
+    state.adminTab = tab;
+
+    const usersTab     = document.getElementById('adminTabUsers');
+    const activityTab  = document.getElementById('adminTabActivity');
+    const usersPanel   = document.getElementById('adminUsersPanel');
+    const activityPanel = document.getElementById('adminActivityPanel');
+    const subtitle     = document.getElementById('adminSubtitle');
+
+    if (tab === 'activity') {
+        if (usersTab)    usersTab.classList.remove('admin-tab-active');
+        if (activityTab) activityTab.classList.add('admin-tab-active');
+        if (usersPanel)   usersPanel.style.display   = 'none';
+        if (activityPanel) activityPanel.style.display = '';
+        if (subtitle) subtitle.textContent = 'Activity Log';
+        refreshActivityStats();
+    } else {
+        if (usersTab)    usersTab.classList.add('admin-tab-active');
+        if (activityTab) activityTab.classList.remove('admin-tab-active');
+        if (usersPanel)   usersPanel.style.display   = '';
+        if (activityPanel) activityPanel.style.display = 'none';
+        refreshAdminUsers();
+    }
+}
+
+/**
+ * Refresh the activity stats panel — fetches from /api/wordai/admin/activity
+ * and re-renders the table and summary cards.
+ */
+export async function refreshActivityStats() {
+    if (!_isCurrentUserAdmin()) return;
+    const tbody = document.getElementById('adminActivityTableBody');
+    if (!tbody) return;
+    tbody.innerHTML = '<tr><td colspan="8" class="admin-table-empty">Loading activity…</td></tr>';
+    try {
+        const resp = await apiGetActivityStats();
+        if (!resp.ok) throw new Error('Failed to fetch activity stats');
+        const data = await resp.json();
+        state.adminActivityData = data.users || [];
+        _renderActivitySummary(data);
+        _renderActivityTable(data.users || []);
+    } catch (err) {
+        tbody.innerHTML =
+            `<tr><td colspan="8" class="admin-table-empty admin-error">Error: ${err.message}</td></tr>`;
+    }
+}
+
+// ---- Activity render helpers ----
+
+function _renderActivitySummary(data) {
+    const el = document.getElementById('adminActivitySummary');
+    if (!el) return;
+    const total     = data.totalUsers           || 0;
+    const active7   = data.activeUsersLast7Days  || 0;
+    const active30  = data.activeUsersLast30Days || 0;
+    el.innerHTML = `
+        <div class="admin-activity-stats">
+            <div class="admin-activity-stat">
+                <div class="admin-activity-stat-value">${total}</div>
+                <div class="admin-activity-stat-label">Players</div>
+            </div>
+            <div class="admin-activity-stat">
+                <div class="admin-activity-stat-value">${active7}</div>
+                <div class="admin-activity-stat-label">Active (7d)</div>
+            </div>
+            <div class="admin-activity-stat">
+                <div class="admin-activity-stat-value">${active30}</div>
+                <div class="admin-activity-stat-label">Active (30d)</div>
+            </div>
+        </div>`;
+
+    const subtitle = document.getElementById('adminSubtitle');
+    if (subtitle) subtitle.textContent =
+        `${total} players \u00b7 ${active7} active (7d) \u00b7 ${active30} active (30d)`;
+}
+
+function _renderActivityTable(users) {
+    const tbody = document.getElementById('adminActivityTableBody');
+    if (!tbody) return;
+    if (users.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="8" class="admin-table-empty">No game activity recorded yet.</td></tr>';
+        return;
+    }
+    tbody.innerHTML = users.map(u => {
+        const winRate    = u.totalGames > 0
+            ? Math.round((u.wonGames / u.totalGames) * 100) + '%'
+            : '\u2014';
+        const lastGame   = _formatDate(u.lastGameDate);
+        const memberSince = _formatDate(u.firstGameDate);
+        const cls7 = u.gamesLast7Days > 0 ? ' admin-activity-recent' : '';
+        return `<tr>
+            <td>${escapeHtml(u.username || '\u2014')}</td>
+            <td>${escapeHtml(u.email || '\u2014')}</td>
+            <td class="num">${u.totalGames}</td>
+            <td class="num${cls7}">${u.gamesLast7Days}</td>
+            <td class="num">${u.gamesLast30Days}</td>
+            <td class="num">${winRate}</td>
+            <td>${lastGame}</td>
+            <td>${memberSince}</td>
+        </tr>`;
+    }).join('');
+}
+
+function _formatDate(dateStr) {
+    if (!dateStr) return '\u2014';
+    const d = new Date(dateStr);
+    return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
 }

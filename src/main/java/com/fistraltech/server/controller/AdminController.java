@@ -2,10 +2,10 @@ package com.fistraltech.server.controller;
 
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.logging.Logger;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -14,8 +14,10 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.fistraltech.server.ActivityService;
 import com.fistraltech.server.SessionTrackingService;
 import com.fistraltech.server.WordGameService;
+import com.fistraltech.server.dto.UserActivityDto;
 import com.fistraltech.server.model.SessionInfo;
 
 /**
@@ -35,12 +37,18 @@ import com.fistraltech.server.model.SessionInfo;
 @PreAuthorize("hasRole('ADMIN')")
 public class AdminController {
     private static final Logger logger = Logger.getLogger(AdminController.class.getName());
-    
-    @Autowired
-    private SessionTrackingService sessionTrackingService;
-    
-    @Autowired
-    private WordGameService wordGameService;
+
+    private final SessionTrackingService sessionTrackingService;
+    private final WordGameService wordGameService;
+    private final ActivityService activityService;
+
+    public AdminController(SessionTrackingService sessionTrackingService,
+                           WordGameService wordGameService,
+                           ActivityService activityService) {
+        this.sessionTrackingService = sessionTrackingService;
+        this.wordGameService = wordGameService;
+        this.activityService = activityService;
+    }
     
     /**
      * Get all active sessions with detailed information.
@@ -126,13 +134,46 @@ public class AdminController {
             
             logger.info("Admin cleanup removed " + (beforeCount - afterCount) + " inactive sessions");
             return ResponseEntity.ok(response);
-            
+
         } catch (Exception e) {
             logger.severe("Error during session cleanup: " + e.getMessage());
             Map<String, Object> errorResponse = new HashMap<>();
             errorResponse.put("error", "Failed to cleanup sessions");
             errorResponse.put("message", e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+        }
+    }
+
+    /**
+     * Returns per-user activity statistics for the admin activity dashboard.
+     * GET /api/wordai/admin/activity
+     *
+     * <p>Only users who have completed at least one game appear in the response.
+     */
+    @GetMapping("/activity")
+    public ResponseEntity<Map<String, Object>> getUserActivity() {
+        try {
+            List<UserActivityDto> stats = activityService.getUserActivityStats();
+
+            long activeUsersLast7Days  = stats.stream().filter(u -> u.getGamesLast7Days()  > 0).count();
+            long activeUsersLast30Days = stats.stream().filter(u -> u.getGamesLast30Days() > 0).count();
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("users",                stats);
+            response.put("totalUsers",           stats.size());
+            response.put("activeUsersLast7Days",  activeUsersLast7Days);
+            response.put("activeUsersLast30Days", activeUsersLast30Days);
+
+            logger.info("Admin requested activity stats: " + stats.size() + " users, "
+                    + activeUsersLast7Days + " active (7d)");
+            return ResponseEntity.ok(response);
+
+        } catch (Exception e) {
+            logger.severe("Error retrieving activity stats: " + e.getMessage());
+            Map<String, Object> error = new HashMap<>();
+            error.put("error", "Failed to retrieve activity statistics");
+            error.put("message", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
         }
     }
 }

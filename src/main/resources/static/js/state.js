@@ -78,6 +78,8 @@ export const state = {
 
     // ---- Admin ----
     adminUsers:         [],
+    adminActivityData:  [],
+    adminTab:           'users',
     roleModalUserId:    null,
     passwordModalUserId: null,
 };

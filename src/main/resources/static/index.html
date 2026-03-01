@@ -509,7 +509,7 @@
                     <div class="screen-subtitle" id="adminSubtitle">User Management</div>
                 </div>
                 <div class="screen-toolbar-right">
-                    <button class="btn btn-secondary" onclick="refreshAdminUsers()">Refresh</button>
+                    <button class="btn btn-secondary" onclick="refreshAdminScreen()">Refresh</button>
                     <button class="btn btn-secondary" onclick="checkHealth()">Server Status</button>
                 </div>
             </div>
@@ -522,8 +522,15 @@
 
             <!-- Admin content (shown to admins) -->
             <div id="adminContent" style="display: none;">
-                <!-- User list table -->
-                <div class="panel admin-panel">
+
+                <!-- Tab bar -->
+                <div class="admin-tabs">
+                    <button id="adminTabUsers" class="admin-tab admin-tab-active" onclick="switchAdminTab('users')">Users</button>
+                    <button id="adminTabActivity" class="admin-tab" onclick="switchAdminTab('activity')">Activity Log</button>
+                </div>
+
+                <!-- Users panel -->
+                <div id="adminUsersPanel" class="panel admin-panel">
                     <div class="admin-table-wrap">
                         <table class="admin-table" id="adminUserTable">
                             <thead>
@@ -544,6 +551,31 @@
                         </table>
                     </div>
                 </div>
+
+                <!-- Activity panel -->
+                <div id="adminActivityPanel" class="panel admin-panel" style="display: none;">
+                    <div id="adminActivitySummary"></div>
+                    <div class="admin-table-wrap">
+                        <table class="admin-table" id="adminActivityTable">
+                            <thead>
+                                <tr>
+                                    <th>Username</th>
+                                    <th>Email</th>
+                                    <th>Total Games</th>
+                                    <th title="Games played in the last 7 days">Last 7 Days</th>
+                                    <th title="Games played in the last 30 days">Last 30 Days</th>
+                                    <th>Win Rate</th>
+                                    <th>Last Game</th>
+                                    <th>Member Since</th>
+                                </tr>
+                            </thead>
+                            <tbody id="adminActivityTableBody">
+                                <tr><td colspan="8" class="admin-table-empty">Loading activity&hellip;</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
             </div>
 
             <!-- Role modal -->

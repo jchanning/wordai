@@ -34,7 +34,7 @@ import {
     loadAdminScreen, refreshAdminUsers,
     openRoleModal, closeRoleModal, addSelectedRole, removeRoleFromModal,
     openPasswordModal, closePasswordModal, submitPasswordReset,
-    toggleUserEnabled,
+    toggleUserEnabled, switchAdminTab, refreshActivityStats,
 } from './admin.js';
 
 // ============================================================
@@ -117,6 +117,12 @@ window.openPasswordModal       = openPasswordModal;
 window.closePasswordModal      = closePasswordModal;
 window.submitPasswordReset     = submitPasswordReset;
 window.toggleUserEnabled       = toggleUserEnabled;
+window.switchAdminTab          = switchAdminTab;
+window.refreshActivityStats    = refreshActivityStats;
+window.refreshAdminScreen      = () => {
+    if (state.adminTab === 'activity') refreshActivityStats();
+    else refreshAdminUsers();
+};
 
 // ============================================================
 // Authentication

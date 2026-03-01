@@ -105,3 +105,7 @@ export async function apiResetPassword(userId, password) {
         body: JSON.stringify({ password }),
     });
 }
+
+export async function apiGetActivityStats() {
+    return fetch('/api/wordai/admin/activity');
+}

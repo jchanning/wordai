@@ -2890,6 +2890,74 @@ select:focus {
     min-height: 1.2em;
 }
 
+/* ---- Admin tabs (Users / Activity Log) ---- */
+.admin-tabs {
+    display: flex;
+    gap: 4px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.10);
+    margin-bottom: 16px;
+}
+
+.admin-tab {
+    padding: 8px 22px;
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid transparent;
+    color: var(--text-muted);
+    cursor: pointer;
+    font-size: 0.9rem;
+    font-weight: 500;
+    margin-bottom: -1px;
+    transition: color 0.15s, border-color 0.15s;
+}
+
+.admin-tab:hover {
+    color: var(--text-primary);
+}
+
+.admin-tab-active {
+    color: var(--text-primary);
+    border-bottom-color: var(--correct-color, #6aaa64);
+}
+
+/* ---- Activity summary stat cards ---- */
+.admin-activity-stats {
+    display: flex;
+    gap: 14px;
+    flex-wrap: wrap;
+    margin-bottom: 16px;
+}
+
+.admin-activity-stat {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 8px;
+    padding: 12px 24px;
+    text-align: center;
+    min-width: 110px;
+}
+
+.admin-activity-stat-value {
+    font-size: 1.9rem;
+    font-weight: 700;
+    color: var(--correct-color, #6aaa64);
+    line-height: 1;
+}
+
+.admin-activity-stat-label {
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    margin-top: 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+/* Highlight cells with recent activity */
+.admin-activity-recent {
+    color: var(--correct-color, #6aaa64);
+    font-weight: 600;
+}
+
 .pagination {
     display: flex;
     justify-content: center;
