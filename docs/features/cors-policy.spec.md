@@ -2,21 +2,20 @@
 
 ## 1. Summary
 
-Replace five `@CrossOrigin(origins = "*")` annotations scattered across individual
+Replace scattered `@CrossOrigin(origins = "*")` annotations across individual
 controllers with a single `CorsConfigurationSource` bean in `SecurityConfig`. Allowed
 origins are read from a `wordai.cors.allowed-origins` property, defaulting to `*` in
 dev and requiring an environment variable in production.
 
 ## 2. Problem Statement
 
-`@CrossOrigin(origins = "*")` is applied directly to five controllers:
+`@CrossOrigin(origins = "*")` was previously applied directly to the API layer, including legacy controllers that were later removed during the resource-controller split:
 
 | Controller | Package |
 |---|---|
 | `WordGameController` | `com.fistraltech.server.controller` |
-| `UserStatsController` | `com.fistraltech.server.controller` |
 | `AdminController` | `com.fistraltech.server.controller` |
-| `AnalyticsController` | `com.fistraltech.server.controller` |
+| `DictionaryController` / `AnalysisController` / `AlgorithmController` / `HistoryController` | `com.fistraltech.server.controller` |
 | `UserManagementController` | `com.fistraltech.security.controller` |
 
 Problems with the annotation-per-controller approach:
@@ -40,7 +39,7 @@ Problems with the annotation-per-controller approach:
 | `SecurityConfig` | Add `CorsConfigurationSource` bean; wire `.cors()` in filter chain |
 | `application.properties` (dev) | `wordai.cors.allowed-origins=*` — dev keeps wildcard for convenience |
 | `application-prod.properties` | `wordai.cors.allowed-origins=${WORDAI_CORS_ALLOWED_ORIGINS:http://localhost:8080}` |
-| All 5 controllers | Remove `@CrossOrigin(origins = "*")` |
+| API controllers | Remove `@CrossOrigin(origins = "*")` |
 
 ### Why `CorsConfigurationSource` in `SecurityConfig`?
 
@@ -83,10 +82,8 @@ multiple origins) at the cloud host to open the API to specific external consume
 | `src/main/java/com/fistraltech/security/config/SecurityConfig.java` | Add `@Value wordai.cors.allowed-origins`; add `CorsConfigurationSource` bean; wire `.cors()` |
 | `application.properties` | Add `wordai.cors.allowed-origins=*` |
 | `application-prod.properties` | Add `wordai.cors.allowed-origins=${WORDAI_CORS_ALLOWED_ORIGINS:http://localhost:8080}` |
-| `WordGameController.java` | Remove `@CrossOrigin` |
-| `UserStatsController.java` | Remove `@CrossOrigin` |
+| `WordGameController.java` and split resource controllers | Remove `@CrossOrigin` |
 | `AdminController.java` | Remove `@CrossOrigin` |
-| `AnalyticsController.java` | Remove `@CrossOrigin` |
 | `UserManagementController.java` | Remove `@CrossOrigin` |
 | `src/test/java/com/fistraltech/security/config/CorsConfigTest.java` | **New** — TDD tests T1–T3 |
 | `docs/IMPLEMENTATION_STATUS.md` | Record completion |

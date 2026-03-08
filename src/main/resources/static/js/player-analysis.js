@@ -9,6 +9,7 @@ import {
     apiGetDictionary, apiCreateGame, apiDeleteGame,
     apiMakeGuess, apiGetSuggestion, apiSetStrategy,
 } from './api.js';
+import { getBrowserSessionId } from './browser-session.js';
 
 // ---- UI setup helpers ----
 
@@ -111,7 +112,11 @@ async function _runAnalysisGames(targetWords, dictionaryId, strategy, wordLength
         _updateAnalysisProgress(`Running: ${as.completed}/${as.total} ("${targetWord.toUpperCase()}")`, pct);
 
         try {
-            const createResponse = await apiCreateGame({ dictionaryId, targetWord });
+            const createResponse = await apiCreateGame({
+                dictionaryId,
+                targetWord,
+                browserSessionId: getBrowserSessionId(),
+            });
             if (!createResponse.ok) throw new Error('Failed to create game');
             const gameData = await createResponse.json();
             const gameId   = gameData.gameId;

@@ -11,6 +11,7 @@ import java.time.LocalDateTime;
  *   "userId": 42,
  *   "username": "alice",
  *   "email": "alice@example.com",
+ *   "ipAddress": null,
  *   "totalGames": 87,
  *   "wonGames": 61,
  *   "gamesLast7Days": 5,
@@ -26,6 +27,7 @@ public class UserActivityDto {
     private Long userId;
     private String username;
     private String email;
+    private String ipAddress;
     private long totalGames;
     private long wonGames;
     private long gamesLast7Days;
@@ -49,6 +51,9 @@ public class UserActivityDto {
 
     public String getEmail() { return email; }
     public void setEmail(String email) { this.email = email; }
+
+    public String getIpAddress() { return ipAddress; }
+    public void setIpAddress(String ipAddress) { this.ipAddress = ipAddress; }
 
     public long getTotalGames() { return totalGames; }
     public void setTotalGames(long totalGames) { this.totalGames = totalGames; }

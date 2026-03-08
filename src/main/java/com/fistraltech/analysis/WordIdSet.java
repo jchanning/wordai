@@ -5,6 +5,8 @@ import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.Set;
 
+import com.fistraltech.core.ResponseMatrix;
+
 /**
  * Memory-efficient set of words represented by their integer IDs.
  * 

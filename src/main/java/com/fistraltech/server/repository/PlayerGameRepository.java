@@ -42,23 +42,23 @@ public interface PlayerGameRepository extends JpaRepository<PersistedGame, Long>
      * Returns aggregate activity stats (total games, first/last game date) for
      * every user who has at least one recorded game. Used by the admin activity screen.
      */
-    @Query("SELECT pg.userId AS userId, COUNT(pg) AS totalGames, " +
+    @Query("SELECT pg.userId AS userId, pg.clientIpAddress AS clientIpAddress, COUNT(pg) AS totalGames, " +
            "MAX(pg.completedAt) AS lastGameDate, MIN(pg.completedAt) AS firstGameDate " +
-           "FROM PersistedGame pg GROUP BY pg.userId")
+           "FROM PersistedGame pg GROUP BY pg.userId, pg.clientIpAddress")
     List<UserActivityProjection> findUserActivityStats();
 
     /**
      * Returns per-user game counts for games completed on or after {@code since}.
      * Reused for 7-day and 30-day windows.
      */
-    @Query("SELECT pg.userId AS userId, COUNT(pg) AS count " +
-           "FROM PersistedGame pg WHERE pg.completedAt >= :since GROUP BY pg.userId")
+    @Query("SELECT pg.userId AS userId, pg.clientIpAddress AS clientIpAddress, COUNT(pg) AS count " +
+           "FROM PersistedGame pg WHERE pg.completedAt >= :since GROUP BY pg.userId, pg.clientIpAddress")
     List<UserRecentCountProjection> countByUserSince(@Param("since") LocalDateTime since);
 
     /**
      * Returns per-user counts of games where the result was {@code "WON"}.
      */
-    @Query("SELECT pg.userId AS userId, COUNT(pg) AS count " +
-           "FROM PersistedGame pg WHERE pg.result = 'WON' GROUP BY pg.userId")
+    @Query("SELECT pg.userId AS userId, pg.clientIpAddress AS clientIpAddress, COUNT(pg) AS count " +
+           "FROM PersistedGame pg WHERE pg.result = 'WON' GROUP BY pg.userId, pg.clientIpAddress")
     List<UserRecentCountProjection> countWonGamesByUser();
 }

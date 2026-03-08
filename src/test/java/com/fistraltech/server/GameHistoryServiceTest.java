@@ -116,45 +116,49 @@ class GameHistoryServiceTest {
     void saveIfEnded_gameNotEnded_noOp() {
         when(gameSession.isGameEnded()).thenReturn(false);
 
-        service.saveIfEnded(gameSession, authentication);
+        service.saveIfEnded(gameSession, authentication, "203.0.113.7");
 
         verifyNoInteractions(playerGameService, userRepository, authentication);
     }
 
     @Test
-    @DisplayName("T7: saveIfEnded — game ended but null auth is a no-op")
-    void saveIfEnded_nullAuth_noOp() {
+    @DisplayName("T7: saveIfEnded — game ended with null auth saves anonymous by IP")
+    void saveIfEnded_nullAuth_savesAnonymousByIp() {
         when(gameSession.isGameEnded()).thenReturn(true);
+        when(gameSession.getDictionaryId()).thenReturn("default");
 
-        service.saveIfEnded(gameSession, null);
+        service.saveIfEnded(gameSession, null, "203.0.113.10");
 
-        verifyNoInteractions(playerGameService, userRepository);
+        verify(playerGameService).saveGame(null, "203.0.113.10", gameSession, "default");
+        verifyNoInteractions(userRepository);
     }
 
     @Test
-    @DisplayName("T8: saveIfEnded — game ended but anonymous auth is a no-op")
-    void saveIfEnded_notAuthenticated_noOp() {
+    @DisplayName("T8: saveIfEnded — game ended but anonymous auth saves anonymous by IP")
+    void saveIfEnded_notAuthenticated_savesAnonymousByIp() {
         when(gameSession.isGameEnded()).thenReturn(true);
+        when(gameSession.getDictionaryId()).thenReturn("default");
         when(authentication.isAuthenticated()).thenReturn(false);
 
-        service.saveIfEnded(gameSession, authentication);
+        service.saveIfEnded(gameSession, authentication, "198.51.100.8");
 
-        verifyNoInteractions(playerGameService);
+        verify(playerGameService).saveGame(null, "198.51.100.8", gameSession, "default");
         verify(userRepository, never()).findByUsername(any());
     }
 
     @Test
-    @DisplayName("T9: saveIfEnded — game ended, authenticated, but user not found is a no-op")
-    void saveIfEnded_userNotFound_noOp() {
+    @DisplayName("T9: saveIfEnded — game ended, authenticated, but user not found saves anonymous by IP")
+    void saveIfEnded_userNotFound_savesAnonymousByIp() {
         when(gameSession.isGameEnded()).thenReturn(true);
+        when(gameSession.getDictionaryId()).thenReturn("default");
         when(authentication.isAuthenticated()).thenReturn(true);
         when(authentication.getName()).thenReturn("ghost");
         when(userRepository.findByUsername("ghost")).thenReturn(Optional.empty());
         when(userRepository.findByEmail("ghost")).thenReturn(Optional.empty());
 
-        service.saveIfEnded(gameSession, authentication);
+        service.saveIfEnded(gameSession, authentication, "192.0.2.24");
 
-        verifyNoInteractions(playerGameService);
+        verify(playerGameService).saveGame(null, "192.0.2.24", gameSession, "default");
     }
 
     @Test
@@ -167,9 +171,9 @@ class GameHistoryServiceTest {
         when(authentication.getName()).thenReturn("admin");
         when(userRepository.findByUsername("admin")).thenReturn(Optional.of(user));
 
-        service.saveIfEnded(gameSession, authentication);
+        service.saveIfEnded(gameSession, authentication, "203.0.113.99");
 
-        verify(playerGameService).saveGame(99L, gameSession, "default");
+        verify(playerGameService).saveGame(99L, null, gameSession, "default");
         verifyNoMoreInteractions(playerGameService);
     }
 

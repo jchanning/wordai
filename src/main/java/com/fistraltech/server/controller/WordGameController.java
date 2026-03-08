@@ -7,7 +7,8 @@ import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import jakarta.servlet.http.HttpServletRequest;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -20,17 +21,14 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.fistraltech.analysis.WordEntropy;
 import com.fistraltech.core.Dictionary;
 import com.fistraltech.core.InvalidWordException;
 import com.fistraltech.core.Response;
 import com.fistraltech.server.AlgorithmFeatureService;
-import com.fistraltech.server.DictionaryService;
 import com.fistraltech.server.GameHistoryService;
 import com.fistraltech.server.WordGameService;
 import com.fistraltech.server.dto.CreateGameRequest;
 import com.fistraltech.server.dto.CreateGameResponse;
-import com.fistraltech.server.dto.DictionaryOption;
 import com.fistraltech.server.dto.GameResponse;
 import com.fistraltech.server.dto.GuessRequest;
 import com.fistraltech.server.model.GameSession;
@@ -43,7 +41,7 @@ import com.fistraltech.server.model.GameSession;
  * <p><strong>Primary resources</strong>
  * <ul>
  *   <li><strong>Games</strong>: create/delete sessions, make guesses, get suggestions</li>
- *   <li><strong>Dictionaries</strong>: list dictionary options and (optionally) fetch full word lists</li>
+ *   <li><strong>Service health</strong>: verify the API is running and report active-session count</li>
  * </ul>
  *
  * <p><strong>Typical flow</strong>
@@ -90,15 +88,18 @@ import com.fistraltech.server.model.GameSession;
 public class WordGameController {
     
     private static final Logger logger = Logger.getLogger(WordGameController.class.getName());
-    
-    @Autowired
-    private WordGameService gameService;
 
-    @Autowired
-    private AlgorithmFeatureService algorithmFeatureService;
+    private final WordGameService gameService;
+    private final AlgorithmFeatureService algorithmFeatureService;
+    private final GameHistoryService gameHistoryService;
 
-    @Autowired
-    private GameHistoryService gameHistoryService;
+    public WordGameController(WordGameService gameService,
+                              AlgorithmFeatureService algorithmFeatureService,
+                              GameHistoryService gameHistoryService) {
+        this.gameService = gameService;
+        this.algorithmFeatureService = algorithmFeatureService;
+        this.gameHistoryService = gameHistoryService;
+    }
 
     /**
      * Health check endpoint
@@ -112,68 +113,6 @@ public class WordGameController {
         response.put("activeSessions", gameService.getActiveSessionCount());
         response.put("timestamp", System.currentTimeMillis());
         return ResponseEntity.ok(response);
-    }
-    
-    /**
-     * Get available dictionaries
-     * GET /api/wordai/dictionaries
-     */
-    @GetMapping("/dictionaries")
-    public ResponseEntity<List<DictionaryOption>> getDictionaries() {
-        try {
-            DictionaryService dictionaryService = gameService.getDictionaryService();
-            List<DictionaryOption> dictionaries = dictionaryService.getAvailableDictionaries();
-            return ResponseEntity.ok(dictionaries);
-        } catch (Exception e) {
-            logger.log(Level.SEVERE, "Error getting dictionaries: {0}", e.getMessage());
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-        }
-    }
-    
-    /**
-     * Get dictionary words with entropy values
-     * GET /api/wordai/dictionaries/{dictionaryId}
-     */
-    @GetMapping("/dictionaries/{dictionaryId}")
-    public ResponseEntity<Map<String, Object>> getDictionary(@PathVariable String dictionaryId) {
-        try {
-            DictionaryService dictionaryService = gameService.getDictionaryService();
-            Dictionary dictionary = dictionaryService.getMasterDictionary(dictionaryId);
-            
-            if (dictionary == null) {
-                return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
-            }
-            
-            // Get pre-computed entropy values from DictionaryService
-            WordEntropy wordEntropy = dictionaryService.getWordEntropy(dictionaryId);
-            
-            logger.info("Dictionary ID: " + dictionaryId + ", Word Length: " + dictionary.getWordLength() + 
-                       ", WordEntropy found: " + (wordEntropy != null));
-            
-            Map<String, Object> response = new HashMap<>();
-            response.put("id", dictionaryId);
-            response.put("wordLength", dictionary.getWordLength());
-            response.put("wordCount", dictionary.getWordCount());
-            response.put("words", new ArrayList<>(dictionary.getMasterSetOfWords()));
-            
-            // Add entropy values if available
-            if (wordEntropy != null) {
-                Map<String, Float> entropyMap = new HashMap<>();
-                for (String word : dictionary.getMasterSetOfWords()) {
-                    float entropy = wordEntropy.getEntropy(word);
-                    entropyMap.put(word, entropy);
-                }
-                logger.info("Added entropy values for " + entropyMap.size() + " words");
-                response.put("entropy", entropyMap);
-            } else {
-                logger.warning("WordEntropy is null for dictionary: " + dictionaryId);
-            }
-            
-            return ResponseEntity.ok(response);
-        } catch (Exception e) {
-            logger.log(Level.SEVERE, "Error loading dictionary: {0}", e.getMessage());
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
-        }
     }
     
     /**
@@ -195,7 +134,10 @@ public class WordGameController {
             }
 
             Long userId = gameHistoryService.resolveUser(authentication).map(u -> u.getId()).orElse(null);
-            String gameId = gameService.createGame(targetWord, wordLength, dictionaryId, userId);
+            String browserSessionId = request != null ? request.getBrowserSessionId() : null;
+        boolean resumeExisting = request != null && Boolean.TRUE.equals(request.getResumeExisting());
+            String gameId = gameService.createGame(targetWord, wordLength, dictionaryId, userId,
+            browserSessionId, resumeExisting);
             GameSession session = gameService.getGameSession(gameId);
             
             CreateGameResponse response = new CreateGameResponse(
@@ -241,8 +183,10 @@ public class WordGameController {
      * POST /api/wordai/games/{gameId}/guess
      */
     @PostMapping("/games/{gameId}/guess")
-    public ResponseEntity<?> makeGuess(@PathVariable String gameId, @RequestBody GuessRequest request,
-            Authentication authentication) {
+        public ResponseEntity<?> makeGuess(@PathVariable String gameId,
+            @RequestBody GuessRequest request,
+            Authentication authentication,
+            HttpServletRequest httpRequest) {
         try {
             if (request.getWord() == null || request.getWord().trim().isEmpty()) {
                 Map<String, String> error = new HashMap<>();
@@ -281,8 +225,8 @@ public class WordGameController {
             metrics.setMostFrequentCharByPosition(analyser.getMostFrequentCharByPosition());
             response.setDictionaryMetrics(metrics);
             
-            // Persist the completed game if a registered user is playing
-            gameHistoryService.saveIfEnded(session, authentication);
+            // Persist the completed game for either the authenticated user or an anonymous IP.
+            gameHistoryService.saveIfEnded(session, authentication, getClientIpAddress(httpRequest));
 
             logger.info("Guess made for game " + gameId + ": " + request.getWord());
             return ResponseEntity.ok(response);
@@ -300,6 +244,31 @@ public class WordGameController {
             error.put("message", "Failed to process guess");
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
         }
+    }
+
+    private String getClientIpAddress(HttpServletRequest request) {
+        String[] headerNames = {
+            "X-Forwarded-For",
+            "Proxy-Client-IP",
+            "WL-Proxy-Client-IP",
+            "HTTP_X_FORWARDED_FOR",
+            "HTTP_X_FORWARDED",
+            "HTTP_X_CLUSTER_CLIENT_IP",
+            "HTTP_CLIENT_IP",
+            "HTTP_FORWARDED_FOR",
+            "HTTP_FORWARDED",
+            "HTTP_VIA",
+            "REMOTE_ADDR"
+        };
+
+        for (String header : headerNames) {
+            String ipList = request.getHeader(header);
+            if (ipList != null && !ipList.isEmpty() && !"unknown".equalsIgnoreCase(ipList)) {
+                return ipList.split(",")[0].trim();
+            }
+        }
+
+        return request.getRemoteAddr();
     }
     
     /**
@@ -507,90 +476,4 @@ public class WordGameController {
         }
     }
     
-    /**
-     * Run full dictionary analysis with specified algorithm
-     * POST /api/wordai/analysis
-     */
-    @PostMapping("/analysis")
-    public ResponseEntity<?> runAnalysis(@RequestBody com.fistraltech.server.dto.AnalysisRequest request) {
-        try {
-            logger.info("Starting analysis with algorithm: " + request.getAlgorithm() + 
-                       ", dictionary: " + request.getDictionaryId());
-            
-            com.fistraltech.server.dto.AnalysisResponse response = 
-                gameService.runAnalysis(request.getAlgorithm(), request.getDictionaryId(), request.getMaxGames());
-            
-            logger.info("Analysis completed: " + response.getTotalGames() + " games, " + 
-                       response.getWinRate() + "% win rate");
-            
-            return ResponseEntity.ok(response);
-            
-        } catch (Exception e) {
-            logger.log(Level.SEVERE, "Error running analysis: {0}", e.getMessage());
-            e.printStackTrace();
-            Map<String, String> error = new HashMap<>();
-            error.put("error", "Analysis failed");
-            error.put("message", e.getMessage());
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
-        }
-    }
-    
-    /**
-     * Get available selection algorithms
-     * GET /api/wordai/algorithms
-     */
-    @GetMapping("/algorithms")
-    public ResponseEntity<List<Map<String, String>>> getAlgorithms() {
-        List<Map<String, String>> algorithms = new ArrayList<>();
-        
-        algorithms.add(createAlgorithmInfo("RANDOM", "Random Selection", 
-            "Selects words randomly from valid options"));
-        algorithms.add(createAlgorithmInfo("ENTROPY", "Maximum Entropy", 
-            "Chooses words that maximize information gain"));
-        algorithms.add(createAlgorithmInfo("BELLMAN_FULL_DICTIONARY", "Bellman Full Dictionary", 
-            "Uses full dictionary guesses (including known incorrect) to reduce remaining possibilities"));
-        
-        return ResponseEntity.ok(algorithms);
-    }
-    
-    /**
-     * Get the authenticated player's persistent game history.
-     * GET /api/wordai/history
-     *
-     * <p>Returns up to 100 most-recent completed games, newest first.
-     * Requires an authenticated (non-guest) user.
-     */
-    @GetMapping("/history")
-    public ResponseEntity<?> getPlayerHistory(Authentication authentication) {
-        if (authentication == null || !authentication.isAuthenticated()) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(Map.of("error", "Authentication required"));
-        }
-        try {
-            return gameHistoryService.getHistory(authentication)
-                    .<ResponseEntity<?>>map(uh -> {
-                        Map<String, Object> response = new HashMap<>();
-                        response.put("games", uh.getGames());
-                        response.put("total", uh.getGames().size());
-                        response.put("username", uh.getUsername());
-                        return ResponseEntity.ok(response);
-                    })
-                    .orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND)
-                            .body(Map.of("error", "User not found")));
-        } catch (Exception e) {
-            logger.log(Level.SEVERE, "Error retrieving player history", e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Map.of("error", "Failed to retrieve game history"));
-        }
-    }
-
-    private Map<String, String> createAlgorithmInfo(String id, String name, String description) {
-        Map<String, String> info = new HashMap<>();
-        info.put("id", id);
-        info.put("name", name);
-        info.put("description", description);
-        boolean enabled = algorithmFeatureService.isAlgorithmEnabled(id);
-        info.put("enabled", String.valueOf(enabled));
-        return info;
-    }
 }

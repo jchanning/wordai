@@ -36,6 +36,7 @@ import {
     openPasswordModal, closePasswordModal, submitPasswordReset,
     toggleUserEnabled, switchAdminTab, refreshActivityStats,
 } from './admin.js';
+import { getBrowserSessionId } from './browser-session.js';
 
 // ============================================================
 // Initialisation
@@ -277,6 +278,7 @@ export async function newGame() {
         const dictionaryId = selector?.value || null;
         const requestBody  = dictionaryId ? { dictionaryId } : {};
 
+        requestBody.browserSessionId = getBrowserSessionId();
         const response = await apiCreateGame(requestBody);
         if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
 
@@ -357,7 +359,10 @@ export async function makeGuess() {
             disableLetterInputs();
             const gb = document.getElementById('guessBtn');
             if (gb) gb.disabled = true;
-            showStatus('\uD83C\uDF89 Congratulations! You won!', 'success');
+            showStatus('Congratulations! You won!', 'success', {
+                anchorEl: document.getElementById('guessHistory'),
+                tilted: true,
+            });
             saveGameResult(word, data.attemptNumber, true);
         } else if (data.gameOver) {
             state.gameEnded = true;

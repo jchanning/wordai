@@ -1,9 +1,10 @@
-package com.fistraltech.bot;
+package com.fistraltech.core;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import com.fistraltech.core.Dictionary;
+import com.fistraltech.bot.GameAnalytics;
+import com.fistraltech.bot.selection.SelectionAlgo;
 
 /**
  * Tracks the evolution of the valid word dictionary as a game progresses.

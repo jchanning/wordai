@@ -6,8 +6,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import com.fistraltech.bot.filter.FilterCharacters;
-
 /*
  class used to manage a dictionary of words for a game like Wordle.  The interface enables identification of words that
  meet the feedback criteria received when making a guess.  It allows the rapid identification of:

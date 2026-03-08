@@ -4,7 +4,7 @@ import java.time.LocalDateTime;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
-import java.util.logging.Logger;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
@@ -29,8 +29,6 @@ import com.fistraltech.server.repository.UserRecentCountProjection;
 @Service
 public class ActivityService {
 
-    private static final Logger logger = Logger.getLogger(ActivityService.class.getName());
-
     private final PlayerGameRepository gameRepository;
     private final UserRepository userRepository;
 
@@ -40,7 +38,7 @@ public class ActivityService {
     }
 
     /**
-     * Returns activity statistics for every user who has completed at least one game,
+    * Returns activity statistics for every player who has completed at least one game,
      * sorted by {@code lastGameDate} descending (most recently active first).
      *
      * @return list of per-user activity DTOs
@@ -55,15 +53,16 @@ public class ActivityService {
 
         // 2. Recent-game counts (2 queries with time windows)
         LocalDateTime now = LocalDateTime.now();
-        Map<Long, Long> last7  = toCountMap(gameRepository.countByUserSince(now.minusDays(7)));
-        Map<Long, Long> last30 = toCountMap(gameRepository.countByUserSince(now.minusDays(30)));
+        Map<ActivityActorKey, Long> last7  = toCountMap(gameRepository.countByUserSince(now.minusDays(7)));
+        Map<ActivityActorKey, Long> last30 = toCountMap(gameRepository.countByUserSince(now.minusDays(30)));
 
         // 3. Won-game counts (1 query)
-        Map<Long, Long> wonMap = toCountMap(gameRepository.countWonGamesByUser());
+        Map<ActivityActorKey, Long> wonMap = toCountMap(gameRepository.countWonGamesByUser());
 
         // 4. Bulk user lookup (1 query)
         List<Long> userIds = allStats.stream()
                 .map(UserActivityProjection::getUserId)
+            .filter(Objects::nonNull)
                 .collect(Collectors.toList());
         Map<Long, User> userMap = userRepository.findAllById(userIds).stream()
                 .collect(Collectors.toMap(User::getId, u -> u));
@@ -73,18 +72,23 @@ public class ActivityService {
                 .map(stat -> {
                     UserActivityDto dto = new UserActivityDto();
                     dto.setUserId(stat.getUserId());
+                    dto.setIpAddress(stat.getClientIpAddress());
+
+                    ActivityActorKey actorKey = ActivityActorKey.from(stat.getUserId(), stat.getClientIpAddress());
 
                     User user = userMap.get(stat.getUserId());
                     if (user != null) {
                         dto.setUsername(user.getUsername());
                         dto.setEmail(user.getEmail());
                         dto.setLastLogin(user.getLastLogin());
+                    } else {
+                        dto.setUsername("Unknown");
                     }
 
                     dto.setTotalGames(stat.getTotalGames());
-                    dto.setWonGames(wonMap.getOrDefault(stat.getUserId(), 0L));
-                    dto.setGamesLast7Days(last7.getOrDefault(stat.getUserId(), 0L));
-                    dto.setGamesLast30Days(last30.getOrDefault(stat.getUserId(), 0L));
+                    dto.setWonGames(wonMap.getOrDefault(actorKey, 0L));
+                    dto.setGamesLast7Days(last7.getOrDefault(actorKey, 0L));
+                    dto.setGamesLast30Days(last30.getOrDefault(actorKey, 0L));
                     dto.setLastGameDate(stat.getLastGameDate());
                     dto.setFirstGameDate(stat.getFirstGameDate());
                     return dto;
@@ -99,10 +103,18 @@ public class ActivityService {
     // Helpers
     // ------------------------------------------------------------------
 
-    private Map<Long, Long> toCountMap(List<UserRecentCountProjection> projections) {
+    private Map<ActivityActorKey, Long> toCountMap(List<UserRecentCountProjection> projections) {
         return projections.stream()
                 .collect(Collectors.toMap(
-                        UserRecentCountProjection::getUserId,
+                        projection -> ActivityActorKey.from(
+                                projection.getUserId(),
+                                projection.getClientIpAddress()),
                         UserRecentCountProjection::getCount));
+    }
+
+    private record ActivityActorKey(Long userId, String clientIpAddress) {
+        private static ActivityActorKey from(Long userId, String clientIpAddress) {
+            return new ActivityActorKey(userId, clientIpAddress);
+        }
     }
 }

@@ -33,6 +33,6 @@ public interface ActiveGameSessionRepository extends JpaRepository<ActiveGameSes
      * @param status       session status, typically {@code "ACTIVE"}
      * @return the matching session, or empty if none found
      */
-    Optional<ActiveGameSessionEntity> findByUserIdAndDictionaryIdAndStatus(
-            Long userId, String dictionaryId, String status);
+        Optional<ActiveGameSessionEntity> findByUserIdAndDictionaryIdAndBrowserSessionIdAndStatus(
+            Long userId, String dictionaryId, String browserSessionId, String status);
 }

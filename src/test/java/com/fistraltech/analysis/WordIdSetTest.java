@@ -16,6 +16,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 
 import com.fistraltech.core.Dictionary;
+import com.fistraltech.core.ResponseMatrix;
 import com.fistraltech.util.Config;
 
 /**

@@ -20,35 +20,35 @@ WordAI is a Wordle-like game simulation and analysis system. It provides:
 
 ```
 ┌─────────────────────────────────────────────────────┐
-│  server   (HTTP, Spring controllers, DTOs, security) │
+│  server   (HTTP API, Spring controllers, DTOs,       │
+│            security, algorithm registry/feature policy) │
 ├─────────────────────────────────────────────────────┤
-│  analysis  (ResponseMatrix, WordEntropy, analytics)  │
+│  analysis  (analytics, reporting, dictionary studies)│
 ├─────────────────────────────────────────────────────┤
 │  bot  (WordGamePlayer, SelectionAlgo strategies,     │
-│        Filter, DictionaryHistory, GameAnalytics)     │
+│        simulation orchestration, CSV analytics)      │
 ├─────────────────────────────────────────────────────┤
-│  core  (WordGame, Dictionary, Response, Column,      │
-│         DictionaryManager, WordSource)               │
+│  core  (WordGame, Dictionary, Response, Filter,      │
+│         WordEntropy, ResponseMatrix, histories)      │
 ├─────────────────────────────────────────────────────┤
-│  util  (Config, ConfigManager, Timer)                │
+│  util  (Config, ConfigManager, DictionaryOption,     │
+│         Timer)                                       │
 └─────────────────────────────────────────────────────┘
 ```
 
 **Rule:** Each layer may only import from layers below it. `server` may import any layer. `util` may import nothing from this project.
 
-### Currently enforced (via `ArchitectureFitnessTest`)
-- `bot` does not import from `server` ✅
-- `game` does not import from `server` ✅
+### Enforced via `ArchitectureFitnessTest`
+- `bot` does not import from `server`
+- `game` does not import from `server` (legacy package allowed to remain empty)
+- `core` does not import from `server`
+- `util` does not import from `server`
+- `analysis` does not import from `server`
+- `core` does not import from `bot`
+- `server` runtime config access is centralised in `DictionaryService`
+- `com.fistraltech` packages are cycle-free
 
-### Known violations (documented in `ArchitectureFitnessTest` as `@Disabled`)
-| Violation | Root cause | Fix |
-|---|---|---|
-| `core` imports `server.dto` | `DictionaryManager` uses `DictionaryOption` | Move `DictionaryOption` to `core` |
-| `util` imports `server.dto` | `Config`/`ConfigManager` use `DictionaryOption` | Move `DictionaryOption` to `core` or `util` |
-| `analysis` imports `server.dto` | `PlayerAnalyser` uses `AnalysisGameResult`/`AnalysisResponse` | Move those DTOs to `analysis` |
-| `core` ↔ `bot` cycle | `Dictionary` → `FilterCharacters`; `ResponseHelper` → `Filter` | Extract interface in `core`; `bot` implements |
-
-Do not introduce new cross-layer imports. Each violation above is a refactoring task — see [refactor.prompt.md](../.github/prompts/refactor.prompt.md).
+Do not introduce new cross-layer imports. Architectural cleanup work is tracked in [specs/README.md](../specs/README.md).
 
 ---
 
@@ -58,10 +58,13 @@ Do not introduce new cross-layer imports. Each violation above is a refactoring 
 Config / ConfigManager
        │
        ▼
-DictionaryManager  ──load once──►  Dictionary (per word length)
-                                        │
-                                        ▼
-                              WordGame.evaluate(guess, target)
+DictionaryService  ──load once──►  Dictionary / WordEntropy caches
+       │                                │
+       │                                ▼
+       │                        GameSession clone per game
+       │                                │
+       ▼                                ▼
+WordGameService  ───────────────► WordGame.evaluate(guess, target)
                                         │ Response (G/A/X/R per position)
                                         ▼
                               SelectionAlgo.selectWord(response)
@@ -72,10 +75,8 @@ DictionaryManager  ──load once──►  Dictionary (per word length)
                               WordGamePlayer.playGame()
                                         │ ResultHistory / DictionaryHistory
                                         ▼
-                              GameSession  (server.model)
-                                        │
-                                        ▼
-                              WordGameController  (REST API)
+             WordGameController / DictionaryController / AnalysisController
+                           / AlgorithmController / HistoryController
                                         │ JSON
                                         ▼
                               browser / UI (index.html + game.js)
@@ -100,22 +101,20 @@ Encoded as a base-4 integer: `G=0, A=1, R=2, X=3`. For a 5-letter word, patterns
 
 ## Selection Strategy Registration
 
-All strategies must be registered in `AlgorithmFeatureService` to be addressable by the UI and API. Strategies extend `SelectionAlgo` and override:
+API-visible strategies are defined by `AlgorithmDescriptor` implementations, discovered by `AlgorithmRegistry`, and filtered for exposure by `AlgorithmFeatureService`. Strategies still extend `SelectionAlgo` and override:
 
 ```java
 String selectWord(Response lastResponse, Dictionary dictionary)
 ```
 
-**Registered strategies:**
+`AlgorithmRegistry` is the canonical place for algorithm ID normalisation and descriptor lookup. `AlgorithmFeatureService` adds environment-driven enablement policy on top of that registry metadata.
+
+**Currently exposed API strategies:**
 
 | API key | Class | Description |
 |---|---|---|
-| `RANDOM` | `SelectRandom` | Uniform random from valid candidates — baseline |
+| `RANDOM` | `SelectRandom` | Uniform random from valid candidates |
 | `ENTROPY` | `SelectMaximumEntropy` | Maximises information gain (Shannon entropy) |
-| `MOST_COMMON_LETTERS` | `SelectMostCommonLetters` | Prefers words covering high-frequency letters |
-| `MINIMISE_COLUMN_LENGTHS` | `SelectMinimiseColumnLengths` | Minimises expected letter options per position |
-| `DICTIONARY_REDUCTION` | `SelectMaximumDictionaryReduction` | Maximises expected reduction in remaining words |
-| `BELLMAN_OPTIMAL` | `SelectBellman*` | Bellman-optimal strategy (single dictionary subset) |
 | `BELLMAN_FULL_DICTIONARY` | `SelectBellmanFullDictionary` | Bellman-optimal across full dictionary |
 
 To add a new strategy, see [new-selection-algo.prompt.md](../.github/prompts/new-selection-algo.prompt.md).
@@ -133,7 +132,7 @@ Four completed optimisation phases replaced naive string/HashMap approaches:
 | Column length | `ResponseMatrix` | Bitmask (26-bit int) vs `HashSet<Character>` | ~99% |
 | Entropy (large dict) | `WordEntropy` | `IntStream.parallel()` above threshold | 2–4× throughput |
 
-**Key invariant:** `ResponseMatrix` is built once per `Dictionary` and cached via `DictionaryManager`. It must not be reconstructed per game or per guess.
+**Key invariant:** `ResponseMatrix` is built once per loaded dictionary and cached behind `DictionaryService`. It must not be reconstructed per game or per guess.
 
 **Lazy threshold:** Selection algorithms switch between cached pre-computed values and lazy per-call computation at `LAZY_THRESHOLD = 0.8` (use cache when >80% of dictionary still valid).
 
@@ -161,7 +160,7 @@ These must hold at all times. Tests or fitness functions enforce them where poss
 1. **Word length is immutable per game.** `Dictionary`, `Filter`, and `SelectionAlgo` are all constructed with a fixed word length. Never mix lengths within a game session.
 2. **`Filter` is not thread-safe.** Each `SelectionAlgo` instance owns its own `Filter`. Never share across threads.
 3. **One `WordGame` per evaluation.** `WordGame.evaluate(guess, target)` is stateless; call it freely. Do not share a single `WordGame` instance across concurrent calls.
-4. **`DictionaryManager` is a singleton.** Dictionaries are loaded once at startup via `DictionaryManager.initialise(config)`. Never call `initialise` again after startup.
+4. **`DictionaryService` is the single runtime dictionary boundary.** Server code must obtain loaded dictionaries and cached entropy through `DictionaryService`, not through ad hoc `ConfigManager` access.
 5. **`ResponseMatrix` is immutable after construction.** It is safe to share across threads; do not mutate after the constructor returns.
 6. **Selection strategies must fall back to `dictionary.selectRandomWord()` on an empty filtered dictionary.** This prevents `NullPointerException` on edge-case game states.
 

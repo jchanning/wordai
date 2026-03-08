@@ -1,4 +1,4 @@
-package com.fistraltech.analysis;
+package com.fistraltech.core;
 
 /**
  * Calculation of entropy is an expensive operation, particularly for large dictionaries at the start of the game.
@@ -29,10 +29,6 @@ import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import com.fistraltech.core.Dictionary;
-import com.fistraltech.core.Response;
-import com.fistraltech.core.ResponseEntry;
-import com.fistraltech.core.WordGame;
 import com.fistraltech.util.Config;
 import com.fistraltech.util.ConfigManager;
 

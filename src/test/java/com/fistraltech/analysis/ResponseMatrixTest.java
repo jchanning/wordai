@@ -13,6 +13,8 @@ import org.junit.jupiter.api.TestInstance;
 
 import com.fistraltech.core.Dictionary;
 import com.fistraltech.core.Response;
+import com.fistraltech.core.ResponseMatrix;
+import com.fistraltech.core.WordEntropy;
 import com.fistraltech.core.WordGame;
 import com.fistraltech.util.Config;
 

@@ -4,11 +4,13 @@ import java.util.Objects;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import com.fistraltech.bot.filter.Filter;
 import com.fistraltech.bot.selection.SelectionAlgo;
 import com.fistraltech.core.Dictionary;
+import com.fistraltech.core.DictionaryHistory;
+import com.fistraltech.core.Filter;
 import com.fistraltech.core.InvalidWordException;
 import com.fistraltech.core.Response;
+import com.fistraltech.core.ResultHistory;
 import com.fistraltech.core.WordGame;
 
 /**

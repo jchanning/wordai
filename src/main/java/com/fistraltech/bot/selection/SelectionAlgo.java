@@ -38,7 +38,7 @@ import com.fistraltech.core.Response;
  * <p><strong>Thread safety:</strong> not thread-safe; use one instance per game.
  *
  * @author Fistral Technologies
- * @see com.fistraltech.bot.filter.Filter
+ * @see com.fistraltech.core.Filter
  * @see com.fistraltech.bot.WordGamePlayer
  * @see com.fistraltech.server.model.GameSession
  */

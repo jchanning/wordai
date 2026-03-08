@@ -24,8 +24,8 @@ import com.fistraltech.server.repository.ActiveGameSessionRepository;
  * hooks in {@link WordGameService}.
  *
  * <p>Verifies that authenticated-user game sessions are correctly saved to,
- * updated in, and removed from the database, and that the same session is
- * returned when a user already has an ACTIVE game for a given dictionary.
+ * updated in, and removed from the database, and that resumable sessions are
+ * isolated per browser window for the same authenticated user.
  *
  * <p>Uses a dedicated in-memory H2 database + Flyway so these tests never touch
  * the dev file-based database.
@@ -42,11 +42,11 @@ import com.fistraltech.server.repository.ActiveGameSessionRepository;
 @DisplayName("SessionPersistenceTest")
 class SessionPersistenceTest {
 
-    @Autowired
-    private WordGameService wordGameService;
+    private static final String BROWSER_A = "browser-a";
+    private static final String BROWSER_B = "browser-b";
 
     @Autowired
-    private SessionPersistenceService sessionPersistenceService;
+    private WordGameService wordGameService;
 
     @Autowired
     private ActiveGameSessionRepository repository;
@@ -76,12 +76,13 @@ class SessionPersistenceTest {
     void createGame_authenticated_rowInsertedInDB() throws Exception {
         Long userId = adminUserId();
 
-        String gameId = wordGameService.createGame(null, null, "default", userId);
+        String gameId = wordGameService.createGame(null, null, "default", userId, BROWSER_A);
 
         Optional<ActiveGameSessionEntity> entity = repository.findById(gameId);
         assertTrue(entity.isPresent(), "DB row must be inserted when authenticated user creates a game");
         assertEquals(userId, entity.get().getUserId(), "user_id must match");
         assertEquals("default", entity.get().getDictionaryId(), "dictionary_id must match");
+        assertEquals(BROWSER_A, entity.get().getBrowserSessionId(), "browser_session_id must match");
         assertEquals("ACTIVE", entity.get().getStatus(), "status must be ACTIVE");
         assertEquals("", entity.get().getGuessWords(), "guess_words must be empty before any guess");
         assertNotNull(entity.get().getTargetWord(), "target_word must not be null");
@@ -95,7 +96,7 @@ class SessionPersistenceTest {
     @DisplayName("T2: after a guess, DB row updated with guess word and COMPLETED status on win")
     void makeGuess_authenticated_rowUpdatedInDB() throws Exception {
         Long userId = adminUserId();
-        String gameId = wordGameService.createGame(null, null, "easy", userId);
+        String gameId = wordGameService.createGame(null, null, "easy", userId, BROWSER_A);
         GameSession session = wordGameService.getGameSession(gameId);
 
         // Guess the target word to win immediately
@@ -118,7 +119,7 @@ class SessionPersistenceTest {
     @DisplayName("T3: remove game → DB row deleted")
     void removeGame_authenticated_rowDeletedFromDB() throws Exception {
         Long userId = adminUserId();
-        String gameId = wordGameService.createGame(null, null, "hard", userId);
+        String gameId = wordGameService.createGame(null, null, "hard", userId, BROWSER_A);
         assertTrue(repository.findById(gameId).isPresent(), "precondition: row must exist before removal");
 
         wordGameService.removeGameSession(gameId);
@@ -131,23 +132,53 @@ class SessionPersistenceTest {
     // -----------------------------------------------------------------------
 
     @Test
-    @DisplayName("T4: createGame returns existing ACTIVE game ID for same user + dictionary (no duplicate rows)")
-    void createGame_existingActiveSession_returnsSameGameId() throws Exception {
+    @DisplayName("T4: same browser session creates a new game by default for the same user and dictionary")
+    void createGame_sameBrowserSession_createsDifferentGameIdByDefault() throws Exception {
         Long userId = adminUserId();
 
         // Create first game
-        String firstGameId = wordGameService.createGame(null, null, "default", userId);
+        String firstGameId = wordGameService.createGame(null, null, "default", userId, BROWSER_A);
         assertTrue(repository.findById(firstGameId).isPresent(), "first game row must exist");
 
-        // Create another game for the same user + dictionary
-        String secondGameId = wordGameService.createGame(null, null, "default", userId);
+        // Create another game for the same user + dictionary in the same browser window
+        String secondGameId = wordGameService.createGame(null, null, "default", userId, BROWSER_A);
+
+        assertFalse(firstGameId.equals(secondGameId),
+                "createGame must create a fresh game by default, even in the same browser session");
+
+        // Two rows should exist because no implicit resumption occurs.
+        List<ActiveGameSessionEntity> rows = repository.findByUserIdAndStatus(userId, "ACTIVE");
+        assertEquals(2, rows.size(), "two ACTIVE sessions must exist when createGame is called twice");
+    }
+
+    @Test
+    @DisplayName("T5: explicit resumeExisting returns the same ACTIVE game ID for the same browser session")
+    void createGame_resumeExisting_returnsSameGameId() throws Exception {
+        Long userId = adminUserId();
+
+        String firstGameId = wordGameService.createGame(null, null, "default", userId, BROWSER_A);
+        String secondGameId = wordGameService.createGame(null, null, "default", userId, BROWSER_A, true);
 
         assertEquals(firstGameId, secondGameId,
-                "createGame must return the existing ACTIVE game ID, not create a duplicate");
+                "resumeExisting must reuse the existing ACTIVE game in the same browser session");
 
-        // Only one row should exist for this user + dictionary
         List<ActiveGameSessionEntity> rows = repository.findByUserIdAndStatus(userId, "ACTIVE");
-        assertEquals(1, rows.size(), "exactly one ACTIVE session must exist per user+dictionary");
+        assertEquals(1, rows.size(), "explicit resume should not create duplicate ACTIVE sessions");
+    }
+
+    @Test
+    @DisplayName("T6: different browser sessions create independent ACTIVE games for the same user and dictionary")
+    void createGame_differentBrowserSessions_returnDifferentGameIds() throws Exception {
+        Long userId = adminUserId();
+
+        String firstGameId = wordGameService.createGame(null, null, "default", userId, BROWSER_A);
+        String secondGameId = wordGameService.createGame(null, null, "default", userId, BROWSER_B);
+
+        assertFalse(firstGameId.equals(secondGameId),
+                "different browser sessions must not share the same active game");
+
+        List<ActiveGameSessionEntity> rows = repository.findByUserIdAndStatus(userId, "ACTIVE");
+        assertEquals(2, rows.size(), "two ACTIVE sessions should exist for two browser sessions");
     }
 
     // -----------------------------------------------------------------------

@@ -8,5 +8,7 @@ public interface UserRecentCountProjection {
 
     Long getUserId();
 
+    String getClientIpAddress();
+
     long getCount();
 }

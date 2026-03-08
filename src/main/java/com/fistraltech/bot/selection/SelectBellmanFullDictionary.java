@@ -5,9 +5,9 @@ import java.util.Map;
 import java.util.Set;
 import java.util.logging.Logger;
 
-import com.fistraltech.analysis.WordEntropy;
 import com.fistraltech.core.Dictionary;
 import com.fistraltech.core.Response;
+import com.fistraltech.core.WordEntropy;
 import com.fistraltech.util.ConfigManager;
 
 /**

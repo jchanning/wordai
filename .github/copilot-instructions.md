@@ -53,6 +53,7 @@ Quick summary:
 	}
 	```
 - Use response buckets:
+
 	```java
 	Map<String, Set<String>> buckets = analyser.getResponseBuckets("slate");
 	// keys like "GARXR" denote per-position feedback

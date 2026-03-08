@@ -1,4 +1,4 @@
-package com.fistraltech.analysis;
+package com.fistraltech.core;
 
 import java.util.Objects;
 

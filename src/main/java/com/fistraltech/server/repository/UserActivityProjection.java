@@ -13,6 +13,8 @@ public interface UserActivityProjection {
 
     Long getUserId();
 
+    String getClientIpAddress();
+
     long getTotalGames();
 
     LocalDateTime getLastGameDate();

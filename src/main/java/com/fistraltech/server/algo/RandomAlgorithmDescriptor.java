@@ -16,6 +16,16 @@ public class RandomAlgorithmDescriptor implements AlgorithmDescriptor {
     }
 
     @Override
+    public String getDisplayName() {
+        return "Random Selection";
+    }
+
+    @Override
+    public String getDescription() {
+        return "Selects words randomly from valid options";
+    }
+
+    @Override
     public SelectionAlgo create(Dictionary dictionary) {
         return new SelectRandom(dictionary);
     }

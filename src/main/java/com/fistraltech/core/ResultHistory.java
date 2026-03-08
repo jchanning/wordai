@@ -1,9 +1,9 @@
-package com.fistraltech.bot;
+package com.fistraltech.core;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import com.fistraltech.core.Response;
+import com.fistraltech.bot.GameAnalytics;
 
 /**
  * Tracks the sequence of guess responses during a word-guessing game session.

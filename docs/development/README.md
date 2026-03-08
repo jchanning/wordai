@@ -16,23 +16,27 @@ WordAI is built on modern Java and Spring Boot technologies:
 │      Spring Boot REST API (Port 8080)            │
 ├─────────────────────────────────────────────────┤
 │  Controllers                                     │
-│  ├─ WordGameController (Game logic)              │
-│  ├─ SessionController (User sessions)            │
-│  └─ AnalyticsController (Reports)                │
+│  ├─ WordGameController (Game lifecycle)          │
+│  ├─ DictionaryController (Dictionary catalog)    │
+│  ├─ AnalysisController (Analysis runs)           │
+│  ├─ AlgorithmController (Algorithm catalog)      │
+│  └─ HistoryController (User history)             │
 ├─────────────────────────────────────────────────┤
 │  Services                                        │
-│  ├─ WordGameService (Game engine)                │
-│  ├─ AlgorithmFeatureService (Bot strategies)     │
-│  └─ GameAnalytics (Performance tracking)         │
+│  ├─ WordGameService (Session orchestration)      │
+│  ├─ DictionaryService (Loaded dictionaries)      │
+│  ├─ AlgorithmFeatureService (API exposure policy)│
+│  └─ GameHistoryService (Persisted history)       │
 ├─────────────────────────────────────────────────┤
 │  Core Components                                 │
 │  ├─ WordGame (Game engine primitives)            │
 │  ├─ Dictionary (Word management)                 │
+│  ├─ WordEntropy / ResponseMatrix (shared caches) │
 │  ├─ WordGamePlayer (Bot implementations)         │
 │  └─ SelectionAlgo (Guessing strategies)          │
 ├─────────────────────────────────────────────────┤
 │  Data Persistence                                │
-│  └─ H2 Database (Embedded)                       │
+│  └─ H2 Database + in-memory session cache        │
 └─────────────────────────────────────────────────┘
 ```
 

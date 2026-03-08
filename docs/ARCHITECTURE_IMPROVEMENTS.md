@@ -3,28 +3,21 @@
 > Generated: 2026-02-27
 > Reviewer: Claude Code (claude-sonnet-4.6)
 > Codebase version: v1.9.0
+>
+> Status update (March 2026): recommendations 1-8 and 15 have been implemented. The summary table below now lists only open follow-up work. Historical sections for completed items are retained below for audit context.
 
 ---
 
 ## Summary Table
 
-| Priority | # | Issue |
-|----------|---|-------|
-| **High** | 1 | Session TTL / memory leak |
-| **High** | 2 | Per-session concurrency race condition |
-| **High** | 3 | Admin credentials in source control |
-| **High** | 4 | `ddl-auto=update` in production |
-| **High** | 5 | CORS wildcard in production |
-| **Medium** | 6 | Fat controller and service layer |
-| **Medium** | 7 | Duplicate filter state |
-| **Medium** | 8 | Algorithm selection should use a registry |
+| Priority | # | Open issue |
+|----------|---|------------|
 | **Medium** | 9 | `game.js` monolith |
 | **Medium** | 10 | No session persistence across restarts |
 | **Low** | 11 | Entropy recomputation has no memoization |
 | **Low** | 12 | `GameSession` is a God Object |
 | **Low** | 13 | Feature toggles in application properties |
 | **Low** | 14 | No API versioning |
-| **Low** | 15 | ArchUnit tests underutilised |
 
 ---
 

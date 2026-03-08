@@ -12,7 +12,7 @@ import com.fistraltech.core.Response;
  *
  * <p><strong>Conceptual model</strong>
  * <ul>
- *   <li>{@link com.fistraltech.bot.selection.SelectionAlgo} maintains a cumulative {@link com.fistraltech.bot.filter.Filter}.</li>
+ *   <li>{@link com.fistraltech.bot.selection.SelectionAlgo} works with a cumulative {@link com.fistraltech.core.Filter}.</li>
  *   <li>On each call, the base class applies all constraints to produce an updated dictionary.</li>
  *   <li>This implementation selects one word at random from that updated dictionary.</li>
  * </ul>

@@ -148,7 +148,8 @@ public class AdminController {
      * Returns per-user activity statistics for the admin activity dashboard.
      * GET /api/wordai/admin/activity
      *
-     * <p>Only users who have completed at least one game appear in the response.
+        * <p>Every player who has completed at least one game appears in the response,
+        * including anonymous players grouped by client IP.
      */
     @GetMapping("/activity")
     public ResponseEntity<Map<String, Object>> getUserActivity() {

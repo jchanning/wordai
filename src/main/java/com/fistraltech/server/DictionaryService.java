@@ -11,12 +11,12 @@ import java.util.logging.Logger;
 
 import org.springframework.stereotype.Service;
 
-import com.fistraltech.analysis.WordEntropy;
 import com.fistraltech.core.Dictionary;
+import com.fistraltech.core.WordEntropy;
 import com.fistraltech.core.WordSource;
-import com.fistraltech.server.dto.DictionaryOption;
 import com.fistraltech.util.Config;
 import com.fistraltech.util.ConfigManager;
+import com.fistraltech.util.DictionaryOption;
 
 import jakarta.annotation.PostConstruct;
 

@@ -2,11 +2,11 @@ package com.fistraltech.server.model;
 
 import java.util.logging.Logger;
 
-import com.fistraltech.analysis.WordEntropy;
-import com.fistraltech.bot.filter.Filter;
 import com.fistraltech.bot.selection.SelectionAlgo;
 import com.fistraltech.core.Dictionary;
+import com.fistraltech.core.Filter;
 import com.fistraltech.core.Response;
+import com.fistraltech.core.WordEntropy;
 import com.fistraltech.core.WordGame;
 import com.fistraltech.server.algo.AlgorithmRegistry;
 import com.fistraltech.util.Config;
@@ -55,6 +55,8 @@ public class GameSession {
     private String dictionaryId = "default";
     /** Numeric user ID of the authenticated player who owns this session; {@code null} for guests. */
     private Long userId;
+    /** Per-browser-window identifier used to keep authenticated tabs isolated while still supporting resume. */
+    private String browserSessionId;
     // Only valid in auto-play mode. In user interactive mode, strategy is chosen per guess.
     private String selectedStrategy = "RANDOM"; // Default strategy
     
@@ -109,6 +111,14 @@ public class GameSession {
 
     public void setUserId(Long userId) {
         this.userId = userId;
+    }
+
+    public String getBrowserSessionId() {
+        return browserSessionId;
+    }
+
+    public void setBrowserSessionId(String browserSessionId) {
+        this.browserSessionId = browserSessionId;
     }
 
     public int getCurrentAttempts() {
@@ -194,13 +204,14 @@ public class GameSession {
 
         if (cachedWordEntropy != null && isUnfilteredDictionary) {
             switch (strategyUpper) {
-                case "ENTROPY":
+                case "ENTROPY" -> {
                     logger.fine(() -> "Using cached WordEntropy for first ENTROPY suggestion (full dict)");
                     return cachedWordEntropy.getMaximumEntropyWord(filteredDictionary.getMasterSetOfWords());
-
-                case "BELLMAN_FULL_DICTIONARY":
+                }
+                case "BELLMAN_FULL_DICTIONARY" -> {
                     logger.fine(() -> "Using cached WordEntropy for first BELLMAN_FULL_DICTIONARY suggestion (full dict)");
                     return cachedWordEntropy.getWordWithMaximumReduction(filteredDictionary.getMasterSetOfWords());
+                }
             }
         }
 
@@ -219,9 +230,7 @@ public class GameSession {
 
     /** Normalises strategy aliases to a canonical upper-case ID. */
     private String normalizeStrategy(String strategy) {
-        if (strategy == null) return "RANDOM";
-        String upper = strategy.toUpperCase();
-        return "MAXIMUM_ENTROPY".equals(upper) ? "ENTROPY" : upper;
+        return algorithmRegistry.normalizeId(strategy);
     }
 
     /**

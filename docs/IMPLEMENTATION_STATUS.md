@@ -2,7 +2,7 @@
 
 Single source of truth for what is built, what is in progress, and what is planned. Update this file when completing or starting any significant piece of work.
 
-*Last updated: February 2026 — CORS policy centralised (improvement #5)*
+*Last updated: March 2026 — architecture cleanup and fitness coverage completed*
 
 ---
 
@@ -16,16 +16,16 @@ Single source of truth for what is built, what is in progress, and what is plann
 | Selection strategies | RANDOM, ENTROPY, MOST_COMMON_LETTERS, MINIMISE_COLUMN_LENGTHS, DICTIONARY_REDUCTION, BELLMAN_OPTIMAL, BELLMAN_FULL_DICTIONARY |
 | REST API — game lifecycle | `POST /games`, `POST /games/{id}/guess`, `GET /games/{id}/suggestion`, `DELETE /games/{id}` |
 | REST API — dictionaries | `GET /dictionaries`, dictionary options endpoint |
-| REST API — analysis | `POST /analysis`, `GET /algorithms` (implemented in `AnalyticsController`) |
+| REST API — analysis and algorithm catalog | `POST /analysis` in `AnalysisController`, `GET /algorithms` in `AlgorithmController` |
 | Performance optimisation (all 4 phases) | `ResponseMatrix` (~98% memory saving), `WordIdSet` (~92%), bitmask column length, parallel/lazy computation |
 | Spring Security + OAuth2 | Login, user registration, role management (`ROLE_USER`, `ROLE_ADMIN`) |
 | Admin endpoints | User management via `AdminController` |
-| User statistics | `UserStatsController` |
 | Game history panel | Session stats + last 5 games in UI |
 | Web UI | `index.html`, `game.js`, `style.css` with Play, Auto, Analyse, Dictionary, History screens |
 | Help page | `help.html` |
 | GitHub Actions CI | `.github/workflows/ci.yml` — runs `mvn clean test` on push/PR to `main` |
-| Architectural fitness tests | `ArchitectureFitnessTest` — ArchUnit rules, 2 active + 4 documented violations |
+| Architectural fitness tests | `ArchitectureFitnessTest` — layer rules, runtime-boundary rule, and package cycle rule all active |
+| Architecture cleanup tranche | Shared DTO/filter moves, legacy runtime removal, controller split, registry-driven algorithm metadata/toggles, and cycle cleanup completed; see `specs/` |
 | Dictionaries | 4, 5, 6 letter word files in `src/main/resources/dictionaries/` |
 | Cloud deployment | Oracle Cloud / OCI scripts in `deployment/` |
 | Javadoc | Comprehensive on core, bot, server packages (see Documentation section below) |
@@ -39,8 +39,6 @@ Single source of truth for what is built, what is in progress, and what is plann
 
 | Feature | Priority | Notes |
 |---|---|---|
-| Fix architectural violations | High | Move `DictionaryOption` out of `server.dto`; enables 3 disabled fitness tests — see [ARCHITECTURE.md](ARCHITECTURE.md) |
-| Break `core` ↔ `bot` cycle | High | `Dictionary` → `FilterCharacters` circular dep; enables 1 disabled fitness test |
 | Javadoc — `util` package | Medium | `Config`, `ConfigManager`, `ConfigFile`, `Timer` — flagged in legacy DOCUMENTATION_STATUS |
 | Javadoc — `analysis` package | Medium | `DictionaryAnalytics`, `PlayerAnalyser`, `ComplexityAnalyser`, `Entropy`, `EntropyKey` |
 | `package-info.java` files | Low | One per package to document package-level responsibility |
@@ -50,16 +48,7 @@ Single source of truth for what is built, what is in progress, and what is plann
 
 ## Known Architectural Debt
 
-Tracked with `@Disabled` tests in `ArchitectureFitnessTest`. Each item below is a self-contained refactoring task.
-
-| Debt | Classes involved | Refactor action | Fitness test unlocked |
-|---|---|---|---|
-| `core` imports `server.dto` | `DictionaryManager` → `DictionaryOption` | Move `DictionaryOption` to `com.fistraltech.core` | `core_mustNotDependOn_server` |
-| `util` imports `server.dto` | `Config`, `ConfigManager` → `DictionaryOption` | Same move as above | `util_mustNotDependOn_server` |
-| `analysis` imports `server.dto` | `PlayerAnalyser` → `AnalysisGameResult`, `AnalysisResponse` | Move DTOs to `com.fistraltech.analysis` | `analysis_mustNotDependOn_server` |
-| `core` ↔ `bot` cycle | `Dictionary` → `FilterCharacters`; `ResponseHelper` → `Filter` | Extract interface in `core`; `bot` implements it | `noCyclicPackageDependencies` |
-
-Use [refactor.prompt.md](../.github/prompts/refactor.prompt.md) to action any of these.
+The previously documented ArchUnit violations are closed. Active architecture work is now tracked in [specs/README.md](../specs/README.md), with remaining backlog concentrated in documentation polish and longer-horizon product/design work rather than broken package boundaries.
 
 ---
 
@@ -68,14 +57,13 @@ Use [refactor.prompt.md](../.github/prompts/refactor.prompt.md) to action any of
 | Package | Test class(es) | Tests |
 |---|---|---|
 | `core` | `DictionaryTest`, `WordGameTest` | 26 |
-| `bot.filter` | `FilterTest` | — |
+| `core` | `FilterTest`, `DictionaryTest`, `WordGameTest` | core filtering and engine coverage |
 | `bot.selection` | `SelectionAlgoTest`, `SelectBellman*Test` | 20+ |
 | `bot` | `WordGamePlayerTest` | 11 |
 | `analysis` | `DictionaryAnalyticsTest`, `ResponseCacheTest`, `ResponseMatrixTest`, `WordEntropyLazyTest`, `WordIdSetTest` | ~70 |
-| `game` | `GameControllerTest` | 12 |
 | `security` | `UserManagementControllerTest`, `UserServiceTest`, `AdminCredentialsValidatorTest`, `CorsConfigTest` | 20+ |
 | `util` | `ConfigManagerTest` | 6 |
-| `(root)` | `ArchitectureFitnessTest`, `FlywayMigrationTest` | 10 (4 skipped — known violations) |
+| `(root)` | `ArchitectureFitnessTest`, `FlywayMigrationTest` | architecture rules active, no documented skipped violations |
 | `server` | `SessionTtlTest`, `SessionConcurrencyTest` | 9 |
 | **Total** | | **239 pass, 4 skipped** |
 
@@ -86,7 +74,7 @@ Run the full suite: `mvn clean test`
 ## Documentation Status
 
 ### ✅ Comprehensive Javadoc
-`Column`, `ResponseEntry`, `WordSource`, `InvalidWordException`, `InvalidWordLengthException`, `WordGamePlayer`, `ResultHistory`, `DictionaryHistory`, `GameAnalytics`, `Filter`, `FilterCharacters`, `SelectionAlgo`, `SelectRandom`, `SelectMostCommonLetters`, `SelectMaximumEntropy`, `SelectFixedFirstWord`, `WordGameService`, `HomeController`, `WordGameController`, `GameSession`, all DTOs in `server.dto`
+`Column`, `ResponseEntry`, `WordSource`, `InvalidWordException`, `InvalidWordLengthException`, `WordGamePlayer`, `ResultHistory`, `DictionaryHistory`, `GameAnalytics`, `Filter`, `FilterCharacters`, `SelectionAlgo`, `SelectRandom`, `SelectMostCommonLetters`, `SelectMaximumEntropy`, `SelectFixedFirstWord`, `WordGameService`, `HomeController`, `WordGameController`, `DictionaryController`, `AnalysisController`, `AlgorithmController`, `HistoryController`, `GameSession`, runtime DTOs in `server.dto`, `DictionaryOption`, `AnalysisResponse`, `AnalysisGameResult`
 
 ### ⚠️ Needs review / minimal
 `Response`, `WordGame`, `Dictionary`, `ResponseHelper`
@@ -99,6 +87,6 @@ Run the full suite: `mvn clean test`
 ## Deferred Planning Files (superseded by this document)
 
 The following root-level files predated this status tracker and are now superseded:
-- `CONTROLLER_METHODS_TO_ADD.txt` — methods were implemented in `AnalyticsController`
+- `CONTROLLER_METHODS_TO_ADD.txt` — superseded by the split resource controllers and current Spring API surface
 - `DOCUMENTATION_STATUS.md` (root) — consolidated into the Documentation section above
 - `PerformanceOptimisation.md` (root) — full detail preserved in `docs/development/performance-optimization.md`

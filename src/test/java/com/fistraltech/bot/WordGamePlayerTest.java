@@ -15,7 +15,9 @@ import org.junit.jupiter.api.Test;
 import com.fistraltech.bot.selection.SelectMaximumEntropy;
 import com.fistraltech.bot.selection.SelectRandom;
 import com.fistraltech.core.Dictionary;
+import com.fistraltech.core.DictionaryHistory;
 import com.fistraltech.core.InvalidWordException;
+import com.fistraltech.core.ResultHistory;
 import com.fistraltech.core.WordGame;
 import com.fistraltech.util.Config;
 

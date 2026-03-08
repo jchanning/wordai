@@ -20,8 +20,8 @@ import com.fistraltech.server.repository.PlayerGameRepository;
 /**
  * Service responsible for persisting completed games and retrieving a player's game history.
  *
- * <p>A game is saved whenever a signed-in player's game reaches a terminal state (won or lost).
- * Guest sessions are never saved.
+ * <p>A game is saved whenever a game reaches a terminal state (won or lost).
+ * Signed-in players are stored by user ID; anonymous players are stored by client IP.
  *
  * <p>The history is capped at the 100 most-recent games per player on retrieval to
  * keep response payloads manageable.
@@ -44,16 +44,18 @@ public class PlayerGameService {
     // ------------------------------------------------------------------
 
     /**
-     * Persists a completed game for a signed-in player.
+     * Persists a completed game.
      *
      * <p>Silently swallows exceptions so that a persistence failure never breaks
      * the game response flow.
      *
-     * @param userId       the player's numeric user ID from the {@code users} table
+     * @param userId       the player's numeric user ID from the {@code users} table,
+     *                     or {@code null} for anonymous players
+     * @param clientIpAddress client IP address for anonymous players, else {@code null}
      * @param session      the completed (gameEnded == true) game session
      * @param dictionaryId the dictionary identifier used when the game was created
      */
-    public void saveGame(Long userId, GameSession session, String dictionaryId) {
+    public void saveGame(Long userId, String clientIpAddress, GameSession session, String dictionaryId) {
         try {
             List<Response> guesses = session.getWordGame().getGuesses();
 
@@ -69,6 +71,7 @@ public class PlayerGameService {
 
             PersistedGame pg = new PersistedGame();
             pg.setUserId(userId);
+            pg.setClientIpAddress(clientIpAddress);
             pg.setGameId(session.getGameId());
             pg.setTargetWord(session.getWordGame().getTargetWord());
             pg.setWordLength(session.getWordGame().getDictionary().getWordLength());
@@ -81,10 +84,12 @@ public class PlayerGameService {
             pg.setCompletedAt(LocalDateTime.now());
 
             repository.save(pg);
-            logger.info(() -> "Saved game for user " + userId + ": " + pg.getResult()
+            String actor = userId != null ? "user " + userId : "anonymous IP " + clientIpAddress;
+            logger.info(() -> "Saved game for " + actor + ": " + pg.getResult()
                     + " target=" + pg.getTargetWord() + " attempts=" + pg.getAttemptsUsed());
         } catch (Exception e) {
-            logger.log(Level.WARNING, "Failed to persist completed game for user " + userId, e);
+            String actor = userId != null ? "user " + userId : "anonymous IP " + clientIpAddress;
+            logger.log(Level.WARNING, "Failed to persist completed game for " + actor, e);
         }
     }
 

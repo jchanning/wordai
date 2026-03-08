@@ -28,6 +28,7 @@ class AlgorithmRegistryTest {
     private Dictionary dictionary;
 
     @BeforeEach
+    @SuppressWarnings("unused")
     void setUp() {
         registry = AlgorithmRegistry.withDefaults();
 
@@ -147,5 +148,22 @@ class AlgorithmRegistryTest {
         assertTrue(ids.contains("ENTROPY"));
         assertTrue(ids.contains("BELLMAN_FULL_DICTIONARY"));
         assertEquals(3, ids.size());
+    }
+
+    @Test
+    @DisplayName("descriptor metadata is exposed from the registry")
+    void getDescriptor_exposesMetadata() {
+        AlgorithmDescriptor descriptor = registry.getDescriptor("BELLMAN_FULL_DICTIONARY").orElseThrow();
+        assertEquals("Bellman Full Dictionary", descriptor.getDisplayName());
+        assertEquals("Uses full dictionary guesses to reduce remaining possibilities", descriptor.getDescription());
+        assertEquals("bellman-full-dictionary", descriptor.getFeatureToggleKey());
+        assertTrue(descriptor.isStateful());
+    }
+
+    @Test
+    @DisplayName("normalizeId maps aliases to canonical IDs")
+    void normalizeId_alias_returnsCanonicalId() {
+        assertEquals("ENTROPY", registry.normalizeId("MAXIMUM_ENTROPY"));
+        assertEquals("RANDOM", registry.normalizeId(null));
     }
 }

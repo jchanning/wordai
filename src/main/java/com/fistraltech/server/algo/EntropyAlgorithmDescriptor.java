@@ -16,6 +16,16 @@ public class EntropyAlgorithmDescriptor implements AlgorithmDescriptor {
     }
 
     @Override
+    public String getDisplayName() {
+        return "Maximum Entropy";
+    }
+
+    @Override
+    public String getDescription() {
+        return "Chooses words that maximize information gain";
+    }
+
+    @Override
     public SelectionAlgo create(Dictionary dictionary) {
         return new SelectMaximumEntropy(dictionary);
     }

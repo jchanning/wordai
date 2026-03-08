@@ -1,4 +1,4 @@
-package com.fistraltech.analysis;
+package com.fistraltech.core;
 
 /**
  * Memory-efficient encoding of response patterns for Wordle-like games.

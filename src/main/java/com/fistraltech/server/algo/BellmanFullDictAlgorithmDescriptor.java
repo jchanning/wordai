@@ -22,6 +22,16 @@ public class BellmanFullDictAlgorithmDescriptor implements AlgorithmDescriptor {
     }
 
     @Override
+    public String getDisplayName() {
+        return "Bellman Full Dictionary";
+    }
+
+    @Override
+    public String getDescription() {
+        return "Uses full dictionary guesses to reduce remaining possibilities";
+    }
+
+    @Override
     public SelectionAlgo create(Dictionary dictionary) {
         return new SelectBellmanFullDictionary(dictionary);
     }

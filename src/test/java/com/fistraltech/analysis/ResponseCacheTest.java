@@ -4,6 +4,9 @@ import static org.junit.jupiter.api.Assertions.*;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.BeforeEach;
 
+import com.fistraltech.core.ResponsePattern;
+import com.fistraltech.core.WordPairKey;
+
 /**
  * Tests for the memory-efficient response caching structures.
  */

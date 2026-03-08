@@ -18,7 +18,6 @@ import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import com.fistraltech.security.service.CustomOAuth2UserService;
-import com.fistraltech.security.service.CustomUserDetailsService;
 
 @Configuration
 @EnableWebSecurity
@@ -34,12 +33,9 @@ public class SecurityConfig {
     @Value("${wordai.cors.allowed-origins}")
     private String allowedOrigins;
 
-    private final CustomUserDetailsService userDetailsService;
     private final CustomOAuth2UserService oAuth2UserService;
 
-    public SecurityConfig(CustomUserDetailsService userDetailsService,
-                         CustomOAuth2UserService oAuth2UserService) {
-        this.userDetailsService = userDetailsService;
+    public SecurityConfig(CustomOAuth2UserService oAuth2UserService) {
         this.oAuth2UserService = oAuth2UserService;
     }
 
@@ -60,10 +56,10 @@ public class SecurityConfig {
                 // Guest access - basic game functionality
                 .requestMatchers("/api/wordai/games/**", "/api/wordai/dictionaries/**",
                                "/api/wordai/algorithms").permitAll()
+                // Removed placeholder routes should resolve as 404 rather than gated pseudo-features
+                .requestMatchers("/api/wordai/stats/**", "/api/wordai/analytics/**", "/api/wordai/export/**").permitAll()
                 // Authenticated user endpoints
-                .requestMatchers("/api/auth/user", "/api/wordai/stats/**").authenticated()
-                // Premium features
-                .requestMatchers("/api/wordai/analytics/**", "/api/wordai/export/**").hasAnyRole("PREMIUM", "ADMIN")
+                .requestMatchers("/api/auth/user", "/api/wordai/history").authenticated()
                 // Admin only endpoints
                 .requestMatchers("/api/wordai/admin/**", "/api/admin/**").hasRole("ADMIN")
                 .anyRequest().authenticated()

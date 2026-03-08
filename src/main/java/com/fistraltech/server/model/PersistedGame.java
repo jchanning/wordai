@@ -12,8 +12,9 @@ import jakarta.persistence.Table;
 /**
  * JPA entity representing a completed game that has been persisted to the database.
  *
- * <p>A row is written whenever a signed-in player's game ends (win or loss).
- * Guest sessions are never persisted.
+ * <p>A row is written whenever a player's game ends (win or loss).
+ * Signed-in players are keyed by {@code userId}; anonymous players are keyed by
+ * {@code clientIpAddress} and leave {@code userId} null.
  *
  * <p><strong>Storage format</strong>
  * <ul>
@@ -30,9 +31,12 @@ public class PersistedGame {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    /** The numeric ID of the player (FK to the users table). */
-    @Column(nullable = false)
+    /** The numeric ID of the player (FK to the users table) for signed-in users. */
     private Long userId;
+
+    /** Client IP address for anonymous players. */
+    @Column(length = 45)
+    private String clientIpAddress;
 
     /** The in-memory game session UUID (informational; not a FK). */
     @Column(nullable = false, length = 50)
@@ -84,6 +88,9 @@ public class PersistedGame {
 
     public Long getUserId() { return userId; }
     public void setUserId(Long userId) { this.userId = userId; }
+
+    public String getClientIpAddress() { return clientIpAddress; }
+    public void setClientIpAddress(String clientIpAddress) { this.clientIpAddress = clientIpAddress; }
 
     public String getGameId() { return gameId; }
     public void setGameId(String gameId) { this.gameId = gameId; }

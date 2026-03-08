@@ -7,15 +7,12 @@ import java.util.logging.Logger;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-
-import com.github.benmanes.caffeine.cache.Cache;
-import com.github.benmanes.caffeine.cache.Caffeine;
-import com.github.benmanes.caffeine.cache.RemovalCause;
-
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
-import com.fistraltech.bot.filter.Filter;
+import com.fistraltech.analysis.AnalysisResponse;
 import com.fistraltech.core.Dictionary;
+import com.fistraltech.core.Filter;
 import com.fistraltech.core.InvalidWordException;
 import com.fistraltech.core.Response;
 import com.fistraltech.core.WordGame;
@@ -23,6 +20,9 @@ import com.fistraltech.server.algo.AlgorithmRegistry;
 import com.fistraltech.server.model.ActiveGameSessionEntity;
 import com.fistraltech.server.model.GameSession;
 import com.fistraltech.util.Config;
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
+import com.github.benmanes.caffeine.cache.RemovalCause;
 
 /**
  * Service layer for creating and managing WordAI game sessions.
@@ -120,41 +120,60 @@ public class WordGameService {
      * Delegates to {@link #createGame(String, Integer, String, Long)} with {@code null} userId.
      */
     public String createGame(String targetWord, Integer wordLength, String dictionaryId) throws InvalidWordException {
-        return createGame(targetWord, wordLength, dictionaryId, null);
+        return createGame(targetWord, wordLength, dictionaryId, null, null, false);
     }
 
     /**
      * Creates a new game session (backward compatibility).
      */
     public String createGame(String targetWord, Integer wordLength) throws InvalidWordException {
-        return createGame(targetWord, wordLength, null, null);
+        return createGame(targetWord, wordLength, null, null, null, false);
+    }
+
+    public String createGame(String targetWord, Integer wordLength, String dictionaryId, Long userId)
+            throws InvalidWordException {
+        return createGame(targetWord, wordLength, dictionaryId, userId, null, false);
+    }
+
+    public String createGame(String targetWord, Integer wordLength, String dictionaryId,
+            Long userId, String browserSessionId)
+            throws InvalidWordException {
+        return createGame(targetWord, wordLength, dictionaryId, userId, browserSessionId, false);
     }
 
     /**
      * Creates (or restores) a game session for the given user.
      *
-     * <p>If {@code userId} is non-null and an ACTIVE session for this user + dictionary
-     * already exists in the DB, the existing session is reconstructed and returned instead
-     * of creating a new game.  This lets users resume in-progress games after browser
-     * refresh or server restart.
+    * <p>If {@code resumeExisting} is {@code true}, {@code userId} is non-null, and an ACTIVE
+    * session for this user + dictionary + browser session already exists in the DB, the existing
+    * session is reconstructed and returned instead of creating a new game. Normal create-game
+    * calls do not resume implicitly, which keeps manual play, autoplay, and analysis isolated.
      *
      * @param targetWord   optional explicit target (lower-cased). If {@code null}, a random target is chosen.
      * @param wordLength   optional word length (only used when {@code dictionaryId} is not supplied).
      * @param dictionaryId optional dictionary identifier from configuration.
-     * @param userId       the authenticated player's numeric user ID; {@code null} for guests.
+         * @param userId       the authenticated player's numeric user ID; {@code null} for guests.
+         * @param browserSessionId per-browser-window identifier; when absent, no persisted-session reuse occurs.
+             * @param resumeExisting when {@code true}, reuse an ACTIVE session for the same browser context.
      * @return the game session ID (new or existing).
      * @throws InvalidWordException if the dictionary is invalid, cannot be loaded, or the target word
      *                              is not in the dictionary.
      */
-    public String createGame(String targetWord, Integer wordLength, String dictionaryId, Long userId)
+        public String createGame(String targetWord, Integer wordLength, String dictionaryId,
+                 Long userId, String browserSessionId, boolean resumeExisting)
             throws InvalidWordException {
 
         String effectiveDictionaryId = (dictionaryId != null && !dictionaryId.isEmpty())
                 ? dictionaryId : "default";
+        String effectiveBrowserSessionId = StringUtils.hasText(browserSessionId)
+            ? browserSessionId.trim()
+            : null;
 
-        // For authenticated users, check if an active session already exists for this dictionary
-        if (userId != null && sessionPersistenceService != null) {
-            String existingGameId = findOrReconstructExistingSession(userId, effectiveDictionaryId);
+        // Resumption is explicit so different game flows in the same browser do not collide.
+        if (resumeExisting && userId != null && sessionPersistenceService != null
+            && effectiveBrowserSessionId != null) {
+            String existingGameId = findOrReconstructExistingSession(
+                userId, effectiveDictionaryId, effectiveBrowserSessionId);
             if (existingGameId != null) {
                 return existingGameId;
             }
@@ -193,9 +212,10 @@ public class WordGameService {
         GameSession session = new GameSession(gameId, wordGame, gameConfig, gameDictionary, algorithmRegistry);
         session.setDictionaryId(effectiveDictionaryId);
         session.setUserId(userId);
+        session.setBrowserSessionId(effectiveBrowserSessionId);
 
         // Set cached WordEntropy for fast entropy-based suggestions
-        com.fistraltech.analysis.WordEntropy cachedEntropy = dictionaryService.getWordEntropy(effectiveDictionaryId);
+        com.fistraltech.core.WordEntropy cachedEntropy = dictionaryService.getWordEntropy(effectiveDictionaryId);
         if (cachedEntropy != null) {
             session.setCachedWordEntropy(cachedEntropy);
             logger.fine(() -> "Set cached WordEntropy for session " + gameId);
@@ -315,13 +335,6 @@ public class WordGameService {
     }
 
     /**
-     * Gets the DictionaryService instance.
-     */
-    public DictionaryService getDictionaryService() {
-        return dictionaryService;
-    }
-
-    /**
      * Loads a dictionary by id from the cache.
      *
      * @param dictionaryId the dictionary identifier
@@ -342,7 +355,7 @@ public class WordGameService {
     /**
      * Runs a complete dictionary analysis using the specified algorithm.
      */
-    public com.fistraltech.server.dto.AnalysisResponse runAnalysis(
+    public AnalysisResponse runAnalysis(
             String algorithm, String dictionaryId, Integer maxGames) throws Exception {
 
         String effectiveId = (dictionaryId != null && !dictionaryId.isEmpty()) ? dictionaryId : "default";
@@ -370,13 +383,14 @@ public class WordGameService {
     // ------------------------------------------------------------------
 
     /**
-     * Looks for an existing ACTIVE session for the given user + dictionary in the DB.
+     * Looks for an existing ACTIVE session for the given user + dictionary + browser session in the DB.
      * If found, reconstructs and caches it, then returns its game ID.
      *
      * @return the game ID of the reconstructed session, or {@code null} if none found
      */
-    private String findOrReconstructExistingSession(Long userId, String dictionaryId) {
-        return sessionPersistenceService.findActiveForUser(userId, dictionaryId)
+    private String findOrReconstructExistingSession(
+            Long userId, String dictionaryId, String browserSessionId) {
+        return sessionPersistenceService.findActiveForUser(userId, dictionaryId, browserSessionId)
                 .map(entity -> {
                     String existingId = entity.getGameId();
                     // Return from cache if already loaded
@@ -425,9 +439,10 @@ public class WordGameService {
                     entity.getGameId(), wordGame, gameConfig, dict, algorithmRegistry);
             session.setDictionaryId(dictId);
             session.setUserId(entity.getUserId());
+                session.setBrowserSessionId(entity.getBrowserSessionId());
             session.setSelectedStrategy(entity.getStrategy());
 
-            com.fistraltech.analysis.WordEntropy cachedEntropy = dictionaryService.getWordEntropy(dictId);
+            com.fistraltech.core.WordEntropy cachedEntropy = dictionaryService.getWordEntropy(dictId);
             if (cachedEntropy != null) {
                 session.setCachedWordEntropy(cachedEntropy);
             }

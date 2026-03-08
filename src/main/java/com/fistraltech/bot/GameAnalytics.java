@@ -6,7 +6,9 @@ import java.util.List;
 
 import com.fistraltech.core.Column;
 import com.fistraltech.core.Dictionary;
+import com.fistraltech.core.DictionaryHistory;
 import com.fistraltech.core.Response;
+import com.fistraltech.core.ResultHistory;
 import com.fistraltech.core.WordGame;
 
 /**

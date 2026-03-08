@@ -1,7 +1,9 @@
 package com.fistraltech.server.algo;
 
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
@@ -39,10 +41,13 @@ public class AlgorithmRegistry {
      * @param all the list of registered algorithm descriptors
      */
     public AlgorithmRegistry(List<AlgorithmDescriptor> all) {
-        this.descriptors = all.stream()
-                .collect(Collectors.toUnmodifiableMap(
-                        d -> d.getId().toUpperCase(),
-                        d -> d));
+        Map<String, AlgorithmDescriptor> discovered = all.stream()
+            .collect(Collectors.toMap(
+                d -> d.getId().toUpperCase(),
+                d -> d,
+                (left, right) -> left,
+                LinkedHashMap::new));
+        this.descriptors = Map.copyOf(discovered);
         logger.info(() -> "AlgorithmRegistry initialised with: " + descriptors.keySet());
     }
 
@@ -57,7 +62,7 @@ public class AlgorithmRegistry {
      * @return a newly created {@link SelectionAlgo}
      */
     public SelectionAlgo create(String algorithmId, Dictionary dictionary) {
-        String id = algorithmId != null ? algorithmId.toUpperCase() : DEFAULT_ID;
+        String id = normalizeId(algorithmId);
         AlgorithmDescriptor descriptor = descriptors.getOrDefault(id, descriptors.get(DEFAULT_ID));
         if (descriptor == null) {
             throw new IllegalStateException(
@@ -71,11 +76,22 @@ public class AlgorithmRegistry {
      * a cached instance per game session. Unknown IDs return {@code false}.
      */
     public boolean isStateful(String algorithmId) {
+        return getDescriptor(algorithmId)
+                .map(AlgorithmDescriptor::isStateful)
+                .orElse(false);
+    }
+
+    /** Returns the descriptor for a known algorithm ID, applying alias normalisation. */
+    public Optional<AlgorithmDescriptor> getDescriptor(String algorithmId) {
         if (algorithmId == null) {
-            return false;
+            return Optional.empty();
         }
-        AlgorithmDescriptor descriptor = descriptors.get(algorithmId.toUpperCase());
-        return descriptor != null && descriptor.isStateful();
+        return Optional.ofNullable(descriptors.get(normalizeId(algorithmId)));
+    }
+
+    /** Returns registered descriptors in API display order. */
+    public List<AlgorithmDescriptor> getDescriptors() {
+        return List.copyOf(descriptors.values());
     }
 
     /**
@@ -84,6 +100,15 @@ public class AlgorithmRegistry {
      */
     public Set<String> getRegisteredIds() {
         return descriptors.keySet();
+    }
+
+    /** Normalises aliases and null values to canonical registry IDs. */
+    public String normalizeId(String algorithmId) {
+        if (algorithmId == null || algorithmId.isBlank()) {
+            return DEFAULT_ID;
+        }
+        String upper = algorithmId.toUpperCase();
+        return "MAXIMUM_ENTROPY".equals(upper) ? "ENTROPY" : upper;
     }
 
     /**

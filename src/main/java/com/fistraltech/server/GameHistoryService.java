@@ -2,7 +2,6 @@ package com.fistraltech.server;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.logging.Logger;
 
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
@@ -21,16 +20,15 @@ import com.fistraltech.server.model.GameSession;
  * no longer needs to inject {@link UserRepository} or {@link PlayerGameService}
  * directly.
  *
- * <p><strong>Save policy:</strong> {@link #saveIfEnded(GameSession, Authentication)}
- * is a no-op when the game has not yet ended, when the caller is unauthenticated,
- * or when the principal cannot be resolved to a user row (guest sessions).
+ * <p><strong>Save policy:</strong> {@link #saveIfEnded(GameSession, Authentication, String)}
+ * is a no-op only when the game has not yet ended. Authenticated callers are
+ * persisted against their user row; guest sessions are persisted as anonymous
+ * rows keyed by client IP.
  * Persistence failures are swallowed silently by {@link PlayerGameService#saveGame}
  * so they never break the HTTP response flow.
  */
 @Service
 public class GameHistoryService {
-
-    private static final Logger logger = Logger.getLogger(GameHistoryService.class.getName());
 
     private final PlayerGameService playerGameService;
     private final UserRepository userRepository;
@@ -45,22 +43,25 @@ public class GameHistoryService {
     // ------------------------------------------------------------------
 
     /**
-     * Persists the completed game for the authenticated user if the game has ended.
-     * No-op otherwise.
+     * Persists the completed game for either the authenticated user or an anonymous
+     * player keyed by client IP. No-op only when the game has not yet ended.
      *
      * @param session        the game session (may or may not be ended)
      * @param authentication Spring Security authentication (may be {@code null})
+     * @param clientIpAddress resolved client IP address (may be {@code null})
      */
-    public void saveIfEnded(GameSession session, Authentication authentication) {
+    public void saveIfEnded(GameSession session, Authentication authentication, String clientIpAddress) {
         if (!session.isGameEnded()) {
             return;
         }
-        if (authentication == null || !authentication.isAuthenticated()) {
+        Optional<User> user = resolveUser(authentication);
+        if (user.isPresent()) {
+            playerGameService.saveGame(user.get().getId(), null, session, session.getDictionaryId());
             return;
         }
-        resolveUser(authentication)
-                .map(User::getId)
-                .ifPresent(uid -> playerGameService.saveGame(uid, session, session.getDictionaryId()));
+
+        playerGameService.saveGame(null, normalizeClientIpAddress(clientIpAddress), session,
+                session.getDictionaryId());
     }
 
     // ------------------------------------------------------------------
@@ -99,6 +100,13 @@ public class GameHistoryService {
         String principal = authentication.getName();
         return userRepository.findByUsername(principal)
                 .or(() -> userRepository.findByEmail(principal));
+    }
+
+    private String normalizeClientIpAddress(String clientIpAddress) {
+        if (clientIpAddress == null || clientIpAddress.isBlank()) {
+            return "Unknown IP";
+        }
+        return clientIpAddress.trim();
     }
 
     // ------------------------------------------------------------------

@@ -2,9 +2,9 @@ package com.fistraltech.bot.selection;
 
 import java.util.Set;
 
-import com.fistraltech.analysis.WordEntropy;
 import com.fistraltech.core.Dictionary;
 import com.fistraltech.core.Response;
+import com.fistraltech.core.WordEntropy;
 
 /**
  * Selection algorithm that chooses the next guess by maximizing expected information gain (entropy).

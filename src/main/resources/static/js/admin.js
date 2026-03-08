@@ -332,9 +332,10 @@ function _renderActivityTable(users) {
         const lastGame   = _formatDate(u.lastGameDate);
         const memberSince = _formatDate(u.firstGameDate);
         const cls7 = u.gamesLast7Days > 0 ? ' admin-activity-recent' : '';
+        const emailOrIp = u.email || u.ipAddress || '\u2014';
         return `<tr>
             <td>${escapeHtml(u.username || '\u2014')}</td>
-            <td>${escapeHtml(u.email || '\u2014')}</td>
+            <td>${escapeHtml(emailOrIp)}</td>
             <td class="num">${u.totalGames}</td>
             <td class="num${cls7}">${u.gamesLast7Days}</td>
             <td class="num">${u.gamesLast30Days}</td>

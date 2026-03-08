@@ -10,7 +10,9 @@ package com.fistraltech.server.dto;
  * {
  *   "dictionaryId": "5",
  *   "wordLength": 5,
- *   "targetWord": "arose"
+ *   "targetWord": "arose",
+ *   "browserSessionId": "4f6c2fd0-90f1-48f7-95d6-4cfd44883ddd",
+ *   "resumeExisting": false
  * }
  * }</pre>
  *
@@ -23,6 +25,8 @@ public class CreateGameRequest {
     private String targetWord; // Optional - if not provided, a random word will be selected
     private Integer wordLength; // Optional - defaults to 5
     private String dictionaryId; // Optional - ID of the dictionary to use (e.g., "default", "easy", "hard")
+    private String browserSessionId; // Optional - per-browser-window key used to isolate resumable sessions
+    private Boolean resumeExisting; // Optional - when true, reuses an existing active session for this browser context
     
     public CreateGameRequest() {}
     
@@ -35,6 +39,23 @@ public class CreateGameRequest {
         this.targetWord = targetWord;
         this.wordLength = wordLength;
         this.dictionaryId = dictionaryId;
+    }
+
+    public CreateGameRequest(String targetWord, Integer wordLength, String dictionaryId,
+            String browserSessionId) {
+        this.targetWord = targetWord;
+        this.wordLength = wordLength;
+        this.dictionaryId = dictionaryId;
+        this.browserSessionId = browserSessionId;
+    }
+
+    public CreateGameRequest(String targetWord, Integer wordLength, String dictionaryId,
+            String browserSessionId, Boolean resumeExisting) {
+        this.targetWord = targetWord;
+        this.wordLength = wordLength;
+        this.dictionaryId = dictionaryId;
+        this.browserSessionId = browserSessionId;
+        this.resumeExisting = resumeExisting;
     }
     
     public String getTargetWord() {
@@ -59,5 +80,21 @@ public class CreateGameRequest {
     
     public void setDictionaryId(String dictionaryId) {
         this.dictionaryId = dictionaryId;
+    }
+
+    public String getBrowserSessionId() {
+        return browserSessionId;
+    }
+
+    public void setBrowserSessionId(String browserSessionId) {
+        this.browserSessionId = browserSessionId;
+    }
+
+    public Boolean getResumeExisting() {
+        return resumeExisting;
+    }
+
+    public void setResumeExisting(Boolean resumeExisting) {
+        this.resumeExisting = resumeExisting;
     }
 }

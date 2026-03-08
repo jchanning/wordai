@@ -11,8 +11,6 @@ import java.util.List;
 import java.util.Properties;
 import java.util.logging.Logger;
 
-import com.fistraltech.server.dto.DictionaryOption;
-
 /**
  * Configuration manager that loads settings from properties file and provides
  * fallback mechanisms for file paths and configuration values.

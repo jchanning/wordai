@@ -30,6 +30,12 @@ public interface AlgorithmDescriptor {
      */
     String getId();
 
+    /** Human-readable name for UI/API consumers. */
+    String getDisplayName();
+
+    /** Short description of how the algorithm behaves. */
+    String getDescription();
+
     /**
      * Creates a fresh algorithm instance bound to the given dictionary.
      * Every invocation must return a distinct object — never a cached singleton.
@@ -44,4 +50,18 @@ public interface AlgorithmDescriptor {
      * <p>Stateless algorithms may be created fresh on every suggestion request.
      */
     boolean isStateful();
+
+    /**
+     * Configuration key suffix for enabling/disabling this algorithm.
+     * For example, {@code BELLMAN_FULL_DICTIONARY} maps to
+     * {@code algorithm.features.bellman-full-dictionary.enabled}.
+     */
+    default String getFeatureToggleKey() {
+        return getId().toLowerCase().replace('_', '-');
+    }
+
+    /** Whether this algorithm should be enabled when no explicit property is present. */
+    default boolean isEnabledByDefault() {
+        return true;
+    }
 }

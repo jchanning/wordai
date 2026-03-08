@@ -1670,20 +1670,21 @@ select:focus {
 /* --- Toast Notification --- */
 .toast {
     position: fixed;
-    top: 64px;
-    left: 50%;
-    transform: translateX(-50%) translateY(-8px);
+    top: 50vh;
+    left: 50vw;
+    transform: translateX(-50%) translateY(-50%) scale(0.85);
     z-index: 9000;
-    min-width: 240px;
-    max-width: min(420px, 90vw);
-    padding: 0.7rem 1rem;
-    border-radius: 0.6rem;
-    font-weight: 600;
-    font-size: 0.9rem;
+    min-width: 320px;
+    max-width: min(520px, 92vw);
+    padding: 1.2rem 2rem;
+    border-radius: 0.8rem;
+    font-weight: 700;
+    font-size: 1.4rem;
     display: none;
     align-items: center;
+    justify-content: center;
     gap: 0.6rem;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.5);
     opacity: 0;
     transition: opacity 0.2s ease, transform 0.2s ease;
     pointer-events: none;
@@ -1692,13 +1693,25 @@ select:focus {
 .toast.toast-visible {
     display: flex;
     opacity: 1;
-    transform: translateX(-50%) translateY(0);
+    transform: translateX(-50%) translateY(-50%) scale(1);
     pointer-events: auto;
 }
 
 .toast.toast-hiding {
     opacity: 0;
-    transform: translateX(-50%) translateY(-8px);
+    transform: translateX(-50%) translateY(-50%) scale(0.85);
+}
+
+.toast.toast-tilted {
+    transform: translateX(-50%) translateY(-50%) rotate(-45deg) scale(0.85);
+}
+
+.toast.toast-tilted.toast-visible {
+    transform: translateX(-50%) translateY(-50%) rotate(-45deg) scale(1);
+}
+
+.toast.toast-tilted.toast-hiding {
+    transform: translateX(-50%) translateY(-50%) rotate(-45deg) scale(0.85);
 }
 
 /* --- Footer --- */

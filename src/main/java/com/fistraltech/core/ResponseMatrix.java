@@ -1,4 +1,4 @@
-package com.fistraltech.analysis;
+package com.fistraltech.core;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -6,10 +6,6 @@ import java.util.Set;
 import java.util.logging.Logger;
 import java.util.stream.IntStream;
 
-import com.fistraltech.core.Dictionary;
-import com.fistraltech.core.Response;
-import com.fistraltech.core.ResponseEntry;
-import com.fistraltech.core.WordGame;
 import com.fistraltech.util.Config;
 
 /**

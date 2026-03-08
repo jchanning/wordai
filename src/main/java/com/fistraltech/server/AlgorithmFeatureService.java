@@ -1,11 +1,14 @@
 package com.fistraltech.server;
 
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.logging.Logger;
 
-import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Service;
+
+import com.fistraltech.server.algo.AlgorithmDescriptor;
+import com.fistraltech.server.algo.AlgorithmRegistry;
 
 import jakarta.annotation.PostConstruct;
 
@@ -38,22 +41,22 @@ import jakarta.annotation.PostConstruct;
 public class AlgorithmFeatureService {
     
     private static final Logger logger = Logger.getLogger(AlgorithmFeatureService.class.getName());
-    
-    @Value("${algorithm.features.random.enabled:true}")
-    private boolean randomEnabled;
-    
-    @Value("${algorithm.features.entropy.enabled:true}")
-    private boolean entropyEnabled;
-    
-    @Value("${algorithm.features.bellman-full-dictionary.enabled:true}")
-    private boolean bellmanFullDictionaryEnabled;
+
+    private final AlgorithmRegistry algorithmRegistry;
+    private final Environment environment;
+
+    public AlgorithmFeatureService(AlgorithmRegistry algorithmRegistry, Environment environment) {
+        this.algorithmRegistry = algorithmRegistry;
+        this.environment = environment;
+    }
     
     @PostConstruct
     public void logAlgorithmStatus() {
         logger.info("=== Algorithm Feature Toggles ===");
-        logger.info("RANDOM: " + (randomEnabled ? "ENABLED" : "DISABLED"));
-        logger.info("ENTROPY: " + (entropyEnabled ? "ENABLED" : "DISABLED"));
-        logger.info("BELLMAN_FULL_DICTIONARY: " + (bellmanFullDictionaryEnabled ? "ENABLED" : "DISABLED"));
+        for (AlgorithmDescriptor descriptor : algorithmRegistry.getDescriptors()) {
+            logger.info(() -> descriptor.getId() + ": "
+                    + (isAlgorithmEnabled(descriptor.getId()) ? "ENABLED" : "DISABLED"));
+        }
         logger.info("=================================");
     }
     
@@ -64,21 +67,9 @@ public class AlgorithmFeatureService {
      * @return true if the algorithm is enabled, false otherwise
      */
     public boolean isAlgorithmEnabled(String algorithmId) {
-        if (algorithmId == null) {
-            return false;
-        }
-        
-        switch (algorithmId.toUpperCase()) {
-            case "RANDOM":
-                return randomEnabled;
-            case "ENTROPY":
-            case "MAXIMUM_ENTROPY":
-                return entropyEnabled;
-            case "BELLMAN_FULL_DICTIONARY":
-                return bellmanFullDictionaryEnabled;
-            default:
-                return false;
-        }
+        return algorithmRegistry.getDescriptor(algorithmId)
+                .map(this::isEnabled)
+                .orElse(false);
     }
     
     /**
@@ -87,13 +78,28 @@ public class AlgorithmFeatureService {
      * @return map of algorithm ID to enabled status
      */
     public Map<String, AlgorithmInfo> getAllAlgorithms() {
-        Map<String, AlgorithmInfo> algorithms = new HashMap<>();
-        
-        algorithms.put("RANDOM", new AlgorithmInfo("RANDOM", "Random Selection", randomEnabled));
-        algorithms.put("ENTROPY", new AlgorithmInfo("ENTROPY", "Maximum Entropy", entropyEnabled));
-        algorithms.put("BELLMAN_FULL_DICTIONARY", new AlgorithmInfo("BELLMAN_FULL_DICTIONARY", "Bellman Full Dictionary", bellmanFullDictionaryEnabled));
-        
+        Map<String, AlgorithmInfo> algorithms = new LinkedHashMap<>();
+        for (AlgorithmDescriptor descriptor : algorithmRegistry.getDescriptors()) {
+            algorithms.put(descriptor.getId(), new AlgorithmInfo(
+                    descriptor.getId(),
+                    descriptor.getDisplayName(),
+                    descriptor.getDescription(),
+                    descriptor.isStateful(),
+                    getFeatureProperty(descriptor),
+                    isEnabled(descriptor)));
+        }
         return algorithms;
+    }
+
+    private boolean isEnabled(AlgorithmDescriptor descriptor) {
+        return environment.getProperty(
+                getFeatureProperty(descriptor),
+                Boolean.class,
+                descriptor.isEnabledByDefault());
+    }
+
+    private String getFeatureProperty(AlgorithmDescriptor descriptor) {
+        return "algorithm.features." + descriptor.getFeatureToggleKey() + ".enabled";
     }
     
     /**
@@ -102,11 +108,18 @@ public class AlgorithmFeatureService {
     public static class AlgorithmInfo {
         private final String id;
         private final String displayName;
+        private final String description;
+        private final boolean stateful;
+        private final String featureProperty;
         private final boolean enabled;
         
-        public AlgorithmInfo(String id, String displayName, boolean enabled) {
+        public AlgorithmInfo(String id, String displayName, String description,
+                             boolean stateful, String featureProperty, boolean enabled) {
             this.id = id;
             this.displayName = displayName;
+            this.description = description;
+            this.stateful = stateful;
+            this.featureProperty = featureProperty;
             this.enabled = enabled;
         }
         
@@ -116,6 +129,18 @@ public class AlgorithmFeatureService {
         
         public String getDisplayName() {
             return displayName;
+        }
+
+        public String getDescription() {
+            return description;
+        }
+
+        public boolean isStateful() {
+            return stateful;
+        }
+
+        public String getFeatureProperty() {
+            return featureProperty;
         }
         
         public boolean isEnabled() {

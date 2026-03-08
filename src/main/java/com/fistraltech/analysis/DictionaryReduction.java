@@ -3,6 +3,8 @@ package com.fistraltech.analysis;
 import java.util.Set;
 
 import com.fistraltech.core.Dictionary;
+import com.fistraltech.core.ResponseMatrix;
+import com.fistraltech.core.WordEntropy;
 import com.fistraltech.util.Config;
 import com.fistraltech.util.ConfigManager;
 

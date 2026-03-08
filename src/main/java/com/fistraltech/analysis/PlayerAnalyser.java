@@ -8,15 +8,13 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.fistraltech.bot.DictionaryHistory;
 import com.fistraltech.bot.GameAnalytics;
 import com.fistraltech.bot.Player;
-import com.fistraltech.bot.ResultHistory;
 import com.fistraltech.core.Dictionary;
+import com.fistraltech.core.DictionaryHistory;
 import com.fistraltech.core.Response;
+import com.fistraltech.core.ResultHistory;
 import com.fistraltech.core.WordGame;
-import com.fistraltech.server.dto.AnalysisGameResult;
-import com.fistraltech.server.dto.AnalysisResponse;
 import com.fistraltech.util.ConfigManager;
 
 /** 

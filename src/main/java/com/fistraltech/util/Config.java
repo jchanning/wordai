@@ -4,8 +4,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import com.fistraltech.server.dto.DictionaryOption;
-
 public class Config {
 
     private int wordLength;

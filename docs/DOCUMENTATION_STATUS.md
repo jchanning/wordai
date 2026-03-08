@@ -31,14 +31,14 @@ All enhanced class documentation now includes:
 
 ### Bot Package (`com.fistraltech.bot`)
 ✅ **WordGamePlayer** - Complete architecture and strategy documentation
-✅ **ResultHistory** - Purpose and integration examples
-✅ **DictionaryHistory** - Performance metrics explanation
 ✅ **GameAnalytics** - CSV export formats and use cases
 ⚠️ **Player** - Interface, minimal documentation acceptable
 
-### Bot Filter Package (`com.fistraltech.bot.filter`)
+### Core Filtering and History (`com.fistraltech.core`)
 ✅ **Filter** - Extensive algorithm and status code documentation
 ✅ **FilterCharacters** - Position-based filtering explanation
+✅ **ResultHistory** - Purpose and integration examples
+✅ **DictionaryHistory** - Performance metrics explanation
 
 ### Bot Selection Package (`com.fistraltech.bot.selection`)
 ✅ **SelectionAlgo** - Template method pattern, strategy comparison
@@ -51,7 +51,11 @@ All enhanced class documentation now includes:
 ### Server Package (`com.fistraltech.server`)
 ✅ **WordGameService** - Service lifecycle, threading, and API integration docs
 ✅ **HomeController** - SPA/static UI forwarding docs
-✅ **WordGameController** - REST API endpoints and JSON examples
+✅ **WordGameController** - Game lifecycle REST API docs
+✅ **DictionaryController** - Dictionary catalog and detail endpoint docs
+✅ **AnalysisController** - Analysis endpoint docs
+✅ **AlgorithmController** - Algorithm catalog endpoint docs
+✅ **HistoryController** - Authenticated history endpoint docs
 
 ### Server Model Package (`com.fistraltech.server.model`)
 ✅ **GameSession** - Session lifecycle and strategy docs
@@ -61,21 +65,21 @@ All enhanced class documentation now includes:
 ✅ **CreateGameResponse** - JSON examples and dictionary metrics notes
 ✅ **GuessRequest** - JSON examples and usage notes
 ✅ **GameResponse** - Status-code explanations and example payload
-✅ **DictionaryOption** - Dictionary listing payload examples
 ✅ **AnalysisRequest** - JSON examples for server-side analysis
-✅ **AnalysisResponse** - Analysis summary/shape notes
-✅ **AnalysisGameResult** - Per-game analysis result notes
-
-### Core Package (`com.fistraltech.core`)
-🔲 **ResponseHelper** - Helper class for game response evaluation
 
 ### Util Package (`com.fistraltech.util`)
+✅ **DictionaryOption** - Dictionary listing payload examples
 🔲 **Config** - Needs review
 🔲 **ConfigManager** - Needs review
 🔲 **ConfigFile** - Needs review
 🔲 **Timer** - Needs review
 
+### Core Package (`com.fistraltech.core`)
+🔲 **ResponseHelper** - Helper class for game response evaluation
+
 ### Analysis Package (`com.fistraltech.analysis`)
+✅ **AnalysisResponse** - Analysis summary/shape notes
+✅ **AnalysisGameResult** - Per-game analysis result notes
 🔲 **DictionaryAnalytics** - Needs review
 🔲 **PlayerAnalyser** - Needs review
 🔲 **ComplexityAnalyser** - Needs review
@@ -83,7 +87,7 @@ All enhanced class documentation now includes:
 🔲 **EntropyKey** - Needs review
 
 ### Game Package (`com.fistraltech.game`)
-⚠️ **GameController** - Already had excellent documentation
+⚠️ Legacy package retained only as an empty compatibility boundary for architecture tests
 
 ## Documentation Quality Metrics
 

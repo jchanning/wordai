@@ -9,6 +9,7 @@ import {
     apiCreateGame, apiDeleteGame, apiMakeGuess, apiGetSuggestion,
     apiSetStrategy, apiGetGameState,
 } from './api.js';
+import { getBrowserSessionId } from './browser-session.js';
 
 // ---- Setup helpers ----
 
@@ -90,7 +91,7 @@ export async function startAutoplay() {
     const gameCount  = parseInt(document.getElementById('autoplayGameCount').value);
     const strategy   = document.getElementById('autoplayStrategy').value;
     const wordLength = parseInt(document.getElementById('autoplayWordLength').value);
-    const guessDelay = parseInt(document.getElementById('autoplaySpeed').value) || 550;
+    const guessDelay = 1100 - (parseInt(document.getElementById('autoplaySpeed').value) || 550);
     const selectedDict = '';
 
     if (gameCount < 1 || gameCount > 1000) {
@@ -183,6 +184,7 @@ async function _runAutoplayGames(dictionaryId, strategy, wordLength, guessDelay)
             }
 
             const requestBody = dictToUse ? { dictionaryId: dictToUse } : {};
+            requestBody.browserSessionId = getBrowserSessionId();
             const createResponse = await apiCreateGame(requestBody);
             if (!createResponse.ok) throw new Error('Failed to create game');
 

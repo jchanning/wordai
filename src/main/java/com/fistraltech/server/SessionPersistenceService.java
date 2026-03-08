@@ -57,6 +57,7 @@ public class SessionPersistenceService {
             entity.setGameId(session.getGameId());
             entity.setUserId(userId);
             entity.setDictionaryId(session.getDictionaryId());
+            entity.setBrowserSessionId(session.getBrowserSessionId() != null ? session.getBrowserSessionId() : "");
             entity.setTargetWord(session.getWordGame().getTargetWord());
             entity.setStrategy(session.getSelectedStrategy());
             entity.setGuessWords("");
@@ -130,17 +131,20 @@ public class SessionPersistenceService {
     }
 
     /**
-     * Finds an ACTIVE session for a user + dictionary combination.
+     * Finds an ACTIVE session for a user + dictionary + browser-session combination.
      * Used to detect whether the user already has an in-progress game for the
      * requested dictionary, enabling session reconstruction on reconnect.
      *
      * @param userId       the player's numeric user ID
      * @param dictionaryId the dictionary identifier
+     * @param browserSessionId the browser-window identifier stored in sessionStorage
      * @return the entity if an active session exists, or empty
      */
     @Transactional(readOnly = true)
-    public Optional<ActiveGameSessionEntity> findActiveForUser(Long userId, String dictionaryId) {
-        return repository.findByUserIdAndDictionaryIdAndStatus(userId, dictionaryId, "ACTIVE");
+    public Optional<ActiveGameSessionEntity> findActiveForUser(
+            Long userId, String dictionaryId, String browserSessionId) {
+        return repository.findByUserIdAndDictionaryIdAndBrowserSessionIdAndStatus(
+                userId, dictionaryId, browserSessionId, "ACTIVE");
     }
 
     // ------------------------------------------------------------------

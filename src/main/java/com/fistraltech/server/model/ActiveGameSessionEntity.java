@@ -37,6 +37,9 @@ public class ActiveGameSessionEntity {
     @Column(name = "dictionary_id", nullable = false, length = 50)
     private String dictionaryId;
 
+    @Column(name = "browser_session_id", nullable = false, length = 100)
+    private String browserSessionId = "";
+
     @Column(name = "target_word", nullable = false, length = 20)
     private String targetWord;
 
@@ -80,6 +83,9 @@ public class ActiveGameSessionEntity {
 
     public String getDictionaryId() { return dictionaryId; }
     public void setDictionaryId(String dictionaryId) { this.dictionaryId = dictionaryId; }
+
+    public String getBrowserSessionId() { return browserSessionId; }
+    public void setBrowserSessionId(String browserSessionId) { this.browserSessionId = browserSessionId; }
 
     public String getTargetWord() { return targetWord; }
     public void setTargetWord(String targetWord) { this.targetWord = targetWord; }

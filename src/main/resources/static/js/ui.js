@@ -132,7 +132,17 @@ export function showStatus(message, type = 'info', options = {}) {
         statusDiv.textContent = message;
     }
 
-    statusDiv.className = `toast ${type} toast-visible`;
+    if (options.anchorEl) {
+        const rect = options.anchorEl.getBoundingClientRect();
+        statusDiv.style.left = (rect.left + rect.width / 2) + 'px';
+        statusDiv.style.top  = (rect.top  + rect.height / 2) + 'px';
+    } else {
+        statusDiv.style.left = '';
+        statusDiv.style.top  = '';
+    }
+
+    const toastVariantClass = options.tilted ? ' toast-tilted' : '';
+    statusDiv.className = `toast ${type}${toastVariantClass} toast-visible`;
 
     const isAlert = type === 'error' || type === 'warning';
     statusDiv.setAttribute('role', isAlert ? 'alert' : 'status');
@@ -143,7 +153,7 @@ export function showStatus(message, type = 'info', options = {}) {
             case 'success': return 3500;
             case 'info':    return 5000;
             case 'warning': return 8000;
-            case 'error':   return 0;
+            case 'error':   return 5000;
             default:        return 5000;
         }
     };
@@ -173,6 +183,8 @@ export function hideStatus() {
         const msgEl = document.getElementById('statusMessage');
         if (msgEl) msgEl.textContent = '';
         statusDiv.className = 'toast';
+        statusDiv.style.left = '';
+        statusDiv.style.top  = '';
         statusDiv.classList.remove('toast-hiding');
     }, 220);
 }
