@@ -141,7 +141,7 @@ export function showStatus(message, type = 'info', options = {}) {
         statusDiv.style.top  = '';
     }
 
-    const toastVariantClass = options.tilted ? ' toast-tilted' : '';
+    const toastVariantClass = options.celebrate ? ' toast-celebrate' : (options.tilted ? ' toast-tilted' : '');
     statusDiv.className = `toast ${type}${toastVariantClass} toast-visible`;
 
     const isAlert = type === 'error' || type === 'warning';
@@ -177,16 +177,73 @@ export function hideStatus() {
         clearTimeout(state.statusHideTimer);
         state.statusHideTimer = null;
     }
-    statusDiv.classList.add('toast-hiding');
-    statusDiv.classList.remove('toast-visible');
-    setTimeout(() => {
-        const msgEl = document.getElementById('statusMessage');
-        if (msgEl) msgEl.textContent = '';
-        statusDiv.className = 'toast';
-        statusDiv.style.left = '';
-        statusDiv.style.top  = '';
-        statusDiv.classList.remove('toast-hiding');
-    }, 220);
+
+    if (statusDiv.classList.contains('toast-celebrate')) {
+        spawnExplosionParticles(statusDiv);
+        statusDiv.classList.remove('toast-visible');
+        statusDiv.classList.add('toast-exploding');
+        setTimeout(() => {
+            const msgEl = document.getElementById('statusMessage');
+            if (msgEl) msgEl.textContent = '';
+            statusDiv.className = 'toast';
+            statusDiv.style.left = '';
+            statusDiv.style.top  = '';
+        }, 800);
+    } else {
+        statusDiv.classList.add('toast-hiding');
+        statusDiv.classList.remove('toast-visible');
+        setTimeout(() => {
+            const msgEl = document.getElementById('statusMessage');
+            if (msgEl) msgEl.textContent = '';
+            statusDiv.className = 'toast';
+            statusDiv.style.left = '';
+            statusDiv.style.top  = '';
+            statusDiv.classList.remove('toast-hiding');
+        }, 220);
+    }
+}
+
+function spawnExplosionParticles(anchor) {
+    const rect = anchor.getBoundingClientRect();
+    const cx = rect.left + rect.width / 2;
+    const cy = rect.top + rect.height / 2;
+    const colors = ['#86efac', '#22c55e', '#fbbf24', '#f59e0b', '#ffffff', '#34d399', '#a78bfa', '#f472b6'];
+    const count = 30;
+
+    for (let i = 0; i < count; i++) {
+        const particle = document.createElement('div');
+        const angle = (Math.PI * 2 * i) / count + (Math.random() - 0.5) * 0.5;
+        const distance = 120 + Math.random() * 200;
+        const tx = Math.cos(angle) * distance;
+        const ty = Math.sin(angle) * distance;
+        const size = 6 + Math.random() * 10;
+        const color = colors[Math.floor(Math.random() * colors.length)];
+        const rotation = Math.random() * 720 - 360;
+
+        particle.style.cssText = `
+            position: fixed;
+            left: ${cx}px;
+            top: ${cy}px;
+            width: ${size}px;
+            height: ${size}px;
+            background: ${color};
+            border-radius: ${Math.random() > 0.5 ? '50%' : '2px'};
+            z-index: 9001;
+            pointer-events: none;
+        `;
+        document.body.appendChild(particle);
+
+        particle.animate([
+            { transform: 'translate(-50%, -50%) rotate(0deg) scale(1)', opacity: 1 },
+            { transform: `translate(calc(-50% + ${tx}px), calc(-50% + ${ty}px)) rotate(${rotation}deg) scale(0)`, opacity: 0 }
+        ], {
+            duration: 700 + Math.random() * 300,
+            easing: 'cubic-bezier(0.25, 0.46, 0.45, 0.94)',
+            fill: 'forwards'
+        });
+
+        setTimeout(() => particle.remove(), 1100);
+    }
 }
 
 // ---- Help counter ----

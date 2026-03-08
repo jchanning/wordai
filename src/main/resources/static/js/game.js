@@ -359,9 +359,10 @@ export async function makeGuess() {
             disableLetterInputs();
             const gb = document.getElementById('guessBtn');
             if (gb) gb.disabled = true;
-            showStatus('Congratulations! You won!', 'success', {
+            showStatus('\u{1F389} Congratulations! You won! \u{1F389}', 'success', {
                 anchorEl: document.getElementById('guessHistory'),
-                tilted: true,
+                celebrate: true,
+                autoHideMs: 4500,
             });
             saveGameResult(word, data.attemptNumber, true);
         } else if (data.gameOver) {
