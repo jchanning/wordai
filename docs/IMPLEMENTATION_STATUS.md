@@ -2,7 +2,7 @@
 
 Single source of truth for what is built, what is in progress, and what is planned. Update this file when completing or starting any significant piece of work.
 
-*Last updated: March 2026 — architecture cleanup and fitness coverage completed*
+*Last updated: March 2026 — v1.14.7 documentation refresh*
 
 ---
 
@@ -13,7 +13,7 @@ Single source of truth for what is built, what is in progress, and what is plann
 | Feature | Notes |
 |---|---|
 | Core game engine | `WordGame`, `Dictionary`, `Response`, `Filter`, response codes G/A/X/R |
-| Selection strategies | RANDOM, ENTROPY, MOST_COMMON_LETTERS, MINIMISE_COLUMN_LENGTHS, DICTIONARY_REDUCTION, BELLMAN_OPTIMAL, BELLMAN_FULL_DICTIONARY |
+| Selection strategies | RANDOM, ENTROPY, BELLMAN_FULL_DICTIONARY |
 | REST API — game lifecycle | `POST /games`, `POST /games/{id}/guess`, `GET /games/{id}/suggestion`, `DELETE /games/{id}` |
 | REST API — dictionaries | `GET /dictionaries`, dictionary options endpoint |
 | REST API — analysis and algorithm catalog | `POST /analysis` in `AnalysisController`, `GET /algorithms` in `AlgorithmController` |
@@ -26,7 +26,7 @@ Single source of truth for what is built, what is in progress, and what is plann
 | GitHub Actions CI | `.github/workflows/ci.yml` — runs `mvn clean test` on push/PR to `main` |
 | Architectural fitness tests | `ArchitectureFitnessTest` — layer rules, runtime-boundary rule, and package cycle rule all active |
 | Architecture cleanup tranche | Shared DTO/filter moves, legacy runtime removal, controller split, registry-driven algorithm metadata/toggles, and cycle cleanup completed; see `specs/` |
-| Dictionaries | 4, 5, 6 letter word files in `src/main/resources/dictionaries/` |
+| Dictionaries | 4, 5, 6 letter word files in `src/main/resources/dictionaries/` (7-letter file also present but not configured) |
 | Cloud deployment | Oracle Cloud / OCI scripts in `deployment/` |
 | Javadoc | Comprehensive on core, bot, server packages (see Documentation section below) |
 | **Session TTL (memory-leak fix)** | `WordGameService` now uses a Caffeine cache with 30-min idle TTL and 10 000-session cap. Configurable via `wordai.session.ttl-minutes`. See `docs/features/session-ttl.spec.md`. |
@@ -34,6 +34,10 @@ Single source of truth for what is built, what is in progress, and what is plann
 | **Admin credentials security hardening** | Removed hardcoded defaults from `DataInitializer.java` `@Value` annotations. `application.properties` now reads from env vars (`WORDAI_ADMIN_EMAIL`, `WORDAI_ADMIN_PASSWORD`) with safe dev fallbacks. `application-prod.properties` requires env vars with no fallback (Spring aborts startup if absent). `AdminCredentialsValidator` adds defence-in-depth: rejects blank or known-default credentials when the `prod` profile is active. See `docs/features/admin-credentials.spec.md`. |
 | **Flyway schema migration** | Replaced `ddl-auto=update` in production with `ddl-auto=validate`. Flyway manages all schema changes via versioned migration scripts. `V1__baseline.sql` captures the current three-table schema (`users`, `user_roles`, `player_games`). `baseline-on-migrate=true` protects the existing production database. Dev still uses `ddl-auto=update` for fast iteration. See `docs/features/flyway-schema-migration.spec.md`. |
 | **CORS policy centralisation** | Removed `@CrossOrigin(origins="*")` from all 5 controllers. Replaced with a single `CorsConfigurationSource` bean in `SecurityConfig`. Allowed origins are driven by `wordai.cors.allowed-origins`: `*` in dev (backward-compatible), `${WORDAI_CORS_ALLOWED_ORIGINS:http://localhost:8080}` in production. `setAllowedOriginPatterns` is used to support both wildcards and credential-bearing requests. See `docs/features/cors-policy.spec.md`. |
+| **Frontend JS modularisation** | `game.js` monolith split into 11 ES modules: `admin.js`, `analytics.js`, `api.js`, `autoplay.js`, `browser-session.js`, `game.js`, `keyboard.js`, `navigation.js`, `player-analysis.js`, `state.js`, `ui.js` |
+| **Session persistence across restarts** | `SessionPersistenceService` persists active game sessions to the database via `ActiveGameSessionEntity`. Flyway migrations V2 (`active_game_sessions` table) and V3 (browser session scoping) manage the schema. |
+| **Browser session isolation** | Sessions scoped to browser via `browser-session.js` and Flyway V3 migration. Each browser tab/instance gets its own game state. |
+| **Anonymous activity tracking** | `ActivityService` tracks game activity for both authenticated and anonymous users. `AdminController` exposes `/activity` endpoint. Flyway V4 adds tracking support. |
 
 ### 🔲 Planned / Backlog
 
@@ -41,6 +45,7 @@ Single source of truth for what is built, what is in progress, and what is plann
 |---|---|---|
 | Javadoc — `util` package | Medium | `Config`, `ConfigManager`, `ConfigFile`, `Timer` — flagged in legacy DOCUMENTATION_STATUS |
 | Javadoc — `analysis` package | Medium | `DictionaryAnalytics`, `PlayerAnalyser`, `ComplexityAnalyser`, `Entropy`, `EntropyKey` |
+| Javadoc — new server classes | Medium | `ActivityService`, `SessionPersistenceService`, `SessionTrackingService`, `PlayerGameService`, `SessionInfo`, `UserActivityDto` |
 | `package-info.java` files | Low | One per package to document package-level responsibility |
 | CONTRIBUTING.md | Low | Contribution guidelines for open-source readiness |
 
@@ -65,7 +70,7 @@ The previously documented ArchUnit violations are closed. Active architecture wo
 | `util` | `ConfigManagerTest` | 6 |
 | `(root)` | `ArchitectureFitnessTest`, `FlywayMigrationTest` | architecture rules active, no documented skipped violations |
 | `server` | `SessionTtlTest`, `SessionConcurrencyTest` | 9 |
-| **Total** | | **239 pass, 4 skipped** |
+| **Total** | | **277 pass, 0 skipped** |
 
 Run the full suite: `mvn clean test`
 
@@ -74,7 +79,7 @@ Run the full suite: `mvn clean test`
 ## Documentation Status
 
 ### ✅ Comprehensive Javadoc
-`Column`, `ResponseEntry`, `WordSource`, `InvalidWordException`, `InvalidWordLengthException`, `WordGamePlayer`, `ResultHistory`, `DictionaryHistory`, `GameAnalytics`, `Filter`, `FilterCharacters`, `SelectionAlgo`, `SelectRandom`, `SelectMostCommonLetters`, `SelectMaximumEntropy`, `SelectFixedFirstWord`, `WordGameService`, `HomeController`, `WordGameController`, `DictionaryController`, `AnalysisController`, `AlgorithmController`, `HistoryController`, `GameSession`, runtime DTOs in `server.dto`, `DictionaryOption`, `AnalysisResponse`, `AnalysisGameResult`
+`Column`, `ResponseEntry`, `WordSource`, `InvalidWordException`, `InvalidWordLengthException`, `WordGamePlayer`, `ResultHistory`, `DictionaryHistory`, `GameAnalytics`, `Filter`, `FilterCharacters`, `SelectionAlgo`, `SelectRandom`, `SelectMaximumEntropy`, `WordGameService`, `HomeController`, `WordGameController`, `DictionaryController`, `AnalysisController`, `AlgorithmController`, `HistoryController`, `GameSession`, runtime DTOs in `server.dto`, `DictionaryOption` (in `util`), `AnalysisResponse` (in `analysis`), `AnalysisGameResult` (in `analysis`)
 
 ### ⚠️ Needs review / minimal
 `Response`, `WordGame`, `Dictionary`, `ResponseHelper`

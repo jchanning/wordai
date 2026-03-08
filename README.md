@@ -10,16 +10,15 @@
 
 ### Interactive Web Game
 - Clean, modern UI with real-time feedback
-- Multiple dictionary options (4, 5, 6, and 7-letter words)
+- Multiple dictionary options (4, 5, and 6-letter words)
 - Session statistics and game history tracking
 - AI-powered word suggestions with multiple strategies
 
 ### Intelligent Bot System
 Multiple bot algorithms for automated gameplay:
 - **Random Selection** - Baseline strategy
-- **Most Common Letters** - Frequency-based selection
 - **Maximum Entropy** - Information theory-based optimization
-- **Fixed First Word** - Optimal opening combined with adaptive play
+- **Bellman Full Dictionary** - Bellman-optimal across complete dictionary
 
 ### Comprehensive Analytics
 - CSV export of game metrics
@@ -43,8 +42,8 @@ Multiple bot algorithms for automated gameplay:
 
 ```bash
 # Clone the repository
-git clone https://github.com/YOUR_USERNAME/WordAI.git
-cd WordAI
+git clone https://github.com/jchanning/wordai.git
+cd wordai
 
 # Run with Maven
 mvn spring-boot:run
@@ -73,15 +72,20 @@ WordAI/
 │   │   ├── WordGame.java  # Main game logic
 │   │   ├── Dictionary.java # Word management
 │   │   ├── Response.java  # Game feedback
+│   │   ├── Filter.java    # Word filtering logic
+│   │   ├── WordEntropy.java # Entropy computation
+│   │   ├── ResponseMatrix.java # Pre-computed response matrix
 │   │   └── Column.java    # Letter position analysis
 │   ├── bot/               # Bot implementations
 │   │   ├── WordGamePlayer.java  # Main bot player
-│   │   ├── filter/        # Word filtering logic
 │   │   └── selection/     # Selection algorithms
 │   ├── server/            # Spring Boot REST API
 │   │   ├── controller/    # REST endpoints
 │   │   ├── dto/           # Data transfer objects
-│   │   └── model/         # Domain models
+│   │   ├── model/         # Domain models
+│   │   ├── algo/          # Algorithm registry & descriptors
+│   │   └── repository/    # JPA repositories
+│   ├── security/          # Spring Security & OAuth2
 │   ├── analysis/          # Analytics tools
 │   └── util/              # Configuration utilities
 ├── src/main/resources/
@@ -93,7 +97,7 @@ WordAI/
 
 ## 🎮 How to Play
 
-1. **Start a New Game** - Click "New Game" and select word length (4-7 letters)
+1. **Start a New Game** - Click "New Game" and select word length (4-6 letters)
 2. **Make Guesses** - Type your guess and click "Make Guess"
 3. **Interpret Feedback**:
    - 🟢 **Green**: Correct letter in correct position
@@ -109,20 +113,15 @@ Simple baseline that randomly chooses from valid words.
 - **Average**: ~5-6 attempts
 - **Use case**: Baseline for comparison
 
-### SelectMostCommonLetters
-Prioritizes words containing frequent letters.
-- **Average**: ~4-5 attempts
-- **Use case**: Good balance of speed and effectiveness
-
 ### SelectMaximumEntropy
 Uses information theory to maximize information gain per guess.
 - **Average**: ~3-4 attempts
 - **Use case**: Optimal strategy (computationally intensive)
 
-### SelectFixedFirstWord
-Starts with a predetermined optimal word, then adapts.
-- **Average**: ~3-5 attempts
-- **Use case**: Consistent opening with flexibility
+### SelectBellmanFullDictionary
+Bellman-optimal strategy that considers the full dictionary for each decision.
+- **Average**: ~3-4 attempts
+- **Use case**: Highest-quality play across all game states
 
 ## 🔧 Configuration
 
@@ -169,7 +168,7 @@ Tracks letter frequency distributions per position for statistical analysis.
 mvn test
 
 # Run specific test class
-mvn test -Dtest=GameControllerTest
+mvn test -Dtest=WordGameServiceTest
 
 # Generate test coverage report
 mvn clean test jacoco:report
@@ -179,7 +178,7 @@ mvn clean test jacoco:report
 
 ### Create Game
 ```http
-POST /api/wordai/game
+POST /api/wordai/games
 Content-Type: application/json
 
 {
@@ -190,7 +189,7 @@ Content-Type: application/json
 
 ### Make Guess
 ```http
-POST /api/wordai/game/{gameId}/guess
+POST /api/wordai/games/{gameId}/guess
 Content-Type: application/json
 
 {
@@ -200,7 +199,7 @@ Content-Type: application/json
 
 ### Get Suggestion
 ```http
-GET /api/wordai/game/{gameId}/suggestion?strategy=ENTROPY
+GET /api/wordai/games/{gameId}/suggestion?strategy=ENTROPY
 ```
 
 See API documentation at `http://localhost:8080/swagger-ui.html` when running.
@@ -257,7 +256,7 @@ For detailed class-level documentation, see:
 
 ## 🐛 Known Issues
 
-See the [Issues](https://github.com/YOUR_USERNAME/WordAI/issues) page for current bugs and feature requests.
+See the [Issues](https://github.com/jchanning/wordai/issues) page for current bugs and feature requests.
 
 ## � Documentation
 
@@ -275,8 +274,8 @@ See the [Issues](https://github.com/YOUR_USERNAME/WordAI/issues) page for curren
 
 ## �📊 Stats
 
-![Code Size](https://img.shields.io/github/languages/code-size/YOUR_USERNAME/WordAI)
-![Repo Size](https://img.shields.io/github/repo-size/YOUR_USERNAME/WordAI)
+![Code Size](https://img.shields.io/github/languages/code-size/jchanning/wordai)
+![Repo Size](https://img.shields.io/github/repo-size/jchanning/wordai)
 
 ---
 

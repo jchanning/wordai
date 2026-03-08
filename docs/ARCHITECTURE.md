@@ -40,7 +40,6 @@ WordAI is a Wordle-like game simulation and analysis system. It provides:
 
 ### Enforced via `ArchitectureFitnessTest`
 - `bot` does not import from `server`
-- `game` does not import from `server` (legacy package allowed to remain empty)
 - `core` does not import from `server`
 - `util` does not import from `server`
 - `analysis` does not import from `server`
@@ -169,7 +168,6 @@ These must hold at all times. Tests or fitness functions enforce them where poss
 ## Key Non-Goals
 
 - No multiplayer / real-time features.
-- No persistent game state between server restarts (game sessions are in-memory only).
 - No mobile-native apps — web UI only.
-- No support for word lengths outside 4–6 letters.
+- No support for word lengths outside 4–6 letters (a 7-letter dictionary exists on disk but is not configured).
 - No external ML model integration — all strategies are deterministic algorithms.

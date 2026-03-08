@@ -2,9 +2,9 @@
 
 > Generated: 2026-02-27
 > Reviewer: Claude Code (claude-sonnet-4.6)
-> Codebase version: v1.9.0
+> Codebase version: v1.9.0 (recommendations made); current version: v1.14.7
 >
-> Status update (March 2026): recommendations 1-8 and 15 have been implemented. The summary table below now lists only open follow-up work. Historical sections for completed items are retained below for audit context.
+> Status update (March 2026): recommendations 1–10 and 15 have been implemented. The summary table below now lists only open follow-up work. Historical sections for completed items are retained below for audit context.
 
 ---
 
@@ -12,8 +12,6 @@
 
 | Priority | # | Open issue |
 |----------|---|------------|
-| **Medium** | 9 | `game.js` monolith |
-| **Medium** | 10 | No session persistence across restarts |
 | **Low** | 11 | Entropy recomputation has no memoization |
 | **Low** | 12 | `GameSession` is a God Object |
 | **Low** | 13 | Feature toggles in application properties |
@@ -181,9 +179,11 @@ public class AlgorithmRegistry {
 
 ---
 
-### 9. `game.js` is a 3967-Line Monolith
+### 9. `game.js` is a 3967-Line Monolith — ✅ COMPLETED
 
-**File:** `src/main/resources/static/js/game.js`
+**Status:** Resolved. The frontend has been split into 11 ES modules: `admin.js`, `analytics.js`, `api.js`, `autoplay.js`, `browser-session.js`, `game.js`, `keyboard.js`, `navigation.js`, `player-analysis.js`, `state.js`, `ui.js`.
+
+**File:** `src/main/resources/static/js/game.js` (was)
 
 The entire frontend lives in one file mixing DOM manipulation, API calls, game state, analytics rendering, autoplay logic, and CSV export. This makes isolated testing impossible and changes high-risk.
 
@@ -200,11 +200,13 @@ The entire frontend lives in one file mixing DOM manipulation, API calls, game s
 
 ---
 
-### 10. No Session Persistence Across Server Restarts
+### 10. No Session Persistence Across Server Restarts — ✅ COMPLETED
+
+**Status:** Resolved. `SessionPersistenceService` persists active game sessions to the database via `ActiveGameSessionEntity`. Flyway migrations V2 and V3 manage the schema. Sessions survive server restarts and are scoped to browser sessions.
 
 Active game sessions live only in JVM memory. A server restart (deployment, crash) silently destroys all in-progress games with no user feedback. Authenticated users are particularly affected since their game history and streak state can be corrupted.
 
-**Fix:** Persist `GameSession` state (at minimum: target word, guess history, strategy) to the database linked to the authenticated user. For anonymous users, use a short-lived signed token to reconstitute state. The `User` entity and JPA infrastructure are already in place.
+**Fix (historical):** Persist `GameSession` state (at minimum: target word, guess history, strategy) to the database linked to the authenticated user. For anonymous users, use a short-lived signed token to reconstitute state. The `User` entity and JPA infrastructure are already in place.
 
 ---
 

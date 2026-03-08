@@ -9,13 +9,14 @@ Quick summary:
 - `com.fistraltech.core`: Game primitives
 	- `WordGame`: Applies a guess to a target; produces `Response` of per-position codes: `G` (green), `A` (amber), `R` (red), `X` (excess).
 	- `Dictionary`: Word set, word length, column stats (`Column`), and helpers.
+	- `Filter` / `FilterCharacters`: Prunes dictionary using `Response` and occurrence rules.
+	- `WordEntropy` / `ResponseMatrix`: Pre-computed entropy and response data for selection strategies.
 - `com.fistraltech.bot`: Bots and game orchestration
-	- `WordGamePlayer` + `SelectionAlgo` strategies (e.g., random, letter-frequency, fixed-first-word).
-	- `filter.Filter`: Prunes dictionary using `Response` and occurrence rules.
+	- `WordGamePlayer` + `SelectionAlgo` strategies (e.g., random, entropy, bellman-full-dictionary).
 - `com.fistraltech.analysis`: Analytics
-	- `DictionaryAnalytics`: letter/position stats, response buckets, entropy and max-entropy word.
+	- `DictionaryAnalytics`: letter/position stats, response buckets.
 	- `GameAnalytics`: writes CSV summaries; `ComplexityAnalyser`: performance.
-- `com.fistraltech.server`: Simple HTTP API and static UI (`static/css`, `static/js`, `index.html`).
+- `com.fistraltech.server`: Spring Boot REST API, algorithm registry, session management, and static UI (`static/css`, `static/js/*.js`, `index.html`).
 
 ## Core Patterns (must follow)
 - Response rules:
@@ -24,12 +25,12 @@ Quick summary:
 	- `X`: letter present but too many occurrences; treat like `A` and track counts.
 	- `R`: letter absent; remove from all positions.
 - Selection strategies implement `SelectionAlgo.selectWord(Response lastResponse, Dictionary dictionary)`.
-- Entropy: `DictionaryAnalytics.getEntropy(word)` computes $-\sum p \log_2 p$ from `getResponseBuckets(word)`.
+- Entropy: `WordEntropy.getEntropy(word)` computes $-\sum p \log_2 p$ from pre-computed `ResponseMatrix` buckets.
 
 ## Build, Test, Run
 - Build/tests: `mvn clean test` (JUnit 5). Artifacts in `target/`.
 - Run server/UI (if present): check `WordAIApplication` main and `server/*` controllers.
-- Static UI split: logic in `src/main/resources/static/js/game.js`, styles in `static/css/style.css`.
+- Static UI split: logic spread across `src/main/resources/static/js/*.js` modules (game.js, api.js, state.js, ui.js, analytics.js, autoplay.js, keyboard.js, navigation.js, player-analysis.js, admin.js, browser-session.js), styles in `static/css/style.css`.
 
 ## Configuration
 - Defaults: `src/main/resources/application.properties`.
@@ -48,10 +49,11 @@ Quick summary:
 	public class SelectHighestEntropy extends SelectionAlgo {
 			@Override
 			public String selectWord(Response lastResponse, Dictionary dictionary) {
-					return new DictionaryAnalytics(dictionary).getMaximumEntropyWord();
+					return wordEntropy.getMaximumEntropyWord();
 			}
 	}
 	```
+	Also register it via an `AlgorithmDescriptor` in `server.algo` and add to `AlgorithmRegistry`.
 - Use response buckets:
 
 	```java
