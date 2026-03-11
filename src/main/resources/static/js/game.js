@@ -359,7 +359,7 @@ export async function makeGuess() {
             disableLetterInputs();
             const gb = document.getElementById('guessBtn');
             if (gb) gb.disabled = true;
-            showStatus('\u{1F389} Congratulations! You won! \u{1F389}', 'success', {
+            showStatus('Congratulations! You won!', 'success', {
                 anchorEl: document.getElementById('guessHistory'),
                 celebrate: true,
                 autoHideMs: 4500,
