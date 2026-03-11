@@ -324,11 +324,11 @@ export async function makeGuess() {
     if (!state.currentGameId || state.gameEnded) return;
 
     const word = getCurrentGuess().trim();
-    if (!word) { showStatus('Please enter a word!', 'error'); return; }
+    if (!word) { showStatus('Please enter a word!', 'error', { clearOnInput: true }); return; }
 
     const expectedLength = document.querySelectorAll('.letter-input').length;
     if (word.length !== expectedLength) {
-        showStatus(`Word must be ${expectedLength} letters long!`, 'error');
+        showStatus(`Word must be ${expectedLength} letters long!`, 'error', { clearOnInput: true });
         return;
     }
 
@@ -374,7 +374,7 @@ export async function makeGuess() {
         }
     } catch (error) {
         console.error('Error making guess:', error);
-        showStatus(error.message || 'Guess failed \u2014 please try again.', 'error');
+        showStatus(error.message || 'Guess failed \u2014 please try again.', 'error', { clearOnInput: true });
     }
 }
 

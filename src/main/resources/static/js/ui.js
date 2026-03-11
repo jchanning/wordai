@@ -168,6 +168,28 @@ export function showStatus(message, type = 'info', options = {}) {
     if (autoHideMs > 0) {
         state.statusHideTimer = setTimeout(() => hideStatus(), autoHideMs);
     }
+
+    // Dismiss on next user input (physical key or on-screen keyboard tap)
+    if (state._statusInputDismiss) {
+        document.removeEventListener('keydown', state._statusInputDismiss, true);
+        document.removeEventListener('click',   state._statusInputDismiss, true);
+        state._statusInputDismiss = null;
+    }
+    if (options.clearOnInput) {
+        const dismiss = (e) => {
+            if (e.type === 'click') {
+                const t = e.target;
+                if (!t.closest('.game-key') && !t.closest('.letter-input')) return;
+            }
+            document.removeEventListener('keydown', dismiss, true);
+            document.removeEventListener('click',   dismiss, true);
+            state._statusInputDismiss = null;
+            hideStatus();
+        };
+        state._statusInputDismiss = dismiss;
+        document.addEventListener('keydown', dismiss, true);
+        document.addEventListener('click',   dismiss, true);
+    }
 }
 
 export function hideStatus() {
