@@ -19,7 +19,7 @@ public class RandomAlgorithmDescriptor implements AlgorithmDescriptor {
 
     @Override
     public String getDisplayName() {
-        return "1 Basic — Random";
+        return "Basic — Random";
     }
 
     @Override

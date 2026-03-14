@@ -37,7 +37,7 @@ class AlgorithmFeatureServiceTest {
         AlgorithmFeatureService service = new AlgorithmFeatureService(AlgorithmRegistry.withDefaults(), environment);
 
         AlgorithmFeatureService.AlgorithmInfo bellman = service.getAllAlgorithms().get("BELLMAN_FULL_DICTIONARY");
-        assertEquals("3 Expert \u2014 Bellman Optimality", bellman.getDisplayName());
+        assertEquals("Expert — Bellman Optimality", bellman.getDisplayName());
         assertEquals("algorithm.features.bellman-full-dictionary.enabled", bellman.getFeatureProperty());
         assertTrue(bellman.isStateful());
         assertFalse(bellman.isEnabled());

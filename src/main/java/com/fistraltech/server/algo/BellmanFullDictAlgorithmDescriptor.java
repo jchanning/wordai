@@ -25,7 +25,7 @@ public class BellmanFullDictAlgorithmDescriptor implements AlgorithmDescriptor {
 
     @Override
     public String getDisplayName() {
-        return "3 Expert — Bellman Optimality";
+        return "Expert — Bellman Optimality";
     }
 
     @Override

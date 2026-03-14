@@ -154,7 +154,7 @@ class AlgorithmRegistryTest {
     @DisplayName("descriptor metadata is exposed from the registry")
     void getDescriptor_exposesMetadata() {
         AlgorithmDescriptor descriptor = registry.getDescriptor("BELLMAN_FULL_DICTIONARY").orElseThrow();
-        assertEquals("3 Expert — Bellman Optimality", descriptor.getDisplayName());
+        assertEquals("Expert — Bellman Optimality", descriptor.getDisplayName());
         assertEquals("Minimises expected guesses across the full dictionary — strongest, most thorough", descriptor.getDescription());
         assertEquals("bellman-full-dictionary", descriptor.getFeatureToggleKey());
         assertTrue(descriptor.isStateful());

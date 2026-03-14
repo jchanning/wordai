@@ -19,7 +19,7 @@ public class EntropyAlgorithmDescriptor implements AlgorithmDescriptor {
 
     @Override
     public String getDisplayName() {
-        return "2 Smart — Maximum Entropy";
+        return "Smart — Maximum Entropy";
     }
 
     @Override
