@@ -1,5 +1,6 @@
 package com.fistraltech.server.algo;
 
+import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
 import com.fistraltech.bot.selection.SelectBellmanFullDictionary;
@@ -14,6 +15,7 @@ import com.fistraltech.core.Dictionary;
  * must cache the instance for the game session's lifetime.
  */
 @Component
+@Order(3)
 public class BellmanFullDictAlgorithmDescriptor implements AlgorithmDescriptor {
 
     @Override
@@ -23,12 +25,12 @@ public class BellmanFullDictAlgorithmDescriptor implements AlgorithmDescriptor {
 
     @Override
     public String getDisplayName() {
-        return "Bellman Full Dictionary";
+        return "3 Expert — Bellman Optimality";
     }
 
     @Override
     public String getDescription() {
-        return "Uses full dictionary guesses to reduce remaining possibilities";
+        return "Minimises expected guesses across the full dictionary — strongest, most thorough";
     }
 
     @Override

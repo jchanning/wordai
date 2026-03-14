@@ -6,7 +6,7 @@
 
     <groupId>com.fistraltech</groupId>
     <artifactId>wordai</artifactId>
-    <version>1.15.1</version>
+    <version>1.15.2</version>
     <packaging>jar</packaging>
 
     <properties>
@@ -34,6 +34,7 @@
         <profile>
             <id>cloud</id>
             <properties>
+                <maven.compiler.release>17</maven.compiler.release>
                 <maven.compiler.source>17</maven.compiler.source>
                 <maven.compiler.target>17</maven.compiler.target>
                 <java.version>17</java.version>

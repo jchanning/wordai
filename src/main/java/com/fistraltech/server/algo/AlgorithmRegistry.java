@@ -1,5 +1,6 @@
 package com.fistraltech.server.algo;
 
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -47,7 +48,7 @@ public class AlgorithmRegistry {
                 d -> d,
                 (left, right) -> left,
                 LinkedHashMap::new));
-        this.descriptors = Map.copyOf(discovered);
+        this.descriptors = Collections.unmodifiableMap(discovered);
         logger.info(() -> "AlgorithmRegistry initialised with: " + descriptors.keySet());
     }
 

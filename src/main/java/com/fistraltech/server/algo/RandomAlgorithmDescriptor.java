@@ -1,5 +1,6 @@
 package com.fistraltech.server.algo;
 
+import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
 import com.fistraltech.bot.selection.SelectRandom;
@@ -8,6 +9,7 @@ import com.fistraltech.core.Dictionary;
 
 /** Descriptor for the {@code RANDOM} baseline selection algorithm. */
 @Component
+@Order(1)
 public class RandomAlgorithmDescriptor implements AlgorithmDescriptor {
 
     @Override
@@ -17,12 +19,12 @@ public class RandomAlgorithmDescriptor implements AlgorithmDescriptor {
 
     @Override
     public String getDisplayName() {
-        return "Random Selection";
+        return "1 Basic — Random";
     }
 
     @Override
     public String getDescription() {
-        return "Selects words randomly from valid options";
+        return "Picks words at random from valid candidates — weakest, no strategy";
     }
 
     @Override

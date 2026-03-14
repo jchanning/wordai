@@ -1,5 +1,6 @@
 package com.fistraltech.server.algo;
 
+import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
 import com.fistraltech.bot.selection.SelectMaximumEntropy;
@@ -8,6 +9,7 @@ import com.fistraltech.core.Dictionary;
 
 /** Descriptor for the maximum-entropy selection algorithm. */
 @Component
+@Order(2)
 public class EntropyAlgorithmDescriptor implements AlgorithmDescriptor {
 
     @Override
@@ -17,12 +19,12 @@ public class EntropyAlgorithmDescriptor implements AlgorithmDescriptor {
 
     @Override
     public String getDisplayName() {
-        return "Maximum Entropy";
+        return "2 Smart — Maximum Entropy";
     }
 
     @Override
     public String getDescription() {
-        return "Chooses words that maximize information gain";
+        return "Maximises information gained per guess — smart, reliable performance";
     }
 
     @Override

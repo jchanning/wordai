@@ -3400,11 +3400,26 @@ select:focus {
     letter-spacing: 0.05em;
 }
 
+.game-key.backspace-key {
+    background-color: var(--accent-primary);
+    color: white;
+}
+
 .game-key.enter-key:hover:not(:disabled) {
     background-color: var(--accent-hover);
 }
 
+.game-key.backspace-key:hover:not(:disabled) {
+    background-color: var(--accent-hover);
+}
+
 .game-key.enter-key:disabled {
+    background-color: var(--bg-tertiary);
+    color: var(--text-secondary);
+    opacity: 0.6;
+}
+
+.game-key.backspace-key:disabled {
     background-color: var(--bg-tertiary);
     color: var(--text-secondary);
     opacity: 0.6;

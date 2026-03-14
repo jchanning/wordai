@@ -61,7 +61,7 @@ export function initializeKeyboard(onGuess) {
             // Backspace on the right
             const backspaceBtn = document.createElement('button');
             backspaceBtn.type = 'button';
-            backspaceBtn.className = 'game-key wide-key';
+            backspaceBtn.className = 'game-key wide-key backspace-key';
             backspaceBtn.innerHTML = '&#9003;'; // ⌫
             backspaceBtn.setAttribute('aria-label', 'Backspace');
             backspaceBtn.addEventListener('click', function (e) {
