@@ -10,6 +10,12 @@ import {
     apiGetDictionaries, apiCheckHealth,
 } from './api.js';
 import {
+    initializeChallengeUI, startChallenge, submitChallengeGuess,
+    useChallengeAssist, pauseChallenge, skipChallenge,
+    changeChallengeStrategy,
+    handleChallengeViewActivated,
+} from './challenge.js';
+import {
     shouldSuppressNativeKeyboard,
     getCurrentGuess, clearLetterInputs, disableLetterInputs, setupLetterInputs,
     showStatus, hideStatus, updateHelpCounter,
@@ -49,6 +55,7 @@ window.addEventListener('DOMContentLoaded', function () {
     adjustLetterInputGrid(5);
     loadAlgorithms();
     newGame();
+    initializeChallengeUI();
     updateHistoryDisplay();
     updateStats();
     updateHelpCounter();
@@ -84,6 +91,13 @@ window.hideSessionViewer       = hideSessionViewer;
 window.exportSessionGamesToCSV = exportSessionGamesToCSV;
 window.onDictionaryChange      = onDictionaryChange;
 window.populateDictionarySelector = populateDictionarySelector;
+window.startChallenge          = startChallenge;
+window.submitChallengeGuess    = submitChallengeGuess;
+window.useChallengeAssist      = useChallengeAssist;
+window.pauseChallenge          = pauseChallenge;
+window.skipChallenge           = skipChallenge;
+window.changeChallengeStrategy = changeChallengeStrategy;
+window.onChallengeViewActivated = handleChallengeViewActivated;
 
 // ui.js
 window.hideStatus              = hideStatus;
@@ -821,12 +835,14 @@ async function loadDictionaries() {
 function populateDictionarySelector() {
     const selector     = document.getElementById('dictionarySelector');
     const selectorDict = document.getElementById('dictionarySelectorDict');
+    const selectorChallenge = document.getElementById('challengeDictionarySelector');
 
     if (selector)     selector.innerHTML     = '';
     if (selectorDict) selectorDict.innerHTML = '';
+    if (selectorChallenge) selectorChallenge.innerHTML = '';
 
     state.availableDictionaries.forEach(dict => {
-        [selector, selectorDict].forEach(sel => {
+        [selector, selectorDict, selectorChallenge].forEach(sel => {
             if (!sel) return;
             const opt = document.createElement('option');
             opt.value       = dict.id;
@@ -842,6 +858,7 @@ function populateDictionarySelector() {
     if (defaultDict) {
         if (selector)     selector.value     = defaultDict.id;
         if (selectorDict) selectorDict.value = defaultDict.id;
+        if (selectorChallenge) selectorChallenge.value = defaultDict.id;
         adjustLetterInputGrid(defaultDict.wordLength);
     }
 

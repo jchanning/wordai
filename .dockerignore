@@ -1,0 +1,16 @@
+.git
+.github
+.vscode
+.idea
+
+**/target
+**/node_modules
+
+.env
+.env.*
+
+data
+logs
+*.log
+
+*.iml

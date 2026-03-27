@@ -26,6 +26,7 @@
                 <h1 class="header-title">WordAI</h1>
                 <nav class="app-nav" id="appNav" aria-label="Application Modes">
                     <a class="nav-link" href="#/play" data-nav="play">Play</a>
+                    <a class="nav-link" href="#/challenge" data-nav="challenge">Challenge</a>
                     <a class="nav-link desktop-only" href="#/bot-demo" data-nav="bot-demo">Auto</a>
                     <a class="nav-link desktop-only" href="#/bot-performance" data-nav="bot-performance">Analyse</a>
                     <a class="nav-link" href="#/dictionary" data-nav="dictionary">Dictionary</a>
@@ -240,6 +241,121 @@
     </div>
             </div>
 
+        </section>
+
+        <!-- Screen: Challenge Mode -->
+        <section id="screen-challenge" class="screen" hidden>
+            <div class="screen-toolbar">
+                <div class="screen-toolbar-left">
+                    <h2 class="screen-title">Challenge Mode</h2>
+                    <div class="screen-subtitle">Ten escalating puzzles. One score. Limited assists.</div>
+                </div>
+            </div>
+
+            <div class="challenge-layout">
+                <aside class="panel challenge-sidebar">
+                    <div class="challenge-section-header">
+                        <h3>Challenge</h3>
+                    </div>
+
+                    <div class="form-grid challenge-form-grid">
+                        <div class="form-group">
+                            <label for="challengeStrategySelector">Assist Strategy</label>
+                            <select id="challengeStrategySelector" class="form-input" onchange="changeChallengeStrategy()">
+                                <option value="ENTROPY" selected>Smart — Maximum Entropy</option>
+                                <option value="RANDOM">Basic — Random</option>
+                                <option value="BELLMAN_FULL_DICTIONARY">Expert — Bellman Optimality</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div id="challengeEmptyState" class="challenge-empty-state">
+                        <p>Start a new challenge to begin a timed 10-puzzle run.</p>
+                        <ul class="challenge-rule-list">
+                            <li>Start with 120 seconds, 6 attempts, and 3 assists.</li>
+                            <li>Time drops by 10 seconds per puzzle down to 10 seconds.</li>
+                            <li>Assists drop every 3 puzzles, but never below 1.</li>
+                            <li>You can pause once and skip once per challenge.</li>
+                        </ul>
+                    </div>
+
+                    <div id="challengeActiveState" hidden>
+                        <div class="challenge-stat-grid">
+                            <div class="challenge-stat-card">
+                                <span class="challenge-stat-label">Status</span>
+                                <strong id="challengeStatusPill" class="challenge-status-pill status-idle">IDLE</strong>
+                            </div>
+                            <div class="challenge-stat-card">
+                                <span class="challenge-stat-label">Score</span>
+                                <strong id="challengeScoreValue">0</strong>
+                            </div>
+                            <div class="challenge-stat-card">
+                                <span class="challenge-stat-label">Assists</span>
+                                <strong id="challengeAssistValue">3</strong>
+                            </div>
+                        </div>
+
+                        <p id="challengeInlineMessage" class="challenge-inline-message">Solve the current puzzle before the timer expires.</p>
+
+                        <div class="challenge-action-grid">
+                            <button id="challengeAssistBtn" class="btn btn-info" onclick="useChallengeAssist()">Use Assist</button>
+                            <button id="challengePauseBtn" class="btn btn-secondary" onclick="pauseChallenge()">Pause +10s</button>
+                            <button id="challengeSkipBtn" class="btn btn-warning" onclick="skipChallenge()">Skip (-20)</button>
+                        </div>
+                    </div>
+                </aside>
+
+                <div class="game-container panel play-panel challenge-game-panel">
+                    <div class="panel-header-row">
+                        <h3>Game</h3>
+                        <div class="panel-header-actions">
+                            <select id="challengeDictionarySelector" class="dictionary-selector">
+                                <option value="">Loading dictionaries...</option>
+                            </select>
+                            <span class="attempts-counter"><span id="challengeAttempts">0</span>/<span id="challengeMaxAttempts">6</span></span>
+                            <button id="startChallengeBtn" class="btn btn-success btn-md" onclick="startChallenge()">Start Challenge</button>
+                        </div>
+                    </div>
+
+                    <div class="challenge-game-strip" id="challengeGameStrip" hidden>
+                        <div class="challenge-game-strip-info">
+                            <span class="challenge-game-strip-meta">PUZZLE <strong id="challengeGameStripPuzzle">1/10</strong></span>
+                            <strong class="challenge-game-strip-timer" id="challengeGameStripTimer">120s</strong>
+                        </div>
+                        <div class="challenge-timer-track">
+                            <div class="challenge-timer-fill" id="challengeTimerFill"></div>
+                        </div>
+                    </div>
+
+                    <div class="guess-container">
+                        <div class="letter-inputs" id="challengeLetterInputs"></div>
+                    </div>
+
+                    <div class="guess-history" id="challengeGuessHistory"></div>
+
+                    <div class="challenge-next-overlay" id="challengeNextOverlay" hidden>
+                        <div class="challenge-next-inner">
+                            <p class="challenge-next-label">NEXT PUZZLE</p>
+                            <p class="challenge-next-num" id="challengeNextNum">2/10</p>
+                            <div class="challenge-next-countdown" id="challengeNextCountdown">5</div>
+                        </div>
+                    </div>
+
+                    <div class="keyboard-container">
+                        <div class="keyboard" id="challengeKeyboard"></div>
+                    </div>
+                </div>
+
+                <div class="panel challenge-progress-panel">
+                    <div class="challenge-section-header">
+                        <h3>Completed Puzzles</h3>
+                        <span class="challenge-muted">Full challenge summary</span>
+                    </div>
+                    <div id="challengeCompletedList" class="challenge-completed-list challenge-completed-list-full">
+                        <p class="challenge-muted">No completed puzzles yet.</p>
+                    </div>
+                </div>
+            </div>
         </section>
 
         <!-- Mobile Bottom Navigation (7 panels) -->
@@ -660,7 +776,7 @@
             <div class="about-content panel">
                 <div class="about-logo">
                     <h1 class="about-app-name">WordAI</h1>
-                    <p class="about-version">v1.15.3</p>
+                    <p class="about-version">v1.15.4</p>
                 </div>
                 <p class="about-description">A Wordle-style word game with AI-powered analysis and bot strategies.</p>
                 <div class="about-links">
@@ -837,7 +953,7 @@
     <footer class="app-footer">
         <div class="footer-content">
             <div class="footer-copyright">
-                © 2026 FistralTech Ltd | v1.15.3
+                © 2026 FistralTech Ltd | v1.15.4
             </div>
             <nav class="footer-links" aria-label="Footer navigation">
                 <a href="https://fistraltech.com" target="_blank" rel="noopener noreferrer" class="footer-link">fistraltech.com</a>

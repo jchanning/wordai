@@ -86,6 +86,52 @@ export async function apiSetStrategy(gameId, strategy) {
     });
 }
 
+// ---- Challenges ----
+
+export async function apiCreateChallenge(body) {
+    return apiFetch(`${API_BASE}/challenges`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body || {}),
+    });
+}
+
+export async function apiGetChallengeState(challengeId) {
+    return apiFetch(`${API_BASE}/challenges/${encodeURIComponent(challengeId)}`);
+}
+
+export async function apiMakeChallengeGuess(challengeId, word) {
+    return apiFetch(`${API_BASE}/challenges/${encodeURIComponent(challengeId)}/guess`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ word }),
+    });
+}
+
+export async function apiUseChallengeAssist(challengeId, strategy) {
+    return apiFetch(`${API_BASE}/challenges/${encodeURIComponent(challengeId)}/assist`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ strategy }),
+    });
+}
+
+export async function apiPauseChallenge(challengeId) {
+    return apiFetch(`${API_BASE}/challenges/${encodeURIComponent(challengeId)}/pause`, {
+        method: 'POST',
+    });
+}
+
+export async function apiSkipChallenge(challengeId) {
+    return apiFetch(`${API_BASE}/challenges/${encodeURIComponent(challengeId)}/skip`, {
+        method: 'POST',
+    });
+}
+
+export async function apiGetChallengeLeaderboard() {
+    return apiFetch(`${API_BASE}/challenges/leaderboard`);
+}
+
 // ---- Health ----
 
 export async function apiCheckHealth() {

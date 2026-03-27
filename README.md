@@ -54,6 +54,26 @@ mvnw.cmd spring-boot:run
 
 The application will start on `http://localhost:8080`
 
+### Running with Docker
+
+```bash
+# Build and run with Docker Compose
+cp .env.example .env
+docker compose up --build
+```
+
+The application will be available at `http://localhost:8080`.
+
+Containerization files:
+- `Dockerfile` - multi-stage build using Java 21
+- `docker-compose.yml` - local runtime with persistent named volumes
+- `docker/wordai.properties` - container-specific configuration for `ConfigManager`
+- `.dockerignore` - optimized build context
+
+Persistent volumes created by Compose:
+- `wordai-data` mounted at `/app/data` (H2 database and generated output)
+- `wordai-logs` mounted at `/app/logs`
+
 ### Access from Other Devices
 
 The server is configured to accept connections from your local network:

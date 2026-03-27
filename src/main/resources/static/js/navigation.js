@@ -23,7 +23,7 @@ export function setView(view) {
     state.currentView = view;
 
     const viewIds = [
-        'play', 'session', 'bot-demo', 'bot-performance',
+        'play', 'challenge', 'session', 'bot-demo', 'bot-performance',
         'dictionary', 'admin', 'help', 'about',
         'privacy', 'terms', 'cookies', 'terms-sale',
     ];
@@ -64,6 +64,9 @@ export function setView(view) {
     if (view === 'admin') {
         // Defer to admin module via event to avoid circular import
         document.dispatchEvent(new CustomEvent('wordai:loadAdmin'));
+    }
+    if (view === 'challenge' && typeof window.onChallengeViewActivated === 'function') {
+        window.onChallengeViewActivated();
     }
 }
 

@@ -17,6 +17,40 @@ export const state = {
     latestOccurrenceData: null,
     letterStatusMap:     {},   // letter → 'G'|'A'|'R' across current game guesses
 
+    // ---- Challenge mode ----
+    challenge: {
+        currentChallengeId:     null,
+        dictionaryId:           null,
+        status:                 'IDLE',
+        totalScore:             0,
+        totalPuzzles:           10,
+        currentPuzzleNumber:    1,
+        puzzlesCompleted:       0,
+        currentPuzzleTimeLimitSeconds: 120,
+        secondsRemaining:       120,
+        currentPuzzleAssistsRemaining: 3,
+        currentAttempts:        0,
+        maxAttempts:            6,
+        pauseUsed:              false,
+        skipUsed:               false,
+        challengeComplete:      false,
+        challengeFailed:        false,
+        message:                '',
+        suggestedWord:          null,
+        revealedTargetWord:     null,
+        lastGuess:              null,
+        completedPuzzles:       [],
+        currentPuzzleGuesses:   [],
+        keyboardStatusMap:      {},
+        leaderboard:            [],
+        selectedStrategy:       'ENTROPY',
+        timerIntervalId:        null,
+        countdownIntervalId:    null,
+        countdownTimeoutId:     null,
+        timerSyncedAtMs:        0,
+        syncedSecondsRemaining: 120,
+    },
+
     // ---- Auth ----
     currentUser: null,
 

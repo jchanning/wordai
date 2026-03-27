@@ -1,6 +1,23 @@
 # WordAI Copilot Instructions (Updated)
 
-WordAI is a Wordle-like simulation and analysis system. This guide equips AI agents to make correct, fast changes aligned with project conventions.
+WordAI is a Wordle-like game engine and bot strategy analysis system. This guide equips AI agents to make correct, fast changes aligned with project conventions.
+
+## Coding Standards
+- Follow Java conventions: camelCase for variables/methods, PascalCase for classes.
+- Use descriptive names; avoid abbreviations unless widely understood (e.g., `Response`, `Dictionary`).
+- Keep methods focused; if a method exceeds ~20 lines, consider refactoring.
+- Document public methods with Javadoc; internal methods can have inline comments as needed.
+- Use logging (e.g., `Logger`) for important events/errors rather than `System.out.println`.
+- Clean up unused imports and code; run `mvn clean` before committing.
+- Avoid opaque behavior; do not create fallback mechanisms that hide errors. If a file is missing, throw an exception rather than silently using defaults.
+
+## Testing
+- Write unit tests for new functionality; place them in `src/test/java/com/fistraltech/...` mirroring the main code structure.
+- Use JUnit 5; follow existing test naming conventions (e.g., `ClassNameTest`).
+- For core logic (e.g., `WordGame`, `Filter`), test edge cases like repeated letters, all correct/incorrect guesses, and dictionary pruning.
+- For server routes, use Spring's `MockMvc` to test API endpoints and expected responses.
+- Run tests locally with `mvn test` and ensure they pass before pushing changes.
+- If adding new configuration options, include tests that verify correct loading and behaviThe or.
 
 ## Architecture Map
 See [docs/ARCHITECTURE.md](../docs/ARCHITECTURE.md) for the full architecture reference including layer rules, data flow, invariants, and known violations.

@@ -1,0 +1,25 @@
+services:
+  wordai:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: wordai:local
+    container_name: wordai
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:h2:file:/app/data/wordai;DB_CLOSE_ON_EXIT=FALSE
+      SPRING_H2_CONSOLE_ENABLED: "false"
+      WORDAI_CORS_ALLOWED_ORIGINS: ${WORDAI_CORS_ALLOWED_ORIGINS:-http://localhost:8080}
+      WORDAI_ADMIN_EMAIL: ${WORDAI_ADMIN_EMAIL:-admin@wordai.local}
+      WORDAI_ADMIN_USERNAME: ${WORDAI_ADMIN_USERNAME:-admin}
+      WORDAI_ADMIN_PASSWORD: ${WORDAI_ADMIN_PASSWORD:-ChangeMe123!}
+      WORDAI_ADMIN_FULLNAME: ${WORDAI_ADMIN_FULLNAME:-System Administrator}
+    volumes:
+      - wordai-data:/app/data
+      - wordai-logs:/app/logs
+
+volumes:
+  wordai-data:
+  wordai-logs:

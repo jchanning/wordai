@@ -79,7 +79,7 @@ class ResourceControllerTest {
         mockMvc.perform(get("/api/wordai/algorithms"))
                 .andExpect(status().isOk())
             .andExpect(content().string(containsString("\"id\":\"RANDOM\"")))
-            .andExpect(content().string(containsString("Selects words randomly from valid options")))
+            .andExpect(content().string(containsString("Picks words at random from valid candidates")))
             .andExpect(content().string(containsString("\"id\":\"ENTROPY\"")))
             .andExpect(content().string(containsString("\"id\":\"BELLMAN_FULL_DICTIONARY\"")))
             .andExpect(content().string(containsString("\"stateful\":\"true\"")))
