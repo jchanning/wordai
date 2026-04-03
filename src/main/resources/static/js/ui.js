@@ -18,7 +18,7 @@ export function shouldSuppressNativeKeyboard() {
  * @returns {string} Upper-cased word.
  */
 export function getCurrentGuess() {
-    const inputs = document.querySelectorAll('.letter-input');
+    const inputs = document.querySelectorAll('#letterInputs .letter-input');
     let word = '';
     inputs.forEach(input => { word += input.value.toUpperCase(); });
     return word;
@@ -28,7 +28,7 @@ export function getCurrentGuess() {
  * Clears all letter inputs and re-focuses the first one (unless on a touch device).
  */
 export function clearLetterInputs() {
-    const inputs = document.querySelectorAll('.letter-input');
+    const inputs = document.querySelectorAll('#letterInputs .letter-input');
     const suppressKeyboard = shouldSuppressNativeKeyboard();
     inputs.forEach(input => {
         input.value = '';
@@ -44,7 +44,7 @@ export function clearLetterInputs() {
  * Disables all letter inputs and on-screen keyboard buttons (called when game ends).
  */
 export function disableLetterInputs() {
-    document.querySelectorAll('.letter-input').forEach(input => { input.disabled = true; });
+    document.querySelectorAll('#letterInputs .letter-input').forEach(input => { input.disabled = true; });
     document.querySelectorAll('.game-key').forEach(button => { button.disabled = true; });
 }
 
@@ -53,7 +53,7 @@ export function disableLetterInputs() {
  * @param {Function} onEnter  Called when the user presses Enter (i.e. makeGuess).
  */
 export function setupLetterInputs(onEnter) {
-    const inputs = document.querySelectorAll('.letter-input');
+    const inputs = document.querySelectorAll('#letterInputs .letter-input');
     const suppressKeyboard = shouldSuppressNativeKeyboard();
 
     inputs.forEach((input, index) => {
