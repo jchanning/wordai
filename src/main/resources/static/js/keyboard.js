@@ -81,7 +81,10 @@ export function initializeKeyboard(onGuess) {
 // ---- Letter insertion / deletion ----
 
 export function insertLetterFromKeyboard(letter) {
-    const inputs = document.querySelectorAll('.letter-input');
+    const container = document.getElementById('letterInputs');
+    const inputs = container
+        ? container.querySelectorAll('.letter-input')
+        : document.querySelectorAll('.letter-input');
     const suppressKeyboard = shouldSuppressNativeKeyboard();
     let inserted = false;
 
@@ -101,7 +104,10 @@ export function insertLetterFromKeyboard(letter) {
 }
 
 export function deleteLastLetter() {
-    const inputs = document.querySelectorAll('.letter-input');
+    const container = document.getElementById('letterInputs');
+    const inputs = container
+        ? container.querySelectorAll('.letter-input')
+        : document.querySelectorAll('.letter-input');
     let lastFilledIndex = -1;
     for (let i = 0; i < inputs.length; i++) {
         if (inputs[i].value) { lastFilledIndex = i; } else { break; }

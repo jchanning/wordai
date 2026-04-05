@@ -340,7 +340,7 @@ export async function makeGuess() {
     const word = getCurrentGuess().trim();
     if (!word) { showStatus('Please enter a word!', 'error', { clearOnInput: true }); return; }
 
-    const expectedLength = document.querySelectorAll('#letterInputs .letter-input').length;
+    const expectedLength = state.currentWordLength;
     if (word.length !== expectedLength) {
         showStatus(`Word must be ${expectedLength} letters long!`, 'error', { clearOnInput: true });
         return;
