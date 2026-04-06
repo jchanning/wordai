@@ -658,7 +658,7 @@ function updateAttemptsDistribution() {
     }
     const failPct = maxCount > 0 ? (dist.fail / maxCount) * 100 : 0;
     html += `<div style="display:flex;align-items:center;gap:8px;">
-        <div style="min-width:12px;text-align:right;font-size:0.9em;font-weight:600;color:var(--error);">&times;</div>
+        <div style="min-width:12px;text-align:right;font-size:0.9em;font-weight:600;color:var(--error);">\u2717</div>
         <div style="flex:1;height:24px;background:rgba(239,68,68,0.2);border-radius:4px;overflow:hidden;position:relative;">
             <div style="height:100%;width:${failPct}%;background:var(--error);transition:width 0.3s ease;display:flex;align-items:center;justify-content:flex-end;padding-right:6px;">
                 ${dist.fail > 0 ? `<span style="font-size:0.85em;font-weight:600;color:white;">${dist.fail}</span>` : ''}

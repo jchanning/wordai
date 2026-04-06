@@ -42,11 +42,18 @@ build/
 *.ipr
 out/
 
-# VS Code
-.vscode/
+# VS Code — ignore personal settings but track shared config
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
 .settings/
 .project
 .classpath
+
+# Node / npm (frontend linting only — no build step)
+node_modules/
+npm-debug.log*
+.eslintcache
 
 # Deployment secrets (DO NOT COMMIT)
 deployment/deployment-config.ps1

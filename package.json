@@ -1,0 +1,16 @@
+{
+  "name": "wordai-frontend",
+  "version": "1.0.0",
+  "description": "WordAI frontend static assets — linting only, no build step",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "lint": "eslint \"src/main/resources/static/js/**/*.js\"",
+    "lint:fix": "eslint --fix \"src/main/resources/static/js/**/*.js\""
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.0.0",
+    "eslint": "^9.0.0",
+    "globals": "^15.0.0"
+  }
+}
