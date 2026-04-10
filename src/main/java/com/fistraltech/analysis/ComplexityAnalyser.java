@@ -1,5 +1,8 @@
 package com.fistraltech.analysis;
 
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
 import com.fistraltech.core.Dictionary;
 
 
@@ -23,6 +26,8 @@ import com.fistraltech.core.Dictionary;
  * */
 
 public class ComplexityAnalyser {
+    private static final Logger logger = Logger.getLogger(ComplexityAnalyser.class.getName());
+
     private final Dictionary dictionary;
 
     public ComplexityAnalyser(Dictionary dictionary){
@@ -73,7 +78,7 @@ public class ComplexityAnalyser {
                 }
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            logger.log(Level.WARNING, "Error in analyseTwoLetterComplexity for word: " + targetWord, e);
         }
         return counter;
     }
@@ -99,7 +104,7 @@ public class ComplexityAnalyser {
                 }
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            logger.log(Level.WARNING, "Error in analyseThreeLetterComplexity for word: " + targetWord, e);
         }
         return counter;
     }

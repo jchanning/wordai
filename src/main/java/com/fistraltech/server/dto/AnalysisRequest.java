@@ -1,5 +1,8 @@
 package com.fistraltech.server.dto;
 
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
+
 /**
  * Request DTO for server-side dictionary analysis.
  *
@@ -17,8 +20,11 @@ package com.fistraltech.server.dto;
  * @author Fistral Technologies
  */
 public class AnalysisRequest {
+    @NotBlank(message = "Algorithm is required")
     private String algorithm;
+    @NotBlank(message = "Dictionary ID is required")
     private String dictionaryId;
+    @Min(value = 1, message = "maxGames must be at least 1")
     private Integer maxGames; // Optional: limit number of games to analyze
     
     public AnalysisRequest() {}

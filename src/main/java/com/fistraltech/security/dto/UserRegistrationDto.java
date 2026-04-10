@@ -4,6 +4,12 @@ import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
+/**
+ * Data transfer object for new user registration requests.
+ *
+ * <p>All fields are validated at the API boundary via Jakarta Bean Validation before
+ * the registration is forwarded to {@link com.fistraltech.security.service.UserService}.
+ */
 public class UserRegistrationDto {
     
     @NotBlank(message = "Email is required")

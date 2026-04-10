@@ -1,21 +1,38 @@
 package com.fistraltech.security.controller;
 
-import com.fistraltech.security.dto.UserDto;
-import com.fistraltech.security.dto.UserRegistrationDto;
-import com.fistraltech.security.service.UserService;
+import java.util.HashMap;
+import java.util.Map;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.oauth2.core.user.OAuth2User;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.fistraltech.security.dto.UserDto;
+import com.fistraltech.security.dto.UserRegistrationDto;
+import com.fistraltech.security.service.UserService;
 
 import jakarta.validation.Valid;
 
-import java.util.HashMap;
-import java.util.Map;
-
+/**
+ * REST controller for user authentication and registration.
+ *
+ * <p><strong>Base path</strong>: {@code /api/auth}
+ *
+ * <p><strong>Endpoints</strong>
+ * <ul>
+ *   <li>{@code POST /register} — register a new local user account</li>
+ *   <li>{@code GET /user} — return the currently authenticated user's profile</li>
+ *   <li>{@code POST /logout} — invalidate the current session</li>
+ * </ul>
+ */
 @RestController
 @RequestMapping("/api/auth")
 public class AuthController {
@@ -33,7 +50,8 @@ public class AuthController {
             return ResponseEntity.ok(userDto);
         } catch (RuntimeException e) {
             Map<String, String> error = new HashMap<>();
-            error.put("error", e.getMessage());
+            error.put("error", "Registration failed");
+            error.put("message", e.getMessage());
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
         }
     }

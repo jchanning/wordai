@@ -7,6 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 
@@ -26,6 +27,7 @@ import com.fistraltech.util.Config;
  * </ul>
  */
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+@DisplayName("WordEntropy Lazy Tests")
 class WordEntropyLazyTest {
     
     private Dictionary dictionary;

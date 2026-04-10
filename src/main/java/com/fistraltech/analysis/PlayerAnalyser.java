@@ -7,6 +7,8 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import com.fistraltech.bot.GameAnalytics;
 import com.fistraltech.bot.Player;
@@ -26,6 +28,8 @@ import com.fistraltech.util.ConfigManager;
  * for integration with the web UI.
  */
 public class PlayerAnalyser {
+    private static final Logger logger = Logger.getLogger(PlayerAnalyser.class.getName());
+
     private final Player player;
     private final boolean enableFileOutput;
     private final String outputBasePath;
@@ -108,7 +112,7 @@ public class PlayerAnalyser {
             List<String> words = new ArrayList<>(allWords.getMasterSetOfWords());
             int gamesToPlay = (maxGames != null && maxGames > 0) ? Math.min(maxGames, words.size()) : words.size();
             
-            System.out.println("Starting analysis of " + gamesToPlay + " games...");
+            logger.info("Starting analysis of " + gamesToPlay + " games...");
             
             for(int i = 0; i < gamesToPlay; i++){
                 String word = words.get(i);
@@ -125,6 +129,7 @@ public class PlayerAnalyser {
                 }
                 catch(Exception ex){
                     // Game failed (likely max attempts reached) - continue to collect result
+                    logger.log(Level.FINE, "Game play failed for word: " + word, ex);
                 }
                 
                 // Collect game result (works for both won and lost games)
@@ -141,7 +146,7 @@ public class PlayerAnalyser {
                 // Progress logging (every 100 games or at key milestones)
                 if ((i + 1) % 100 == 0 || (i + 1) == gamesToPlay || (i + 1) == 10) {
                     double currentWinRate = totalGames > 0 ? (gamesWon * 100.0 / totalGames) : 0;
-                    System.out.println(String.format("Progress: %d/%d games (%.1f%% win rate)", 
+                    logger.info(String.format("Progress: %d/%d games (%.1f%% win rate)",
                         i + 1, gamesToPlay, currentWinRate));
                 }
                 
@@ -154,7 +159,7 @@ public class PlayerAnalyser {
                         ga.saveDetailsToFile(details);
                     } catch(Exception ex) {
                         // Log but don't fail the analysis
-                        System.err.println("Failed to write analytics for iteration " + (i + 1) + ": " + ex.getMessage());
+                        logger.log(Level.WARNING, "Failed to write analytics for iteration " + (i + 1), ex);
                     }
                 }
             }
@@ -177,10 +182,10 @@ public class PlayerAnalyser {
             
         } finally {
             if (summary != null) {
-                try { summary.close(); } catch (IOException e) { /* ignore */ }
+                try { summary.close(); } catch (IOException e) { logger.log(Level.WARNING, "Failed to close summary file", e); }
             }
             if (details != null) {
-                try { details.close(); } catch (IOException e) { /* ignore */ }
+                try { details.close(); } catch (IOException e) { logger.log(Level.WARNING, "Failed to close details file", e); }
             }
         }
         

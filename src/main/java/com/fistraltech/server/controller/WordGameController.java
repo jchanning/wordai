@@ -7,8 +7,6 @@ import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import jakarta.servlet.http.HttpServletRequest;
-
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -32,6 +30,9 @@ import com.fistraltech.server.dto.CreateGameResponse;
 import com.fistraltech.server.dto.GameResponse;
 import com.fistraltech.server.dto.GuessRequest;
 import com.fistraltech.server.model.GameSession;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.Valid;
 
 /**
  * REST controller for the WordAI HTTP API.
@@ -120,7 +121,7 @@ public class WordGameController {
      * POST /api/wordai/games
      */
     @PostMapping("/games")
-    public ResponseEntity<?> createGame(@RequestBody(required = false) CreateGameRequest request,
+    public ResponseEntity<?> createGame(@Valid @RequestBody(required = false) CreateGameRequest request,
             Authentication authentication) {
         try {
             String targetWord = null;
@@ -184,7 +185,7 @@ public class WordGameController {
      */
     @PostMapping("/games/{gameId}/guess")
         public ResponseEntity<?> makeGuess(@PathVariable String gameId,
-            @RequestBody GuessRequest request,
+            @Valid @RequestBody GuessRequest request,
             Authentication authentication,
             HttpServletRequest httpRequest) {
         try {
@@ -202,7 +203,7 @@ public class WordGameController {
                 Map<String, String> error = new HashMap<>();
                 error.put("error", "Game not found");
                 error.put("message", "Game session " + gameId + " does not exist");
-                return ResponseEntity.notFound().build();
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
             }
             
             GameResponse response = new GameResponse(

@@ -3,22 +3,27 @@ package com.fistraltech.security.service;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.lang.NonNull;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.fistraltech.security.dto.UserDto;
 import com.fistraltech.security.dto.UserRegistrationDto;
+import com.fistraltech.security.exception.DuplicateResourceException;
+import com.fistraltech.security.exception.InvalidOperationException;
+import com.fistraltech.security.exception.ResourceNotFoundException;
 import com.fistraltech.security.model.User;
 import com.fistraltech.security.repository.UserRepository;
 
 @Service
 public class UserService {
-    
+
+    private static final String USER_NOT_FOUND = "User not found";
+
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     
@@ -29,11 +34,11 @@ public class UserService {
     
     public UserDto registerUser(UserRegistrationDto registrationDto) {
         if (userRepository.existsByEmail(registrationDto.getEmail())) {
-            throw new RuntimeException("Email already exists");
+            throw new DuplicateResourceException("Email already exists");
         }
         
         if (userRepository.existsByUsername(registrationDto.getUsername())) {
-            throw new RuntimeException("Username already exists");
+            throw new DuplicateResourceException("Username already exists");
         }
         
         User user = new User();
@@ -76,7 +81,7 @@ public class UserService {
         return userRepository.findByEmail(email).map(this::convertToDto);
     }
     
-    public Optional<UserDto> getUserById(Long id) {
+    public Optional<UserDto> getUserById(@NonNull Long id) {
         return userRepository.findById(id).map(this::convertToDto);
     }
 
@@ -86,18 +91,18 @@ public class UserService {
     public List<UserDto> getAllUsers() {
         return userRepository.findAll().stream()
                 .map(this::convertToDto)
-                .collect(Collectors.toList());
+                .toList();
     }
     
     @Transactional
-    public Page<UserDto> getUsersPaged(Pageable pageable) {
+    public Page<UserDto> getUsersPaged(@NonNull Pageable pageable) {
         return userRepository.findAll(pageable).map(this::convertToDto);
     }
     
     @Transactional
-    public UserDto updateUserRoles(Long userId, List<String> roles) {
+    public UserDto updateUserRoles(@NonNull Long userId, List<String> roles) {
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException(USER_NOT_FOUND));
         
         user.getRoles().clear();
         roles.forEach(user::addRole);
@@ -107,9 +112,9 @@ public class UserService {
     }
     
     @Transactional
-    public UserDto addRoleToUser(Long userId, String role) {
+    public UserDto addRoleToUser(@NonNull Long userId, String role) {
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException(USER_NOT_FOUND));
         
         user.addRole(role);
         User savedUser = userRepository.save(user);
@@ -117,9 +122,9 @@ public class UserService {
     }
     
     @Transactional
-    public UserDto removeRoleFromUser(Long userId, String role) {
+    public UserDto removeRoleFromUser(@NonNull Long userId, String role) {
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException(USER_NOT_FOUND));
         
         user.removeRole(role);
         User savedUser = userRepository.save(user);
@@ -127,9 +132,9 @@ public class UserService {
     }
     
     @Transactional
-    public UserDto enableUser(Long userId) {
+    public UserDto enableUser(@NonNull Long userId) {
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException(USER_NOT_FOUND));
         
         user.setEnabled(true);
         User savedUser = userRepository.save(user);
@@ -137,9 +142,9 @@ public class UserService {
     }
     
     @Transactional
-    public UserDto disableUser(Long userId) {
+    public UserDto disableUser(@NonNull Long userId) {
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException(USER_NOT_FOUND));
         
         user.setEnabled(false);
         User savedUser = userRepository.save(user);
@@ -168,20 +173,20 @@ public class UserService {
         return userRepository.findAll().stream()
                 .filter(user -> user.hasRole(role))
                 .map(this::convertToDto)
-                .collect(Collectors.toList());
+                .toList();
     }
     
     @Transactional
-    public UserDto resetPassword(Long userId, String newPassword) {
+    public UserDto resetPassword(@NonNull Long userId, String newPassword) {
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException(USER_NOT_FOUND));
         
         if (!"local".equals(user.getProvider())) {
-            throw new IllegalStateException("Cannot reset password for OAuth users");
+            throw new InvalidOperationException("Cannot reset password for OAuth users");
         }
         
         if (newPassword == null || newPassword.length() < 8) {
-            throw new IllegalArgumentException("Password must be at least 8 characters");
+            throw new InvalidOperationException("Password must be at least 8 characters");
         }
         
         user.setPassword(passwordEncoder.encode(newPassword));

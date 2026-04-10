@@ -1,5 +1,7 @@
 package com.fistraltech.server.dto;
 
+import jakarta.validation.constraints.NotBlank;
+
 /**
  * Request DTO for submitting a guess.
  *
@@ -13,6 +15,7 @@ package com.fistraltech.server.dto;
  * @author Fistral Technologies
  */
 public class GuessRequest {
+    @NotBlank(message = "Word is required")
     private String word;
     
     public GuessRequest() {}
