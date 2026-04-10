@@ -12,12 +12,18 @@
     <properties>
         <maven.compiler.source>25</maven.compiler.source>
         <maven.compiler.target>25</maven.compiler.target>
+        <!-- JDK 25 runtime; bytecode targets Java 21 for Spring Boot 3.4.x ASM 9.7 compatibility -->
+        <!-- Spring Boot 3.4.0 depends on ASM 9.7 which does not parse Java 25 class files.        -->
+        <!-- Upgrade Spring Boot to a release that bundles ASM 9.8+ to enable release 25 bytecode. -->
+        <maven.compiler.source>21</maven.compiler.source>
+        <maven.compiler.target>21</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <java.version>25</java.version>
     </properties>
 
     <profiles>
         <!-- Local development profile (Java 25) -->
+        <!-- Local development profile (Java 25 LTS — bytecode targets 21 for Spring Boot 3.4.x ASM compat) -->
         <profile>
             <id>local</id>
             <activation>
@@ -39,6 +45,33 @@
                 <maven.compiler.target>17</maven.compiler.target>
                 <java.version>17</java.version>
             </properties>
+        </profile>
+
+        <!-- Security scanning profile — run with: mvn verify -P security
+             Downloads NVD data on first run (~100 MB); subsequent runs use cached DB. -->
+        <profile>
+            <id>security</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.owasp</groupId>
+                        <artifactId>dependency-check-maven</artifactId>
+                        <version>10.0.4</version>
+                        <configuration>
+                            <failBuildOnCVSS>7</failBuildOnCVSS>
+                            <formats>HTML,JSON</formats>
+                            <outputDirectory>${project.build.directory}/dependency-check</outputDirectory>
+                        </configuration>
+                        <executions>
+                            <execution>
+                                <goals>
+                                    <goal>check</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
         </profile>
     </profiles>
 
@@ -157,7 +190,16 @@
         <dependency>
             <groupId>org.flywaydb</groupId>
             <artifactId>flyway-core</artifactId>
-            <version>9.22.3</version>
+            <version>10.21.0</version>
+        </dependency>
+
+        <!-- Force jackson-core to 2.18.x: Flyway 10.21.0 transitively brings jackson-dataformat-toml:2.15.2
+             which resolves jackson-core to 2.15.2, downgrading Spring Boot's 2.18.1 and causing
+             NoSuchMethodError on BufferRecycler.releaseToPool() (added in 2.16.0) -->
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-core</artifactId>
+            <version>2.18.1</version>
         </dependency>
 
         <!-- Force json-smart / accessors-smart to 2.5.1 so that json-path (via spring-boot-starter-test)
@@ -178,11 +220,34 @@
             <groupId>net.bytebuddy</groupId>
             <artifactId>byte-buddy</artifactId>
             <version>1.17.5</version>
+        <!-- Mockito 5.23.0 — required for JDK 25 compatibility.
+             Mockito 5.14.2 (shipped with Spring Boot 3.4.0) uses ByteBuddy 1.15.x which
+             cannot parse JDK 25 class files. Mockito 5.23.0 pulls ByteBuddy 1.17.7 which
+             fully supports JDK 25. -->
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-core</artifactId>
+            <version>5.23.0</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-junit-jupiter</artifactId>
+            <version>5.23.0</version>
+            <scope>test</scope>
+        </dependency>
+
+        <!-- ByteBuddy 1.17.7 — transitively required by Mockito 5.23.0 for JDK 25 compatibility.
+             Explicit override ensures Maven does not resolve an older version from other deps. -->
+        <dependency>
+            <groupId>net.bytebuddy</groupId>
+            <artifactId>byte-buddy</artifactId>
+            <version>1.17.7</version>
         </dependency>
         <dependency>
             <groupId>net.bytebuddy</groupId>
             <artifactId>byte-buddy-agent</artifactId>
-            <version>1.17.5</version>
+            <version>1.17.7</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
@@ -212,7 +277,35 @@
                 <configuration>
                     <argLine>-Xmx1g -XX:+EnableDynamicAgentLoading -Djdk.attach.allowAttachSelf=true --enable-native-access=ALL-UNNAMED</argLine>
                     <forkCount>0</forkCount>
+                <version>3.5.0</version>
+                <configuration>
+                    <!-- @{argLine} enables late-binding so JaCoCo can prepend its javaagent -->
+                    <argLine>@{argLine} -Xmx1g -XX:+EnableDynamicAgentLoading -Djdk.attach.allowAttachSelf=true</argLine>
                 </configuration>
+            </plugin>
+
+            <!-- JaCoCo — code coverage reporting -->
+            <plugin>
+                <groupId>org.jacoco</groupId>
+                <artifactId>jacoco-maven-plugin</artifactId>
+                <version>0.8.12</version>
+                <executions>
+                    <!-- Injects the JaCoCo agent before tests run -->
+                    <execution>
+                        <id>prepare-agent</id>
+                        <goals>
+                            <goal>prepare-agent</goal>
+                        </goals>
+                    </execution>
+                    <!-- Generates HTML/XML/CSV report during verify phase -->
+                    <execution>
+                        <id>report</id>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>report</goal>
+                        </goals>
+                    </execution>
+                </executions>
             </plugin>
             
             <!-- Spring Boot Maven Plugin -->

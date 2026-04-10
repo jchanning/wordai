@@ -1,0 +1,28 @@
+{
+  "recommendations": [
+    // Java core
+    "redhat.java",
+    "vscjava.vscode-java-pack",
+    "vscjava.vscode-java-debug",
+    "vscjava.vscode-java-test",
+    "vscjava.vscode-maven",
+    "vscjava.vscode-java-dependency",
+    // Spring Boot
+    "vmware.vscode-spring-boot",
+    "vscjava.vscode-spring-boot-dashboard",
+    // JavaScript / frontend
+    "dbaeumer.vscode-eslint",
+    "esbenp.prettier-vscode",
+    // Oracle Cloud (deployment target)
+    "oracle.oci-vscode-toolkit",
+    "oracle.oci-core",
+    // Quality / static analysis
+    "sonarsource.sonarlint-vscode",
+    // Tooling
+    "redhat.vscode-yaml",
+    "eamodio.gitlens",
+    "github.copilot",
+    "github.copilot-chat",
+    "github.vscode-github-actions"
+  ]
+}

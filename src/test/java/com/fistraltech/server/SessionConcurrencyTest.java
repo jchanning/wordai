@@ -41,6 +41,7 @@ import com.github.benmanes.caffeine.cache.Caffeine;
  *
  * <p>Spec: {@code docs/features/session-concurrency.spec.md}
  */
+@DisplayName("Session Concurrency Tests")
 class SessionConcurrencyTest {
 
     private static final int MAX_ATTEMPTS = 3;
