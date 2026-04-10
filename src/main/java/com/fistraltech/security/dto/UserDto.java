@@ -1,8 +1,14 @@
 package com.fistraltech.security.dto;
 
-import java.util.Set;
 import java.time.LocalDateTime;
+import java.util.Set;
 
+/**
+ * Data transfer object representing a user's public profile.
+ *
+ * <p>Returned by authentication endpoints and user-lookup queries. Contains no
+ * credentials or sensitive data; passwords are never included.
+ */
 public class UserDto {
     
     private Long id;

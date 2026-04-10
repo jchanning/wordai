@@ -12,12 +12,6 @@ package com.fistraltech.core;
  *   <li>Memory usage: ~5 MB for 2,315 words vs ~500 MB for HashMap approach</li>
  *   <li>Lookup: O(1) array access vs O(1) HashMap with object allocation overhead</li>
  * </ul>
- * 
- * <p><strong>Previous optimization (deprecated but still supported):</strong>
- * <ul>
- *   <li>{@link WordPairKey}: Stores word pair references instead of concatenated strings (~28 bytes vs ~56 bytes)</li>
- *   <li>Short-encoded response patterns: 2 bytes vs ~48 bytes for String representation</li>
- * </ul>
  */
 
 import java.util.HashMap;
@@ -39,12 +33,12 @@ public class WordEntropy {
     private Set<String> internedWords;
    
     // Stores computed entropy values for words in the context of this dictionary
-    private Map<String, Float> entropyCache = new HashMap<>();
-    private Map<String, Map<Short, Set<String>>> responseBucketCache = new HashMap<>();
+    private final Map<String, Float> entropyCache = new HashMap<>();
+    private final Map<String, Map<Short, Set<String>>> responseBucketCache = new HashMap<>();
     
     // Additional caches for other selection algorithms
-    private Map<String, Double> dictionaryReductionCache = new HashMap<>();
-    private Map<String, Float> columnLengthCache = new HashMap<>();
+    private final Map<String, Double> dictionaryReductionCache = new HashMap<>();
+    private final Map<String, Float> columnLengthCache = new HashMap<>();
 
     private WordGame wordGame;
     
@@ -56,81 +50,16 @@ public class WordEntropy {
      * Replaces the global ConcurrentHashMap approach with a dense 2D array.
      */
     private ResponseMatrix responseMatrix;
-    
-    /** Flag to use the new matrix-based approach (default: true) */
-    private boolean useMatrix = true;
 
-    /**
-     * Global cache of response patterns for word pairs.
-     * 
-     * <p><strong>Memory-efficient design:</strong>
-     * <ul>
-     *   <li>Key: {@link WordPairKey} holding references to interned word strings (~28 bytes)</li>
-     *   <li>Value: Short-encoded response pattern via {@link ResponsePattern} (2 bytes)</li>
-     * </ul>
-     * 
-     * Since responses are deterministic based solely on the two words (independent of dictionary or game state),
-     * this cache is shared across all WordEntropy instances and persists for the application lifetime.
-     * This dramatically reduces computation in entropy analysis across multiple games and sessions.
-     * 
-     * Thread-safe: uses ConcurrentHashMap for safe concurrent access.
-     * 
-     * @deprecated Replaced by ResponseMatrix in Phase 1 optimization
-     */
-    @Deprecated
-    private static final Map<WordPairKey, Short> responseCache = new ConcurrentHashMap<>();
     private static final Logger logger = Logger.getLogger(WordEntropy.class.getName());
     
     /**
-     * Returns the number of entries currently in the global response cache.
-     * Useful for monitoring memory usage and debugging.
-     * 
-     * @return the number of cached response patterns
-     * @deprecated Use getResponseMatrix().getEstimatedMemoryBytes() instead
-     */
-    @Deprecated
-    public static int getResponseCacheSize() {
-        return responseCache.size();
-    }
-    
-    /**
-     * Clears the global response cache.
-     * Use with caution - this will force recomputation of all response patterns.
-     * Primarily useful for testing or when memory pressure is critical.
-     * 
-     * @deprecated The ResponseMatrix is now used instead
-     */
-    @Deprecated
-    public static void clearResponseCache() {
-        int size = responseCache.size();
-        responseCache.clear();
-        logger.info(() -> "Cleared response cache (" + size + " entries)");
-    }
-    
-    /**
      * Returns the ResponseMatrix for direct access to pattern lookups.
-     * 
-     * @return the response matrix, or null if not using matrix mode
+     *
+     * @return the response matrix
      */
     public ResponseMatrix getResponseMatrix() {
         return responseMatrix;
-    }
-    
-    /**
-     * Returns an estimate of the memory used by the global response cache in bytes.
-     * 
-     * <p>Memory calculation:
-     * <ul>
-     *   <li>WordPairKey: ~28 bytes (object header + 2 references + cached hashCode)</li>
-     *   <li>Short value: ~2 bytes (but boxed to Short which is ~16 bytes)</li>
-     *   <li>ConcurrentHashMap entry overhead: ~48 bytes</li>
-     * </ul>
-     * Estimated ~92 bytes per entry.
-     * 
-     * @return estimated memory usage in bytes
-     */
-    public static long getEstimatedCacheMemoryBytes() {
-        return (long) responseCache.size() * 92L;
     }
     
     /**
@@ -172,31 +101,18 @@ public class WordEntropy {
             .collect(Collectors.toSet());
         
         // Build the memory-efficient response matrix
-        if (useMatrix) {
-            logger.info(() -> "Building ResponseMatrix for " + dictionary.getWordCount() + " words...");
-            this.responseMatrix = new ResponseMatrix(dictionary, config);
-        }
+        logger.info(() -> "Building ResponseMatrix for " + dictionary.getWordCount() + " words...");
+        this.responseMatrix = new ResponseMatrix(dictionary, config);
         
         if (precompute) {
             logger.info(() -> "Pre-computing entropy for " + dictionary.getWordCount() + " words...");
             long startTime = System.currentTimeMillis();
             
-            if (useMatrix) {
-                // Use matrix-based precomputation (much faster, no HashSet allocation)
-                precomputeWithMatrix();
-            } else {
-                // Legacy approach using HashMap cache
-                precomputeWithCache();
-            }
+            precomputeWithMatrix();
             
             long duration = System.currentTimeMillis() - startTime;
             logger.info(() -> "Entropy pre-computation complete in " + duration + "ms");
-            
-            if (!useMatrix) {
-                logger.info(() -> "Response cache size: " + responseCache.size() + " entries");
-            } else {
-                logger.info(() -> "ResponseMatrix memory: " + (responseMatrix.getEstimatedMemoryBytes() / 1024 / 1024) + " MB");
-            }
+            logger.info(() -> "ResponseMatrix memory: " + (responseMatrix.getEstimatedMemoryBytes() / 1024 / 1024) + " MB");
         }
     }
     
@@ -278,51 +194,6 @@ public class WordEntropy {
     }
     
     /**
-     * Legacy pre-computation using HashMap cache.
-     * @deprecated Use matrix-based approach instead
-     */
-    private void precomputeWithCache() {
-        for (String word : internedWords) {
-            // Pre-compute response buckets (used by all algorithms)
-            Map<Short, Set<String>> buckets = getResponseBuckets(word);
-            
-            // Compute entropy
-            float entropy = calculateEntropyFromBuckets(buckets, dictionary.getWordCount());
-            entropyCache.put(word, entropy);
-            
-            // Compute dictionary reduction score (lower is better)
-            double reductionScore = calculateDictionaryReductionFromBuckets(buckets, dictionary.getWordCount());
-            dictionaryReductionCache.put(word, reductionScore);
-            
-            // Compute column length score (lower is better)
-            float columnLength = calculateColumnLengthFromBuckets(buckets, dictionary.getWordCount(), wordLength);
-            columnLengthCache.put(word, columnLength);
-        }
-    }
-    
-    /**
-     * Converts matrix bucket counts to Map<Short, Set<String>> format.
-     * Used for backward compatibility with column length calculation.
-     * 
-     * @deprecated Use ResponseMatrix.computeExpectedColumnLength() instead.
-     *             This method creates HashSet objects which defeats the memory optimization.
-     */
-    @Deprecated
-    @SuppressWarnings("unused")
-    private Map<Short, Set<String>> getResponseBucketsFromMatrix(int guessId) {
-        Map<Short, Set<String>> result = new HashMap<>();
-        int wordCount = responseMatrix.getWordCount();
-        
-        for (int targetId = 0; targetId < wordCount; targetId++) {
-            short pattern = responseMatrix.getPattern(guessId, targetId);
-            String targetWord = responseMatrix.getWord(targetId);
-            result.computeIfAbsent(pattern, k -> new HashSet<>()).add(targetWord);
-        }
-        
-        return result;
-    }
-    
-    /**
      * Calculates dictionary reduction score from bucket counts array.
      */
     private double calculateDictionaryReductionFromCounts(int[] counts, int total) {
@@ -341,14 +212,13 @@ public class WordEntropy {
     }
 
     /**
-     * Groups every word in the dictionary into buckets keyed by the response pattern produced
-     * key = encoded response pattern (short), value = set of target words producing that response
-     * when comparing the candidate {@code word} against each target word.
-     * The response pattern is encoded as a short for memory efficiency.
-     * Uses response caching to avoid recomputing responses for previously seen word pairs.
+     * Groups every word in the dictionary into buckets keyed by the response pattern produced when
+     * {@code guessWord} is evaluated against each target word in the dictionary.
+     * Key = encoded response pattern (short), value = set of target words producing that pattern.
+     * Results are cached so repeated calls for the same guess word are O(1).
+     *
      * @param guessWord candidate guess word used to produce response patterns
      * @return map from encoded response pattern to set of words generating that pattern
-     * Complexity: O(N * C) first call per guess word, O(N) on cache hits where C = cost of computing response.
      */
     public Map<Short, Set<String>> getResponseBuckets(String guessWord) {
         // Ensure we use the interned version of the guess word
@@ -366,29 +236,31 @@ public class WordEntropy {
     }
     
     private Map<Short, Set<String>> computeResponseBuckets(String guessWord) {
+        int guessId = responseMatrix.getWordId(guessWord);
         Map<Short, Set<String>> result = new HashMap<>();
-        Set<String> words = internedWords != null ? internedWords : dictionary.getMasterSetOfWords();
-                
-        for (String targetWord : words) {
-            try {
-                // Ensure target word is interned for WordPairKey efficiency
-                String internedTarget = targetWord.intern();
-                
-                // Check cache first using composite key
-                WordPairKey cacheKey = new WordPairKey(guessWord, internedTarget);
-                Short encodedBucket = responseCache.get(cacheKey);
-                
-                if (encodedBucket == null) {
-                    // Not in cache - compute and store
-                    wordGame.setTargetWord(internedTarget);
+        int wordCount = responseMatrix.getWordCount();
+
+        if (guessId >= 0) {
+            // Fast path: guess word is in the matrix — O(1) lookup per target
+            for (int targetId = 0; targetId < wordCount; targetId++) {
+                short pattern = responseMatrix.getPattern(guessId, targetId);
+                String targetWord = responseMatrix.getWord(targetId);
+                result.computeIfAbsent(pattern, k -> new HashSet<>()).add(targetWord);
+            }
+        } else {
+            // Fallback: guess word is outside this dictionary (e.g. full-dictionary guess
+            // evaluated against a filtered remaining-dictionary matrix). Compute responses
+            // directly via WordGame.
+            for (int targetId = 0; targetId < wordCount; targetId++) {
+                String targetWord = responseMatrix.getWord(targetId);
+                try {
+                    wordGame.setTargetWord(targetWord);
                     Response r = wordGame.evaluate(guessWord);
-                    encodedBucket = encodeResponse(r);
-                    responseCache.put(cacheKey, encodedBucket);
+                    short pattern = encodeResponse(r);
+                    result.computeIfAbsent(pattern, k -> new HashSet<>()).add(targetWord);
+                } catch (Exception ex) {
+                    logger.warning(() -> "Error computing response for " + guessWord + " vs " + targetWord + ": " + ex.getMessage());
                 }
-                
-                result.computeIfAbsent(encodedBucket, k -> new HashSet<>()).add(internedTarget);
-            } catch (Exception ex) {
-                logger.warning(() -> "Error computing response for " + guessWord + " vs " + targetWord + ": " + ex.getMessage());
             }
         }
         return result;
@@ -743,76 +615,5 @@ public class WordEntropy {
             entropy += -(probability * logProbability);
         }
         return entropy;
-    }
-    
-    /**
-     * Calculates expected dictionary size after guessing a word.
-     * Lower values mean better dictionary reduction.
-     * Uses the same logic as DictionaryReduction.calculateAverageDictionarySize().
-     */
-    private double calculateDictionaryReductionFromBuckets(Map<Short, Set<String>> buckets, int dictionarySize) {
-        if (dictionarySize == 0) {
-            return 0.0;
-        }
-        
-        double totalSize = 0;
-        
-        for (Set<String> bucket : buckets.values()) {
-            int bucketSize = bucket.size();
-            double probability = (double) bucketSize / dictionarySize;
-            totalSize += probability * bucketSize;
-        }
-        
-        return totalSize;
-    }
-    
-    /**
-     * Calculates expected column length (product of unique letters per position) after guessing a word.
-     * Lower values indicate better column length minimization.
-     */
-    private float calculateColumnLengthFromBuckets(Map<Short, Set<String>> buckets, int dictionarySize, int wordLength) {
-        if (dictionarySize == 0) {
-            return 0f;
-        }
-        
-        float expectedLength = 0f;
-        
-        for (Set<String> bucketWords : buckets.values()) {
-            int bucketSize = bucketWords.size();
-            
-            if (bucketSize == 0) {
-                continue;
-            }
-            
-            double probability = (double) bucketSize / dictionarySize;
-            int columnLength = calculateColumnLengthForWords(bucketWords, wordLength);
-            expectedLength += probability * columnLength;
-        }
-        
-        return expectedLength;
-    }
-    
-    /**
-     * Calculates the total column length (product of unique letters per position) for a set of words.
-     */
-    private int calculateColumnLengthForWords(Set<String> words, int wordLength) {
-        if (words.isEmpty()) {
-            return 0;
-        }
-        
-        int totalLength = 0;
-        for (int pos = 0; pos < wordLength; pos++) {
-            Set<Character> uniqueLetters = new HashSet<>();
-            for (String word : words) {
-                uniqueLetters.add(word.charAt(pos));
-            }
-            if (totalLength == 0) {
-                totalLength = uniqueLetters.size();
-            } else {
-                totalLength *= uniqueLetters.size();
-            }
-        }
-        
-        return totalLength;
     }
 }

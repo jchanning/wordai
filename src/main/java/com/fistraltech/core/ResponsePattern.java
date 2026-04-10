@@ -37,7 +37,6 @@ package com.fistraltech.core;
  * <p>Thread-safety: This class is immutable and safe for concurrent use.
  * 
  * @see WordEntropy
- * @see WordPairKey
  */
 public final class ResponsePattern {
     

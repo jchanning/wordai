@@ -1,5 +1,8 @@
 package com.fistraltech.server.dto;
 
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.Size;
+
 /**
  * Request DTO for creating a new game session.
  *
@@ -22,7 +25,9 @@ package com.fistraltech.server.dto;
  * @author Fistral Technologies
  */
 public class CreateGameRequest {
+    @Size(min = 2, max = 20, message = "targetWord must be between 2 and 20 characters")
     private String targetWord; // Optional - if not provided, a random word will be selected
+    @Min(value = 2, message = "wordLength must be at least 2")
     private Integer wordLength; // Optional - defaults to 5
     private String dictionaryId; // Optional - ID of the dictionary to use (e.g., "default", "easy", "hard")
     private String browserSessionId; // Optional - per-browser-window key used to isolate resumable sessions

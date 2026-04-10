@@ -16,6 +16,8 @@ import com.fistraltech.analysis.AnalysisResponse;
 import com.fistraltech.server.WordGameService;
 import com.fistraltech.server.dto.AnalysisRequest;
 
+import jakarta.validation.Valid;
+
 /**
  * REST controller for analysis resources.
  *
@@ -49,7 +51,7 @@ public class AnalysisController {
      * POST /api/wordai/analysis
      */
     @PostMapping
-    public ResponseEntity<?> runAnalysis(@RequestBody AnalysisRequest request) {
+    public ResponseEntity<?> runAnalysis(@Valid @RequestBody AnalysisRequest request) {
         try {
             logger.info("Starting analysis with algorithm: " + request.getAlgorithm()
                     + ", dictionary: " + request.getDictionaryId());
