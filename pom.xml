@@ -185,6 +185,14 @@
             <groupId>org.flywaydb</groupId>
             <artifactId>flyway-core</artifactId>
             <version>10.21.0</version>
+            <exclusions>
+                <!-- Flyway 10.21.0 brings jackson-dataformat-toml:2.15.2 which is binary-incompatible
+                     with jackson-databind:2.21.2 (Spring Boot 3.5.13). TOML config is not used here. -->
+                <exclusion>
+                    <groupId>com.fasterxml.jackson.dataformat</groupId>
+                    <artifactId>jackson-dataformat-toml</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
 
         <!-- Force jackson-core to 2.21.2: Flyway 10.21.0 transitively brings jackson-dataformat-toml:2.15.2
@@ -193,6 +201,14 @@
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-core</artifactId>
+            <version>2.21.2</version>
+        </dependency>
+        <!-- Force jackson-datatype-jsr310 to 2.21.2: a transitive dep brings jackson-datatype-jsr310:2.15.2
+             which pulls jackson-annotations:2.15.2. Spring Framework 6.2.17 requires a newer
+             jackson-annotations that includes JsonSerializeAs; pinning jsr310 forces the correct version. -->
+        <dependency>
+            <groupId>com.fasterxml.jackson.datatype</groupId>
+            <artifactId>jackson-datatype-jsr310</artifactId>
             <version>2.21.2</version>
         </dependency>
 
@@ -272,7 +288,7 @@
             <plugin>
                 <groupId>org.jacoco</groupId>
                 <artifactId>jacoco-maven-plugin</artifactId>
-                <version>0.8.12</version>
+                <version>0.8.13</version>
                 <executions>
                     <!-- Injects the JaCoCo agent before tests run -->
                     <execution>
