@@ -302,6 +302,7 @@ export async function newGame() {
         state.gameEnded            = false;
         state.letterStatusMap      = {};
         state.latestOccurrenceData = null;
+        state.currentGameGuesses   = [];
 
         adjustLetterInputGrid(data.wordLength);
         document.getElementById('attempts').textContent    = '0';
@@ -314,7 +315,6 @@ export async function newGame() {
         else resetAnalytics();
 
         state.helpUsedCount      = 0;
-        state.currentGameGuesses = [];
         updateHelpCounter();
         await changeStrategy();
 

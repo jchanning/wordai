@@ -4336,15 +4336,7 @@ select:focus {
     .info-panel.mobile-active [data-mobile-panel="2"] .mobile-assistant-surface {
         display: flex;
         flex-direction: column;
-        gap: var(--padding-md);
-    }
-
-    .mobile-assistant-summary,
-    .mobile-assistant-table-panel {
-        padding: var(--padding-md);
-        border: 1px solid var(--border-color);
-        border-radius: 0.75rem;
-        background: rgba(255, 255, 255, 0.03);
+        gap: 0;
     }
 
     .mobile-assistant-summary {
@@ -4352,6 +4344,9 @@ select:focus {
         align-items: center;
         justify-content: space-between;
         gap: var(--padding-sm);
+        padding-bottom: var(--padding-sm);
+        border-bottom: 1px solid var(--border-color);
+        margin-bottom: var(--padding-sm);
     }
 
     .mobile-assistant-summary-label,
