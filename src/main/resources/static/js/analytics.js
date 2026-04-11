@@ -381,7 +381,7 @@ function renderMobileAssistantTable() {
 
                     const count = document.createElement('span');
                     count.className = 'mobile-assist-count';
-                    count.textContent = '';
+                    count.textContent = '1';
 
                     cell.classList.add('is-confirmed');
                     cell.append(letter, count);

@@ -4197,8 +4197,8 @@ select:focus {
         flex-direction: column !important;
         /* Calculate height: 100vh - header (~60px) - bottom nav (60px) - padding */
         height: calc(100dvh - 130px) !important; 
-        overflow-y: auto;
-        padding-bottom: 20px !important; /* Spacing above bottom nav */
+        overflow: hidden;
+        padding-bottom: 0 !important;
         animation: fadeIn 0.15s ease-out;
     }
 
@@ -4436,6 +4436,10 @@ select:focus {
         background: rgba(106, 170, 100, 0.18);
     }
 
+    .mobile-assist-ranking-table tbody tr {
+        height: 2.5rem; /* prevents rows collapsing when all cells are empty */
+    }
+
     .mobile-assist-ranking-table td.is-empty {
         background: transparent;
     }
@@ -4476,8 +4480,11 @@ select:focus {
     .history-panel.mobile-active [data-mobile-panel].mobile-panel-active {
         display: block !important;
         width: 100% !important;
+        flex: 1;
+        min-height: 0;
         overflow-y: auto;
         padding: var(--padding-sm) var(--padding-md);
+        box-sizing: border-box;
         animation: fadeIn 0.15s ease-out;
     }
 
