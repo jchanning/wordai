@@ -305,6 +305,8 @@ function renderMobileAssistantTable() {
         return;
     }
 
+    totalsContainer.style.setProperty('--position-count', state.latestColumnLengths.length);
+
     state.latestColumnLengths.forEach((count, index) => {
         const totalCell = document.createElement('div');
         totalCell.className = 'mobile-position-total-cell';
