@@ -2437,6 +2437,10 @@ select:focus {
     color: var(--text-primary);
 }
 
+.mobile-assistant-surface {
+    display: none;
+}
+
 #suggestedWord {
     color: var(--accent-primary);
     text-shadow: 0 0 20px rgba(59, 130, 246, 0.3);
@@ -4325,6 +4329,147 @@ select:focus {
         flex-direction: column;
     }
 
+    .info-panel.mobile-active [data-mobile-panel="2"] .info-section {
+        display: none;
+    }
+
+    .info-panel.mobile-active [data-mobile-panel="2"] .mobile-assistant-surface {
+        display: flex;
+        flex-direction: column;
+        gap: var(--padding-md);
+    }
+
+    .mobile-assistant-summary,
+    .mobile-assistant-table-panel {
+        padding: var(--padding-md);
+        border: 1px solid var(--border-color);
+        border-radius: 0.75rem;
+        background: rgba(255, 255, 255, 0.03);
+    }
+
+    .mobile-assistant-summary {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: var(--padding-sm);
+    }
+
+    .mobile-assistant-summary-label,
+    .mobile-assistant-table-heading,
+    .mobile-position-total-label {
+        color: var(--text-secondary);
+        font-size: 0.78rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: var(--letter-spacing-wide);
+    }
+
+    .mobile-assistant-summary-value {
+        color: var(--text-primary);
+        font-size: 1.3rem;
+        font-weight: 800;
+        display: flex;
+        align-items: baseline;
+        gap: 0.35rem;
+    }
+
+    .mobile-assistant-summary-separator {
+        color: var(--text-secondary);
+    }
+
+    .mobile-assistant-table-panel {
+        display: flex;
+        flex-direction: column;
+        gap: var(--padding-sm);
+    }
+
+    .mobile-position-total-grid {
+        display: grid;
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+        gap: 0.4rem;
+    }
+
+    .mobile-position-total-cell {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.2rem;
+        padding: 0.45rem 0.2rem;
+        border-radius: 0.6rem;
+        background: rgba(59, 130, 246, 0.08);
+        border: 1px solid rgba(59, 130, 246, 0.18);
+    }
+
+    .mobile-position-total-value {
+        color: var(--text-primary);
+        font-size: 1rem;
+        font-weight: 800;
+    }
+
+    .mobile-assist-table-wrap {
+        min-height: 6rem;
+    }
+
+    .mobile-assist-ranking-table {
+        width: 100%;
+        border-collapse: collapse;
+        table-layout: fixed;
+    }
+
+    .mobile-assist-ranking-table th,
+    .mobile-assist-ranking-table td {
+        width: 20%;
+        padding: 0.45rem 0.2rem;
+        text-align: center;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .mobile-assist-ranking-table th {
+        color: var(--text-secondary);
+        font-size: 0.72rem;
+        font-weight: 700;
+        letter-spacing: var(--letter-spacing-wide);
+        text-transform: uppercase;
+        background: rgba(255, 255, 255, 0.02);
+    }
+
+    .mobile-assist-ranking-table td {
+        background: rgba(255, 255, 255, 0.02);
+    }
+
+    .mobile-assist-ranking-table td.is-confirmed {
+        background: rgba(106, 170, 100, 0.18);
+    }
+
+    .mobile-assist-ranking-table td.is-empty {
+        background: transparent;
+    }
+
+    .mobile-assist-letter,
+    .mobile-assist-count {
+        display: block;
+    }
+
+    .mobile-assist-letter {
+        color: var(--text-primary);
+        font-size: 0.95rem;
+        font-weight: 800;
+        line-height: 1.1;
+    }
+
+    .mobile-assist-count {
+        color: var(--text-secondary);
+        font-size: 0.72rem;
+        margin-top: 0.15rem;
+    }
+
+    .mobile-assist-empty-state {
+        padding: var(--padding-md) 0;
+        text-align: center;
+        color: var(--text-secondary);
+        font-size: 0.9rem;
+    }
+
     /* Hide ALL tagged sub-panels by default when their parent is mobile-active */
     .info-panel.mobile-active [data-mobile-panel],
     .history-panel.mobile-active [data-mobile-panel] {
@@ -4475,6 +4620,16 @@ select:focus {
 .mobile-nav-label {
     font-size: 0.65rem;
     display: none; /* symbol-only nav */
+}
+
+@media (max-width: 768px) {
+    .mobile-bottom-nav .mobile-nav-btn {
+        width: 25%;
+    }
+
+    .mobile-bottom-nav .mobile-nav-label {
+        display: block;
+    }
 }
 
 @media (max-width: 480px) {

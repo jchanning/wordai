@@ -3,18 +3,17 @@
  * Imports: state, ui, analytics (for refreshDictionaryScreen/switchDictTab).
  */
 import { state } from './state.js';
-import { showStatus } from './ui.js';
 import { refreshDictionaryScreen, switchDictTab } from './analytics.js';
 
 // ---- Router ----
 
 export function initRouter() {
-    window.addEventListener('hashchange', onRouteChange);
+    globalThis.addEventListener('hashchange', onRouteChange);
     onRouteChange();
 }
 
 export function onRouteChange() {
-    const hash  = window.location.hash || '#/play';
+    const hash  = globalThis.location.hash || '#/play';
     const route = hash.replace(/^#\//, '').trim();
     setView(route || 'play');
 }
@@ -39,7 +38,7 @@ export function setView(view) {
     closeMobileNav();
 
     document.querySelectorAll('.nav-link[data-nav]').forEach(link => {
-        const isActive = link.getAttribute('data-nav') === view;
+        const isActive = link.dataset.nav === view;
         link.classList.toggle('active', isActive);
         if (isActive) link.setAttribute('aria-current', 'page');
         else          link.removeAttribute('aria-current');
@@ -48,14 +47,14 @@ export function setView(view) {
     // Ensure dictionary selectors are populated when switching to relevant views
     if (view === 'dictionary' && state.availableDictionaries.length > 0) {
         const selectorDict = document.getElementById('dictionarySelectorDict');
-        if (selectorDict && selectorDict.options.length === 0) {
+        if (selectorDict?.options.length === 0) {
             populateDictionarySelector();
         }
         refreshDictionaryScreen();
         switchDictTab('frequency');
     } else if (view === 'play' && state.availableDictionaries.length > 0) {
         const selector = document.getElementById('dictionarySelector');
-        if (selector && selector.options.length === 0) {
+        if (selector?.options.length === 0) {
             populateDictionarySelector();
         }
     }
@@ -65,8 +64,8 @@ export function setView(view) {
         // Defer to admin module via event to avoid circular import
         document.dispatchEvent(new CustomEvent('wordai:loadAdmin'));
     }
-    if (view === 'challenge' && typeof window.onChallengeViewActivated === 'function') {
-        window.onChallengeViewActivated();
+    if (view === 'challenge' && typeof globalThis.onChallengeViewActivated === 'function') {
+        globalThis.onChallengeViewActivated();
     }
 }
 
@@ -134,8 +133,8 @@ export function updateMobileBottomNavVisibility(view) {
 // Forward-declared here; actual logic lives in game.js but is exposed globally.
 // We call the global function if it exists to avoid an import cycle.
 function populateDictionarySelector() {
-    if (typeof window.populateDictionarySelector === 'function') {
-        window.populateDictionarySelector();
+    if (typeof globalThis.populateDictionarySelector === 'function') {
+        globalThis.populateDictionarySelector();
     }
 }
 
@@ -162,11 +161,11 @@ export function initMobileNavigation() {
 
     appNav.querySelectorAll('.nav-link').forEach(link => {
         link.addEventListener('click', function (e) {
-            const nav = this.getAttribute('data-nav');
+            const nav = this.dataset.nav;
             closeMobileNav();
             if (nav) {
                 e.preventDefault();
-                window.location.hash = '#/' + nav;
+                globalThis.location.hash = '#/' + nav;
                 setView(nav);
             }
         });
@@ -214,8 +213,8 @@ export function closeMobileNav() {
 export function initMobileViewSwitcher() {
     document.querySelectorAll('.mobile-nav-btn[data-panel]').forEach(btn => {
         btn.addEventListener('click', function () {
-            const panel = parseInt(this.getAttribute('data-panel'), 10);
-            if (!isNaN(panel)) switchMobilePanel(panel);
+            const panel = Number.parseInt(this.dataset.panel || '', 10);
+            if (!Number.isNaN(panel)) switchMobilePanel(panel);
         });
     });
 
@@ -240,23 +239,33 @@ export function handleMobilePanelMode() {
 }
 
 /**
- * Switch to one of the 7 mobile panels.
+ * Switch to one of the active mobile panels.
  *   1 → game board
- *   2 → key statistics (info-panel sub-panel)
- *   3 → visual analysis (info-panel sub-panel)
- *   4 → letters by position (info-panel sub-panel)
+ *   2 → assistant (single mobile assist screen)
  *   5 → session stats (history-panel sub-panel)
- *   6 → guess distribution (history-panel sub-panel)
- *   7 → recent games (history-panel sub-panel)
+ *   6 → recent games (history-panel sub-panel)
  */
 export function switchMobilePanel(n) {
     if (window.innerWidth >= 769) return;
 
+    if (n === 3 || n === 4) {
+        n = 2;
+    }
+    if (![1, 2, 5, 6].includes(n)) {
+        n = 1;
+    }
+
     state.currentMobilePanel = n;
-    state.currentMobileView  = (n === 1) ? 'game' : (n <= 4) ? 'assistant' : 'session';
+    if (n === 1) {
+        state.currentMobileView = 'game';
+    } else if (n === 2) {
+        state.currentMobileView = 'assistant';
+    } else {
+        state.currentMobileView = 'session';
+    }
 
     document.querySelectorAll('.mobile-nav-btn[data-panel]').forEach(btn => {
-        const isActive = parseInt(btn.getAttribute('data-panel'), 10) === n;
+        const isActive = Number.parseInt(btn.dataset.panel || '', 10) === n;
         btn.classList.toggle('active', isActive);
         btn.setAttribute('aria-current', isActive ? 'page' : 'false');
     });
@@ -274,7 +283,7 @@ export function switchMobilePanel(n) {
 
     const parentMap = {
         1: gameContainer,
-        2: infoPanel, 3: infoPanel, 4: infoPanel,
+        2: infoPanel,
         5: historyPanel, 6: historyPanel,
     };
     const parent = parentMap[n];

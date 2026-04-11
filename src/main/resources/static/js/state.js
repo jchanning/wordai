@@ -11,9 +11,11 @@ export const state = {
     gameEnded:           false,
     currentWordLength:   5,
     currentDictionarySize: 2315,
+    currentRemainingWords: 2315,
     helpUsedCount:       0,
     MAX_HELP_COUNT:      3,
     currentGameGuesses:  [],   // { attempt, guess, results, remainingWords, dictionaryMetrics }[]
+    latestColumnLengths: null,
     latestOccurrenceData: null,
     letterStatusMap:     {},   // letter → 'G'|'A'|'R' across current game guesses
 

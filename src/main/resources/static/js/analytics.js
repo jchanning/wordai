@@ -7,6 +7,25 @@
 import { state } from './state.js';
 import { showStatus } from './ui.js';
 
+function setTextIfPresent(id, value) {
+    const element = document.getElementById(id);
+    if (element) {
+        element.textContent = value;
+    }
+}
+
+function createMobileAssistEmptyState(message) {
+    const emptyState = document.createElement('div');
+    emptyState.className = 'mobile-assist-empty-state';
+    emptyState.textContent = message;
+    return emptyState;
+}
+
+function syncMobileAssistantSummary() {
+    setTextIfPresent('mobileRemainingWords', state.currentRemainingWords);
+    setTextIfPresent('mobileTotalWords', state.currentDictionarySize);
+}
+
 // ============================================================
 // In-game analytics panel
 // ============================================================
@@ -14,6 +33,8 @@ import { showStatus } from './ui.js';
 export function initializeAnalytics(dictionaryMetrics) {
     const totalWords = dictionaryMetrics.totalWords || 2315;
     state.currentDictionarySize = totalWords;
+    state.currentRemainingWords = totalWords;
+    state.latestColumnLengths = dictionaryMetrics.columnLengths || null;
 
     document.getElementById('totalWords').textContent = totalWords;
     document.getElementById('remainingWords').textContent = totalWords;
@@ -40,10 +61,14 @@ export function initializeAnalytics(dictionaryMetrics) {
     } else {
         updateMostFrequentTable(null);
     }
+
+    renderMobileAssistantTable();
 }
 
 export function resetAnalytics() {
     const totalWords = state.currentDictionarySize;
+    state.currentRemainingWords = totalWords;
+    state.latestColumnLengths = null;
     document.getElementById('totalWords').textContent      = totalWords;
     document.getElementById('remainingWords').textContent  = totalWords;
     document.getElementById('eliminatedWords').textContent = '0';
@@ -53,12 +78,14 @@ export function resetAnalytics() {
     updateColumnLengthsChart(null);
     updateOccurrenceTable(null);
     updateMostFrequentTable(null);
+    renderMobileAssistantTable();
 }
 
 export function updateAnalytics(guessedWord, remainingCount, dictionaryMetrics) {
     const totalWords = state.currentDictionarySize;
     const eliminated = totalWords - remainingCount;
     const reductionPercent = ((eliminated / totalWords) * 100).toFixed(2);
+    state.currentRemainingWords = remainingCount;
 
     document.getElementById('remainingWords').textContent  = remainingCount;
     document.getElementById('eliminatedWords').textContent = eliminated;
@@ -67,6 +94,7 @@ export function updateAnalytics(guessedWord, remainingCount, dictionaryMetrics) 
     if (dictionaryMetrics) {
         document.getElementById('uniqueLetters').textContent = dictionaryMetrics.uniqueCharacters || '-';
         document.getElementById('letterCount').textContent   = dictionaryMetrics.letterCount || '-';
+        state.latestColumnLengths = dictionaryMetrics.columnLengths || null;
 
         if (dictionaryMetrics.columnLengths && dictionaryMetrics.columnLengths.length > 0) {
             updateColumnLengthsChart(dictionaryMetrics.columnLengths);
@@ -83,6 +111,8 @@ export function updateAnalytics(guessedWord, remainingCount, dictionaryMetrics) 
             updateMostFrequentTable(dictionaryMetrics.mostFrequentCharByPosition);
         }
     }
+
+    renderMobileAssistantTable();
 }
 
 export function updateColumnLengthsChart(columnLengths) {
@@ -221,6 +251,7 @@ export function updateOccurrenceTable(occurrenceData) {
 
     table.appendChild(tbody);
     tableContainer.appendChild(table);
+    renderMobileAssistantTable();
 }
 
 export function updateMostFrequentTable(mostFrequentData) {
@@ -254,6 +285,135 @@ export function updateMostFrequentTable(mostFrequentData) {
         labelRow.appendChild(labelCell);
     });
     table.appendChild(labelRow);
+    tableContainer.appendChild(table);
+}
+
+function renderMobileAssistantTable() {
+    syncMobileAssistantSummary();
+
+    const totalsContainer = document.getElementById('mobilePositionTotals');
+    const tableContainer = document.getElementById('mobileAssistTable');
+    if (!totalsContainer || !tableContainer) {
+        return;
+    }
+
+    totalsContainer.innerHTML = '';
+    tableContainer.innerHTML = '';
+
+    if (!Array.isArray(state.latestColumnLengths) || state.latestColumnLengths.length === 0) {
+        tableContainer.appendChild(createMobileAssistEmptyState('No data yet'));
+        return;
+    }
+
+    state.latestColumnLengths.forEach((count, index) => {
+        const totalCell = document.createElement('div');
+        totalCell.className = 'mobile-position-total-cell';
+
+        const label = document.createElement('span');
+        label.className = 'mobile-position-total-label';
+        label.textContent = `P${index + 1}`;
+
+        const value = document.createElement('span');
+        value.className = 'mobile-position-total-value';
+        value.textContent = String(count);
+
+        totalCell.append(label, value);
+        totalsContainer.appendChild(totalCell);
+    });
+
+    const occurrenceData = state.latestOccurrenceData;
+    if (!occurrenceData || Object.keys(occurrenceData).length === 0) {
+        tableContainer.appendChild(createMobileAssistEmptyState('No data yet'));
+        return;
+    }
+
+    const firstKey = Object.keys(occurrenceData)[0];
+    const numPositions = occurrenceData[firstKey]?.length || 5;
+    const fixedLetters = new Map();
+
+    state.currentGameGuesses.forEach(guess => {
+        (guess.results || []).forEach((result, positionIndex) => {
+            if (result?.status === 'G') {
+                fixedLetters.set(positionIndex, (result.letter || '').toUpperCase());
+            }
+        });
+    });
+
+    const rankedByPosition = Array.from({ length: numPositions }, (_, positionIndex) => {
+        return 'abcdefghijklmnopqrstuvwxyz'
+            .split('')
+            .map(letter => ({
+                letter,
+                count: occurrenceData[letter]?.[positionIndex] || 0,
+            }))
+            .filter(entry => entry.count > 0)
+            .sort((left, right) => right.count - left.count || left.letter.localeCompare(right.letter));
+    });
+
+    const table = document.createElement('table');
+    table.className = 'mobile-assist-ranking-table';
+
+    const thead = document.createElement('thead');
+    const headerRow = document.createElement('tr');
+    for (let positionIndex = 0; positionIndex < numPositions; positionIndex++) {
+        const heading = document.createElement('th');
+        heading.textContent = `P${positionIndex + 1}`;
+        headerRow.appendChild(heading);
+    }
+    thead.appendChild(headerRow);
+    table.appendChild(thead);
+
+    const tbody = document.createElement('tbody');
+    for (let rankIndex = 0; rankIndex < 5; rankIndex++) {
+        const row = document.createElement('tr');
+
+        for (let positionIndex = 0; positionIndex < numPositions; positionIndex++) {
+            const cell = document.createElement('td');
+            const rankedLetters = rankedByPosition[positionIndex];
+            const entry = rankedLetters[rankIndex];
+            const fixedLetter = fixedLetters.get(positionIndex);
+
+            if (fixedLetter) {
+                if (rankIndex === 0) {
+                    const letter = document.createElement('span');
+                    letter.className = 'mobile-assist-letter';
+                    letter.textContent = fixedLetter;
+
+                    const count = document.createElement('span');
+                    count.className = 'mobile-assist-count';
+                    count.textContent = '';
+
+                    cell.classList.add('is-confirmed');
+                    cell.append(letter, count);
+                } else {
+                    cell.className = 'is-empty';
+                }
+                row.appendChild(cell);
+                continue;
+            }
+
+            if (!entry) {
+                cell.className = 'is-empty';
+                row.appendChild(cell);
+                continue;
+            }
+
+            const letter = document.createElement('span');
+            letter.className = 'mobile-assist-letter';
+            letter.textContent = entry.letter.toUpperCase();
+
+            const count = document.createElement('span');
+            count.className = 'mobile-assist-count';
+            count.textContent = String(entry.count);
+
+            cell.append(letter, count);
+            row.appendChild(cell);
+        }
+
+        tbody.appendChild(row);
+    }
+
+    table.appendChild(tbody);
     tableContainer.appendChild(table);
 }
 

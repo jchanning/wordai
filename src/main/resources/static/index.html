@@ -203,6 +203,23 @@
                                 <div class="info-label">Total Letter Count:</div>
                                 <div class="info-value" id="letterCount">-</div>
                             </div>
+
+                            <section class="mobile-assistant-surface" aria-label="Mobile assist summary">
+                                <div class="mobile-assistant-summary">
+                                    <div class="mobile-assistant-summary-label">Remaining Words</div>
+                                    <div class="mobile-assistant-summary-value">
+                                        <span id="mobileRemainingWords">2315</span>
+                                        <span class="mobile-assistant-summary-separator">/</span>
+                                        <span id="mobileTotalWords">2315</span>
+                                    </div>
+                                </div>
+
+                                <div class="mobile-assistant-table-panel">
+                                    <div class="mobile-assistant-table-heading">Letter Positions</div>
+                                    <div id="mobilePositionTotals" class="mobile-position-total-grid"></div>
+                                    <div id="mobileAssistTable" class="mobile-assist-table-wrap"></div>
+                                </div>
+                            </section>
                         </div>
                     </div>
                     
@@ -358,8 +375,8 @@
             </div>
         </section>
 
-        <!-- Mobile Bottom Navigation (7 panels) -->
-        <nav class="mobile-bottom-nav" id="mobileBottomNav">
+        <!-- Mobile Bottom Navigation (4 panels) -->
+        <nav class="mobile-bottom-nav" id="mobileBottomNav" aria-label="Play screen mobile navigation">
             <!-- Panel 1: Game Board -->
             <button class="mobile-nav-btn active" data-panel="1" onclick="switchMobilePanel(1)" aria-label="Game board" title="Game">
                 <svg class="mobile-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -374,22 +391,6 @@
                     <rect x="3" y="11" width="4" height="10" rx="1"/><rect x="10" y="7" width="4" height="14" rx="1"/><rect x="17" y="4" width="4" height="17" rx="1"/>
                 </svg>
                 <span class="mobile-nav-label">Assist</span>
-            </button>
-            <!-- Panel 3: Visual Analysis -->
-            <button class="mobile-nav-btn" data-panel="3" onclick="switchMobilePanel(3)" aria-label="Letters" title="Letters">
-                <svg class="mobile-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <polyline points="3,17 7,11 11,14 15,7 19,10"/><line x1="3" y1="21" x2="21" y2="21"/>
-                </svg>
-                <span class="mobile-nav-label">Letters</span>
-            </button>
-            <!-- Panel 4: Letters by Position -->
-            <button class="mobile-nav-btn" data-panel="4" onclick="switchMobilePanel(4)" aria-label="Matrix" title="Matrix">
-                <svg class="mobile-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-                    <rect x="3" y="3" width="18" height="18" rx="2"/>
-                    <line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/>
-                    <line x1="9" y1="3" x2="9" y2="21"/><line x1="15" y1="3" x2="15" y2="21"/>
-                </svg>
-                <span class="mobile-nav-label">Matrix</span>
             </button>
             <!-- Panel 5: Session (combined with Distribution) -->
             <button class="mobile-nav-btn" data-panel="5" onclick="switchMobilePanel(5)" aria-label="Session" title="Session">
@@ -409,7 +410,7 @@
         </nav>
 
         <!-- Dictionary tab navigation (mobile only) -->
-        <nav class="dict-bottom-nav" id="dictBottomNav">
+        <nav class="dict-bottom-nav" id="dictBottomNav" aria-label="Dictionary mobile navigation">
             <button class="mobile-nav-btn active" data-tab="frequency" onclick="switchDictTab('frequency')" aria-label="Letter frequency" title="Frequency">
                 <svg class="mobile-nav-icon" viewBox="0 0 24 24" fill="currentColor">
                     <rect x="3" y="11" width="4" height="10" rx="1"/><rect x="10" y="7" width="4" height="14" rx="1"/><rect x="17" y="4" width="4" height="17" rx="1"/>
@@ -776,7 +777,7 @@
             <div class="about-content panel">
                 <div class="about-logo">
                     <h1 class="about-app-name">WordAI</h1>
-                    <p class="about-version">v1.15.4</p>
+                    <p class="about-version">v1.15.5</p>
                 </div>
                 <p class="about-description">A Wordle-style word game with AI-powered analysis and bot strategies.</p>
                 <div class="about-links">
@@ -953,7 +954,7 @@
     <footer class="app-footer">
         <div class="footer-content">
             <div class="footer-copyright">
-                © 2026 FistralTech Ltd | v1.15.4
+                © 2026 FistralTech Ltd | v1.15.5
             </div>
             <nav class="footer-links" aria-label="Footer navigation">
                 <a href="https://fistraltech.com" target="_blank" rel="noopener noreferrer" class="footer-link">fistraltech.com</a>
