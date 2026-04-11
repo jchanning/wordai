@@ -29,7 +29,7 @@ Once you're in the DNS Management page:
    ```
    Type:    A
    Name:    @
-   Value:   130.162.184.150
+   Value:   132.145.64.140
    TTL:     600 (10 minutes - for quick testing)
             or 3600 (1 hour - for production)
    ```
@@ -43,7 +43,7 @@ Once you're in the DNS Management page:
    ```
    Type:    A
    Name:    www
-   Value:   130.162.184.150
+   Value:   132.145.64.140
    TTL:     600 or 3600
    ```
 
@@ -57,8 +57,8 @@ After saving, your records should look like this:
 
 | Type | Name | Value | TTL |
 |------|------|-------|-----|
-| A | @ | 130.162.184.150 | 600 |
-| A | www | 130.162.184.150 | 600 |
+| A | @ | 132.145.64.140 | 600 |
+| A | www | 132.145.64.140 | 600 |
 
 ---
 
@@ -82,7 +82,7 @@ Address:  ...
 
 Non-authoritative answer:
 Name:    yourdomain.com
-Address:  130.162.184.150
+Address:  132.145.64.140
 ```
 
 **Online tools:**
@@ -131,8 +131,8 @@ Records
 ┌─────┬──────┬──────────────────┬──────┬────────┐
 │Type │ Name │ Value            │ TTL  │ Actions│
 ├─────┼──────┼──────────────────┼──────┼────────┤
-│  A  │  @   │ 130.162.184.150  │ 600  │ [Edit] │
-│  A  │ www  │ 130.162.184.150  │ 600  │ [Edit] │
+│  A  │  @   │ 132.145.64.140  │ 600  │ [Edit] │
+│  A  │ www  │ 132.145.64.140  │ 600  │ [Edit] │
 │ NS  │  @   │ ns**.domainco... │ 3600 │        │
 │ SOA │  @   │ Primary namese...│ 3600 │        │
 └─────┴──────┴──────────────────┴──────┴────────┘

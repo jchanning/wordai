@@ -1,7 +1,7 @@
 # WordAI ARM Instance Preparation Script
 # Run this from PowerShell BEFORE uploading files
 
-$IP = "130.162.184.150"
+$IP = "132.145.64.140"
 $KEY = "C:\Users\johnm\.ssh\arm-wordai.key"
 
 Write-Host "=== Preparing OCI ARM Instance for WordAI ===" -ForegroundColor Green

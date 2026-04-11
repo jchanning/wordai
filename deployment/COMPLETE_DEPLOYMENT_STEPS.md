@@ -13,7 +13,7 @@ From your local machine, run:
 
 1. **SSH into the instance:**
 ```powershell
-ssh -i C:\Users\johnm\.ssh\oracle-wordai.key opc@130.162.184.150
+ssh -i C:\Users\johnm\.ssh\oracle-wordai.key opc@132.145.64.140
 ```
 
 2. **Create directories:**
@@ -26,10 +26,10 @@ exit
 
 ```powershell
 # Upload prep script
-scp -i C:\Users\johnm\.ssh\oracle-wordai.key deployment\prepare-server.sh opc@130.162.184.150:~/
+scp -i C:\Users\johnm\.ssh\oracle-wordai.key deployment\prepare-server.sh opc@132.145.64.140:~/
 
 # SSH and run it
-ssh -i C:\Users\johnm\.ssh\oracle-wordai.key opc@130.162.184.150
+ssh -i C:\Users\johnm\.ssh\oracle-wordai.key opc@132.145.64.140
 chmod +x prepare-server.sh
 ./prepare-server.sh
 exit
@@ -48,7 +48,7 @@ Run these commands in order:
 
 ### Step 2: Upload Files
 ```powershell
-$IP = "130.162.184.150"
+$IP = "132.145.64.140"
 $KEY = "C:\Users\johnm\.ssh\oracle-wordai.key"
 
 # Upload JAR
@@ -86,7 +86,7 @@ sudo journalctl -u wordai -f
 
 ### Step 5: Test in Browser
 ```
-http://130.162.184.150:8080
+http://132.145.64.140:8080
 ```
 
 ---
@@ -118,7 +118,7 @@ chmod 755 ~/wordai-data
 
 **Upload all files at once:**
 ```powershell
-$IP = "130.162.184.150"; $KEY = "C:\Users\johnm\.ssh\oracle-wordai.key"
+$IP = "132.145.64.140"; $KEY = "C:\Users\johnm\.ssh\oracle-wordai.key"
 scp -i $KEY target\wordai-1.0-SNAPSHOT.jar opc@${IP}:~/wordai-app/
 scp -i $KEY deployment\wordai.service opc@${IP}:~/
 scp -i $KEY deployment\application-prod.properties opc@${IP}:~/wordai-app/

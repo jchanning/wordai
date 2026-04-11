@@ -11,7 +11,7 @@ Clicking "Sign in with Google" returns **Error 401: invalid_client** because no 
 3. Application type: **Web application**
 4. Add this **Authorised redirect URI**:
    ```
-   http://130.162.184.150:8080/login/oauth2/code/google
+   http://132.145.64.140:8080/login/oauth2/code/google
    ```
 5. Note down the **Client ID** and **Client Secret**
 
@@ -27,7 +27,7 @@ Add these lines (replacing the placeholders with the real values):
 ```properties
 spring.security.oauth2.client.registration.google.client-id=YOUR_REAL_CLIENT_ID
 spring.security.oauth2.client.registration.google.client-secret=YOUR_REAL_CLIENT_SECRET
-spring.security.oauth2.client.registration.google.redirect-uri=http://130.162.184.150:8080/login/oauth2/code/google
+spring.security.oauth2.client.registration.google.redirect-uri=http://132.145.64.140:8080/login/oauth2/code/google
 ```
 
 ### Step 3 — Restart the service
@@ -37,7 +37,7 @@ sudo systemctl status wordai
 ```
 
 ## Server Details
-- **IP**: `130.162.184.150`
+- **IP**: `132.145.64.140`
 - **SSH key**: `C:\Users\johnm\.ssh\arm-wordai.key`
 - **SSH user**: `opc`
 - **Config file**: `/home/opc/wordai-app/application-prod.properties`

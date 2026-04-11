@@ -2,7 +2,7 @@
 
 **Status:** Production-ready  
 **Target Platform:** Oracle Cloud  
-**Current URL:** http://130.162.184.150:8080  
+**Current URL:** http://132.145.64.140:8080  
 **Goal:** https://yourdomain.com with SSL/TLS encryption
 
 ---
@@ -71,7 +71,7 @@ Nginx acts as a reverse proxy and provides:
 
 - [ ] Domain name registered and accessible
 - [ ] Domain registrar login credentials ready
-- [ ] SSH access to Oracle Cloud instance (130.162.184.150)
+- [ ] SSH access to Oracle Cloud instance (132.145.64.140)
 - [ ] SSH key available: `~/.ssh/arm-wordai.key`
 - [ ] Valid email address for Let's Encrypt
 
@@ -79,7 +79,7 @@ Nginx acts as a reverse proxy and provides:
 
 - [ ] Log in to domain registrar
 - [ ] Find DNS settings / Records section
-- [ ] Create A Record pointing to `130.162.184.150`
+- [ ] Create A Record pointing to `132.145.64.140`
 - [ ] Wait 5-30 minutes for DNS propagation
 - [ ] Verify with: `nslookup yourdomain.com`
 
@@ -111,7 +111,7 @@ Contact your domain registrar and point your domain to your Oracle Cloud instanc
 | **Type** | A |
 | **Name** | @ (for root) or www (for www.yourdomain.com) |
 | **TTL** | 3600 (1 hour, or 300 for testing) |
-| **Value** | 130.162.184.150 |
+| **Value** | 132.145.64.140 |
 
 **Common registrars:**
 - GoDaddy, Namecheap, Google Domains, Route53, Cloudflare, etc.
@@ -145,7 +145,7 @@ dig yourdomain.com
 SSH to your instance and add firewall rules for HTTP/HTTPS:
 
 ```bash
-ssh -i ~/.ssh/arm-wordai.key opc@130.162.184.150
+ssh -i ~/.ssh/arm-wordai.key opc@132.145.64.140
 
 # Add HTTP (port 80) for Let's Encrypt validation
 sudo firewall-cmd --zone=public --add-port=80/tcp --permanent
@@ -334,7 +334,7 @@ sudo systemctl status certbot-renew.timer
 **A:** When you type `yourdomain.com`:
 1. Browser queries DNS nameservers
 2. Nameserver looks up the A record
-3. Returns IP address: `130.162.184.150`
+3. Returns IP address: `132.145.64.140`
 4. Browser connects to that IP
 5. Server responds
 

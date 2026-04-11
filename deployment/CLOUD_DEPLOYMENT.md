@@ -20,7 +20,7 @@ Copy-Item deployment\deployment-config.ps1.example deployment\deployment-config.
 
 Edit `deployment\deployment-config.ps1` and set your values:
 ```powershell
-$IP = "130.162.184.150"  # Your OCI instance IP
+$IP = "132.145.64.140"  # Your OCI instance IP
 $KEY = "C:\Users\johnm\.ssh\arm-wordai.key"  # Path to SSH key
 ```
 

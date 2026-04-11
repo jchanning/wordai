@@ -1,4 +1,4 @@
-# Quick Deployment to ARM Instance (130.162.184.150)
+# Quick Deployment to ARM Instance (132.145.64.140)
 
 ## Upload Files to New Instance
 
@@ -6,7 +6,7 @@ From PowerShell on your local machine:
 
 ```powershell
 # Set variables
-$IP = "130.162.184.150"
+$IP = "132.145.64.140"
 $KEY = "C:\Users\johnm\.ssh\oracle-wordai.key"
 
 # Upload JAR file
@@ -39,7 +39,7 @@ chmod +x deploy-to-arm.sh
 
 Open in browser:
 ```
-http://130.162.184.150:8080
+http://132.145.64.140:8080
 ```
 
 ## Useful Commands

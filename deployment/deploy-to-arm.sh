@@ -65,7 +65,7 @@ sudo systemctl status wordai --no-pager
 echo ""
 echo "=== Deployment Complete! ==="
 echo ""
-echo "Application URL: http://130.162.184.150:8080"
+echo "Application URL: http://132.145.64.140:8080"
 echo ""
 echo "Useful commands:"
 echo "  View logs:        sudo journalctl -u wordai -f"
