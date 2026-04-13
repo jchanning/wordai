@@ -2,11 +2,13 @@ package com.fistraltech.server.controller;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 import static org.hamcrest.Matchers.containsString;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -21,6 +23,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.fistraltech.analysis.AnalysisResponse;
+import com.fistraltech.core.Dictionary;
+import com.fistraltech.core.WordEntropy;
 import com.fistraltech.security.config.SecurityConfig;
 import com.fistraltech.security.service.CustomOAuth2UserService;
 import com.fistraltech.server.AlgorithmFeatureService;
@@ -72,6 +76,46 @@ class ResourceControllerTest {
             .andExpect(content().string(containsString("\"id\":\"5\"")))
             .andExpect(content().string(containsString("\"wordLength\":5")));
     }
+
+            @Test
+            @DisplayName("getDictionary_returnsDictionaryDetailAndEntropy")
+            void getDictionary_returnsDictionaryDetailAndEntropy() throws Exception {
+            Dictionary dictionary = new Dictionary(5);
+            dictionary.addWords(Set.of("arose", "stare"));
+
+            WordEntropy wordEntropy = mock(WordEntropy.class);
+            when(wordEntropy.getEntropy("arose")).thenReturn(3.5f);
+            when(wordEntropy.getEntropy("stare")).thenReturn(3.0f);
+
+            when(dictionaryService.getMasterDictionary("5")).thenReturn(dictionary);
+            when(dictionaryService.getWordEntropy("5")).thenReturn(wordEntropy);
+
+            mockMvc.perform(get("/api/wordai/dictionaries/5"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("\"id\":\"5\"")))
+                .andExpect(content().string(containsString("\"wordLength\":5")))
+                .andExpect(content().string(containsString("\"wordCount\":2")))
+                .andExpect(content().string(containsString("\"entropy\"")));
+            }
+
+            @Test
+            @DisplayName("getDictionary_returnsNotFound_whenDictionaryMissing")
+            void getDictionary_returnsNotFound_whenDictionaryMissing() throws Exception {
+            when(dictionaryService.getMasterDictionary("missing")).thenReturn(null);
+
+            mockMvc.perform(get("/api/wordai/dictionaries/missing"))
+                .andExpect(status().isNotFound());
+            }
+
+            @Test
+            @DisplayName("getDictionary_returnsNotFound_whenServiceThrows")
+            void getDictionary_returnsNotFound_whenServiceThrows() throws Exception {
+            when(dictionaryService.getMasterDictionary("bad"))
+                .thenThrow(new RuntimeException("boom"));
+
+            mockMvc.perform(get("/api/wordai/dictionaries/bad"))
+                .andExpect(status().isNotFound());
+            }
 
     @Test
     @DisplayName("getAlgorithms_returnsServiceMetadata")

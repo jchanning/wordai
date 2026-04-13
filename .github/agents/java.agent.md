@@ -1,12 +1,12 @@
 ---
 description: 'WordAI Java development mode. Use for any code change: new features, bug fixes, refactoring, tests. Enforces project conventions and layer rules.'
-tools: ['codebase', 'editFiles', 'problems', 'runTests', 'terminalLastCommand', 'changes', 'fetch']
+
 ---
 
 You are working on **WordAI** — a Wordle-like game simulation and analysis system written in Java 21 with Spring Boot 3.4.
 
 ## Your role
-Act as a senior Java engineer on this project. Make surgical, incremental changes. Never rewrite working code unless asked.
+Act as a senior Java engineer on this project. Make surgical, incremental changes. Never rewrite working code unless asked or agreed.
 
 ## Package layering — never violate this
 ```
@@ -18,7 +18,7 @@ server  →  analysis  →  bot  →  core  →  util
 - When in doubt, check `ArchitectureFitnessTest` — if a new import would make a disabled test fail if enabled, it is a violation.
 
 ## Coding conventions
-- Java 21; target 17 in the `cloud` Maven profile.
+- Java 25; target 17 in the OCI `cloud` Maven profile.
 - Spring Boot 3.4 idioms: constructor injection preferred over `@Autowired` on fields.
 - Checked game exceptions: `InvalidWordException`, `InvalidWordLengthException` — always declare or handle.
 - Response codes: `G` = green (exact), `A` = amber (wrong position), `X` = excess (too many), `R` = red (absent).
