@@ -42,8 +42,10 @@ WordAI is built on modern Java and Spring Boot technologies:
 
 ## Key Technologies
 
-- **Java 21** (or 17 for production)
-- **Spring Boot 3.4.0** - REST API framework
+- **Java 25** - local development and CI baseline
+- **Java 17** - cloud Maven profile for deployment compatibility
+- **Temurin 21 container image** - current Docker baseline until container alignment work lands
+- **Spring Boot 3.5.13** - REST API framework
 - **Maven 3.8.9+** - Build automation
 - **H2 Database** - Embedded SQL database
 - **JUnit 5** - Unit testing
@@ -63,10 +65,15 @@ WordAI is built on modern Java and Spring Boot technologies:
 
 3. **Run tests**
    ```bash
-   mvn clean test
+   mvn clean verify
    ```
 
-4. **Start development server**
+4. **Lint frontend static assets**
+   ```bash
+   npm run lint
+   ```
+
+5. **Start development server**
    ```bash
    mvn spring-boot:run
    ```
@@ -90,10 +97,16 @@ wordai/
 
 ## Related Documentation
 
-- [Java 21 Upgrade Notes](./java-upgrade-notes.md)
+- [Architecture](../ARCHITECTURE.md)
+- [Execution Playbook](../EXECUTION_PLAYBOOK.md)
+- [Coding Standards](../coding-standards.md)
+- [Contribution Guide](../../CONTRIBUTING.md)
+- [Java 25 Upgrade Notes](./java-upgrade-notes.md)
 - [Performance Optimization](./performance-optimization.md)
 - [Deployment Guide](../deployment/deployment-guide.md)
 
 ## Contributing
 
-See [docs/README.md](../README.md) for contribution guidelines.
+Use [../../CONTRIBUTING.md](../../CONTRIBUTING.md) for the minimum ticket, test, and status workflow.
+Use [../EXECUTION_PLAYBOOK.md](../EXECUTION_PLAYBOOK.md) when the change affects architecture, API shape, validation policy, or repository governance.
+Current CI also enforces frontend lint plus a staged 60% JaCoCo line-coverage floor during `mvn clean verify`.

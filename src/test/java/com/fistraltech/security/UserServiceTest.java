@@ -29,6 +29,7 @@ import com.fistraltech.security.repository.UserRepository;
 import com.fistraltech.security.service.UserService;
 
 @ExtendWith(MockitoExtension.class)
+@DisplayName("UserService Tests")
 class UserServiceTest {
 
     @Mock

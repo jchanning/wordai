@@ -1,15 +1,14 @@
 package com.fistraltech.security.config;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
+import static org.mockito.Mockito.when;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.core.env.Environment;
-
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.Mockito.when;
 
 /**
  * TDD tests for {@link AdminCredentialsValidator}.
@@ -17,6 +16,7 @@ import static org.mockito.Mockito.when;
  * <p>Spec: {@code docs/features/admin-credentials.spec.md}
  */
 @ExtendWith(MockitoExtension.class)
+@DisplayName("AdminCredentialsValidator Tests")
 class AdminCredentialsValidatorTest {
 
     private static final String KNOWN_DEFAULT_PASSWORD = "ChangeMe123!";

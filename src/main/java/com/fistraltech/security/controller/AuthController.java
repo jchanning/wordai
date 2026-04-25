@@ -18,6 +18,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.fistraltech.security.dto.UserDto;
 import com.fistraltech.security.dto.UserRegistrationDto;
 import com.fistraltech.security.service.UserService;
+import com.fistraltech.web.ApiErrors;
 
 import jakarta.validation.Valid;
 
@@ -45,15 +46,8 @@ public class AuthController {
     
     @PostMapping("/register")
     public ResponseEntity<?> register(@Valid @RequestBody UserRegistrationDto registrationDto) {
-        try {
-            UserDto userDto = userService.registerUser(registrationDto);
-            return ResponseEntity.ok(userDto);
-        } catch (RuntimeException e) {
-            Map<String, String> error = new HashMap<>();
-            error.put("error", "Registration failed");
-            error.put("message", e.getMessage());
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
-        }
+        UserDto userDto = userService.registerUser(registrationDto);
+        return ResponseEntity.ok(userDto);
     }
     
     @GetMapping("/user")
@@ -61,7 +55,8 @@ public class AuthController {
                                            @AuthenticationPrincipal UserDetails userDetails,
                                            @AuthenticationPrincipal OAuth2User oauth2User) {
         if (authentication == null || !authentication.isAuthenticated()) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+            return ApiErrors.response(HttpStatus.UNAUTHORIZED,
+                    "Authentication required", "User is not authenticated");
         }
         
         String email = null;
@@ -77,12 +72,16 @@ public class AuthController {
         }
         
         if (email != null) {
-            return userService.getUserByEmail(email)
-                    .map(ResponseEntity::ok)
-                    .orElse(ResponseEntity.notFound().build());
+            UserDto user = userService.getUserByEmail(email).orElse(null);
+            if (user != null) {
+                return ResponseEntity.ok(user);
+            }
+            return ApiErrors.response(HttpStatus.NOT_FOUND,
+                    "User not found", "Authenticated user profile was not found");
         }
         
-        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        return ApiErrors.response(HttpStatus.UNAUTHORIZED,
+            "Authentication required", "Authenticated user details were not available");
     }
     
     @GetMapping("/check")

@@ -24,12 +24,13 @@ import com.fistraltech.core.InvalidWordException;
 import com.fistraltech.core.Response;
 import com.fistraltech.server.AlgorithmFeatureService;
 import com.fistraltech.server.GameHistoryService;
+import com.fistraltech.server.GameResponseShaper;
 import com.fistraltech.server.WordGameService;
 import com.fistraltech.server.dto.CreateGameRequest;
-import com.fistraltech.server.dto.CreateGameResponse;
-import com.fistraltech.server.dto.GameResponse;
 import com.fistraltech.server.dto.GuessRequest;
 import com.fistraltech.server.model.GameSession;
+import com.fistraltech.web.ApiErrors;
+import com.fistraltech.web.ApiResourceNotFoundException;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
@@ -85,7 +86,7 @@ import jakarta.validation.Valid;
  * @see com.fistraltech.server.WordGameService
  */
 @RestController
-@RequestMapping("/api/wordai")
+@RequestMapping({ApiRoutes.LEGACY_ROOT, ApiRoutes.V1_ROOT})
 public class WordGameController {
     
     private static final Logger logger = Logger.getLogger(WordGameController.class.getName());
@@ -93,13 +94,16 @@ public class WordGameController {
     private final WordGameService gameService;
     private final AlgorithmFeatureService algorithmFeatureService;
     private final GameHistoryService gameHistoryService;
+    private final GameResponseShaper responseShaper;
 
     public WordGameController(WordGameService gameService,
                               AlgorithmFeatureService algorithmFeatureService,
-                              GameHistoryService gameHistoryService) {
+                              GameHistoryService gameHistoryService,
+                              GameResponseShaper responseShaper) {
         this.gameService = gameService;
         this.algorithmFeatureService = algorithmFeatureService;
         this.gameHistoryService = gameHistoryService;
+        this.responseShaper = responseShaper;
     }
 
     /**
@@ -140,42 +144,18 @@ public class WordGameController {
             String gameId = gameService.createGame(targetWord, wordLength, dictionaryId, userId,
             browserSessionId, resumeExisting);
             GameSession session = gameService.getGameSession(gameId);
-            
-            CreateGameResponse response = new CreateGameResponse(
-                gameId,
-                session.getWordGame().getDictionary().getWordLength(),
-                session.getMaxAttempts()
-            );
-            
-            // Add initial dictionary metrics
-            com.fistraltech.core.Dictionary filteredDict = session.getFilteredDictionary();
-            com.fistraltech.analysis.DictionaryAnalytics analyser = new com.fistraltech.analysis.DictionaryAnalytics(filteredDict);
-            
-            CreateGameResponse.DictionaryMetrics metrics = new CreateGameResponse.DictionaryMetrics(
-                filteredDict.getWordCount(),
-                filteredDict.getLetterCount(),
-                filteredDict.getUniqueCharacters().size(),
-                filteredDict.getColumnLengths()
-            );
-            metrics.setOccurrenceCountByPosition(analyser.getOccurrenceCountByPosition());
-            metrics.setMostFrequentCharByPosition(analyser.getMostFrequentCharByPosition());
-            response.setDictionaryMetrics(metrics);
+            var response = responseShaper.buildCreateGameResponse(session);
             
             logger.log(Level.INFO, "Game created: {0}", gameId);
             return ResponseEntity.status(HttpStatus.CREATED).body(response);
             
         } catch (InvalidWordException e) {
             logger.log(Level.WARNING, "Failed to create game: {0}", e.getMessage());
-            Map<String, String> error = new HashMap<>();
-            error.put("error", "Invalid request");
-            error.put("message", e.getMessage());
-            return ResponseEntity.badRequest().body(error);
+            return ApiErrors.response(HttpStatus.BAD_REQUEST, "Invalid request", e.getMessage());
         } catch (Exception e) {
-            logger.log(Level.SEVERE, "Unexpected error creating game: {0}", e.getMessage());
-            Map<String, String> error = new HashMap<>();
-            error.put("error", "Internal server error");
-            error.put("message", "Failed to create game");
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
+            logger.log(Level.SEVERE, "Unexpected error creating game", e);
+            return ApiErrors.response(HttpStatus.INTERNAL_SERVER_ERROR,
+                    "Internal server error", "Failed to create game");
         }
     }
     
@@ -184,47 +164,19 @@ public class WordGameController {
      * POST /api/wordai/games/{gameId}/guess
      */
     @PostMapping("/games/{gameId}/guess")
-        public ResponseEntity<?> makeGuess(@PathVariable String gameId,
+    public ResponseEntity<?> makeGuess(@PathVariable String gameId,
             @Valid @RequestBody GuessRequest request,
             Authentication authentication,
             HttpServletRequest httpRequest) {
         try {
-            if (request.getWord() == null || request.getWord().trim().isEmpty()) {
-                Map<String, String> error = new HashMap<>();
-                error.put("error", "Invalid request");
-                error.put("message", "Word is required");
-                return ResponseEntity.badRequest().body(error);
-            }
-            
             Response gameResponse = gameService.makeGuess(gameId, request.getWord().trim());
             GameSession session = gameService.getGameSession(gameId);
             
             if (session == null) {
-                Map<String, String> error = new HashMap<>();
-                error.put("error", "Game not found");
-                error.put("message", "Game session " + gameId + " does not exist");
-                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
+                return ApiErrors.response(HttpStatus.NOT_FOUND,
+                        "Game not found", "Game session " + gameId + " does not exist");
             }
-            
-            GameResponse response = new GameResponse(
-                gameId,
-                gameResponse,
-                session.getCurrentAttempts(),
-                session.getMaxAttempts()
-            );
-            
-            // Add dictionary metrics
-            com.fistraltech.core.Dictionary filteredDict = session.getFilteredDictionary();
-            com.fistraltech.analysis.DictionaryAnalytics analyser = new com.fistraltech.analysis.DictionaryAnalytics(filteredDict);
-            
-            GameResponse.DictionaryMetrics metrics = new GameResponse.DictionaryMetrics(
-                filteredDict.getLetterCount(),
-                filteredDict.getUniqueCharacters().size(),
-                filteredDict.getColumnLengths()
-            );
-            metrics.setOccurrenceCountByPosition(analyser.getOccurrenceCountByPosition());
-            metrics.setMostFrequentCharByPosition(analyser.getMostFrequentCharByPosition());
-            response.setDictionaryMetrics(metrics);
+            var response = responseShaper.buildGameResponse(gameId, gameResponse, session);
             
             // Persist the completed game for either the authenticated user or an anonymous IP.
             gameHistoryService.saveIfEnded(session, authentication, getClientIpAddress(httpRequest));
@@ -234,16 +186,13 @@ public class WordGameController {
             
         } catch (InvalidWordException e) {
             logger.warning("Invalid guess for game " + gameId + ": " + e.getMessage());
-            Map<String, String> error = new HashMap<>();
-            error.put("error", "Invalid word");
-            error.put("message", e.getMessage());
-            return ResponseEntity.badRequest().body(error);
+            return ApiErrors.response(HttpStatus.BAD_REQUEST, "Invalid word", e.getMessage());
+        } catch (ApiResourceNotFoundException e) {
+            return ApiErrors.response(HttpStatus.NOT_FOUND, e.getError(), e.getMessage());
         } catch (Exception e) {
-            logger.severe("Unexpected error processing guess for game " + gameId + ": " + e.getMessage());
-            Map<String, String> error = new HashMap<>();
-            error.put("error", "Internal server error");
-            error.put("message", "Failed to process guess");
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
+            logger.log(Level.SEVERE, "Unexpected error processing guess for game " + gameId, e);
+            return ApiErrors.response(HttpStatus.INTERNAL_SERVER_ERROR,
+                    "Internal server error", "Failed to process guess");
         }
     }
 
@@ -282,10 +231,8 @@ public class WordGameController {
             GameSession session = gameService.getGameSession(gameId);
             
             if (session == null) {
-                Map<String, String> error = new HashMap<>();
-                error.put("error", "Game not found");
-                error.put("message", "Game session " + gameId + " does not exist");
-                return ResponseEntity.notFound().build();
+                return ApiErrors.response(HttpStatus.NOT_FOUND,
+                        "Game not found", "Game session " + gameId + " does not exist");
             }
             
             Map<String, Object> gameState = new HashMap<>();
@@ -306,11 +253,9 @@ public class WordGameController {
             return ResponseEntity.ok(gameState);
             
         } catch (Exception e) {
-            logger.severe("Unexpected error getting game state for " + gameId + ": " + e.getMessage());
-            Map<String, String> error = new HashMap<>();
-            error.put("error", "Internal server error");
-            error.put("message", "Failed to get game state");
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
+            logger.log(Level.SEVERE, "Unexpected error getting game state for " + gameId, e);
+            return ApiErrors.response(HttpStatus.INTERNAL_SERVER_ERROR,
+                    "Internal server error", "Failed to get game state");
         }
     }
     
@@ -324,10 +269,8 @@ public class WordGameController {
             GameSession session = gameService.getGameSession(gameId);
             
             if (session == null) {
-                Map<String, String> error = new HashMap<>();
-                error.put("error", "Game not found");
-                error.put("message", "Game session " + gameId + " does not exist");
-                return ResponseEntity.notFound().build();
+                return ApiErrors.response(HttpStatus.NOT_FOUND,
+                        "Game not found", "Game session " + gameId + " does not exist");
             }
             
             gameService.removeGameSession(gameId);
@@ -340,11 +283,9 @@ public class WordGameController {
             return ResponseEntity.ok(response);
             
         } catch (Exception e) {
-            logger.severe("Unexpected error deleting game " + gameId + ": " + e.getMessage());
-            Map<String, String> error = new HashMap<>();
-            error.put("error", "Internal server error");
-            error.put("message", "Failed to delete game");
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
+            logger.log(Level.SEVERE, "Unexpected error deleting game " + gameId, e);
+            return ApiErrors.response(HttpStatus.INTERNAL_SERVER_ERROR,
+                    "Internal server error", "Failed to delete game");
         }
     }
     
@@ -358,10 +299,8 @@ public class WordGameController {
             GameSession session = gameService.getGameSession(gameId);
             
             if (session == null) {
-                Map<String, String> error = new HashMap<>();
-                error.put("error", "Game not found");
-                error.put("message", "Game session " + gameId + " does not exist");
-                return ResponseEntity.notFound().build();
+                return ApiErrors.response(HttpStatus.NOT_FOUND,
+                        "Game not found", "Game session " + gameId + " does not exist");
             }
             
             // Get the filtered dictionary based on current game state
@@ -377,11 +316,9 @@ public class WordGameController {
             return ResponseEntity.ok(response);
             
         } catch (Exception e) {
-            logger.severe("Unexpected error getting dictionary words for game " + gameId + ": " + e.getMessage());
-            Map<String, String> error = new HashMap<>();
-            error.put("error", "Internal server error");
-            error.put("message", "Failed to get dictionary words");
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
+            logger.log(Level.SEVERE, "Unexpected error getting dictionary words for game " + gameId, e);
+            return ApiErrors.response(HttpStatus.INTERNAL_SERVER_ERROR,
+                    "Internal server error", "Failed to get dictionary words");
         }
     }
     
@@ -396,10 +333,8 @@ public class WordGameController {
             GameSession session = gameService.getGameSession(gameId);
             
             if (session == null) {
-                Map<String, String> error = new HashMap<>();
-                error.put("error", "Game not found");
-                error.put("message", "Game session " + gameId + " does not exist");
-                return ResponseEntity.notFound().build();
+                return ApiErrors.response(HttpStatus.NOT_FOUND,
+                        "Game not found", "Game session " + gameId + " does not exist");
             }
             
             String suggestion = session.suggestWord();
@@ -417,11 +352,9 @@ public class WordGameController {
             return ResponseEntity.ok(response);
             
         } catch (Exception e) {
-            logger.severe("Unexpected error getting suggestion for game " + gameId + ": " + e.getMessage());
-            Map<String, String> error = new HashMap<>();
-            error.put("error", "Internal server error");
-            error.put("message", "Failed to get suggestion");
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
+            logger.log(Level.SEVERE, "Unexpected error getting suggestion for game " + gameId, e);
+            return ApiErrors.response(HttpStatus.INTERNAL_SERVER_ERROR,
+                    "Internal server error", "Failed to get suggestion");
         }
     }
     
@@ -435,27 +368,21 @@ public class WordGameController {
             GameSession session = gameService.getGameSession(gameId);
             
             if (session == null) {
-                Map<String, String> error = new HashMap<>();
-                error.put("error", "Game not found");
-                error.put("message", "Game session " + gameId + " does not exist");
-                return ResponseEntity.notFound().build();
+                return ApiErrors.response(HttpStatus.NOT_FOUND,
+                        "Game not found", "Game session " + gameId + " does not exist");
             }
             
             String strategy = request.get("strategy");
             if (strategy == null || strategy.trim().isEmpty()) {
-                Map<String, String> error = new HashMap<>();
-                error.put("error", "Invalid request");
-                error.put("message", "Strategy is required");
-                return ResponseEntity.badRequest().body(error);
+                return ApiErrors.response(HttpStatus.BAD_REQUEST,
+                        "Invalid request", "Strategy is required");
             }
             
             // Validate that the algorithm is enabled
             if (!algorithmFeatureService.isAlgorithmEnabled(strategy)) {
-                Map<String, String> error = new HashMap<>();
-                error.put("error", "Algorithm disabled");
-                error.put("message", "Algorithm '" + strategy + "' is not enabled on this server");
                 logger.warning("Attempt to use disabled algorithm '" + strategy + "' for game " + gameId);
-                return ResponseEntity.status(HttpStatus.FORBIDDEN).body(error);
+                return ApiErrors.response(HttpStatus.FORBIDDEN,
+                        "Algorithm disabled", "Algorithm '" + strategy + "' is not enabled on this server");
             }
             
             session.setSelectedStrategy(strategy);
@@ -469,11 +396,9 @@ public class WordGameController {
             return ResponseEntity.ok(response);
             
         } catch (Exception e) {
-            logger.severe("Unexpected error setting strategy for game " + gameId + ": " + e.getMessage());
-            Map<String, String> error = new HashMap<>();
-            error.put("error", "Internal server error");
-            error.put("message", "Failed to set strategy");
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
+            logger.log(Level.SEVERE, "Unexpected error setting strategy for game " + gameId, e);
+            return ApiErrors.response(HttpStatus.INTERNAL_SERVER_ERROR,
+                    "Internal server error", "Failed to set strategy");
         }
     }
     

@@ -1,17 +1,16 @@
 package com.fistraltech.server;
 
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
-
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import com.fistraltech.server.model.GameSession;
 import com.fistraltech.util.Config;
@@ -29,6 +28,7 @@ import com.github.benmanes.caffeine.cache.Ticker;
  *
  * <p>Spec: {@code docs/features/session-ttl.spec.md}
  */
+@DisplayName("SessionTtl Tests")
 class SessionTtlTest {
 
     // -----------------------------------------------------------------------

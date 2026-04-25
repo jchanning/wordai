@@ -105,8 +105,17 @@ class FlywayMigrationTest {
                 "active_game_sessions must include browser_session_id for tab isolation");
     }
 
+    @Test
+    @DisplayName("T7: V6 migration creates the algorithm_policies table")
+    void v6Migration_createsAlgorithmPoliciesTable() throws Exception {
+        assertTrue(tableExists("ALGORITHM_POLICIES"),
+                "algorithm_policies table must be created by V6 migration");
+        assertTrue(columnExists("ALGORITHM_POLICIES", "ENABLED"),
+                "algorithm_policies must include enabled state");
+    }
+
         @Test
-        @DisplayName("T7: legacy schema with active_game_sessions baselines at V2 and applies V3 and V4")
+        @DisplayName("T8: legacy schema with active_game_sessions baselines at V2 and applies V3 and V4")
         void legacySchemaWithActiveSessions_baselinesAtV2_andAppliesV3AndV4() throws Exception {
         String jdbcUrl = "jdbc:h2:mem:flyway_legacy_db;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE";
 

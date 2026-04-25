@@ -1,6 +1,6 @@
 # WordAI Architecture
 
-This document is the single source of truth for architectural decisions. It is the reference every AI session and every developer should consult before making structural changes.
+This document is WordAI's blueprint and master-plan equivalent. It is the primary source of truth for architectural decisions and the reference every AI session and developer should consult before making structural changes.
 
 ---
 
@@ -12,7 +12,13 @@ WordAI is a Wordle-like game simulation and analysis system. It provides:
 - Analytics over full-dictionary runs to compare strategy performance
 - A REST API to drive both the UI and automated analysis
 
-**Stack:** Java 21 · Spring Boot 3.4 · H2 (dev) / file-based H2 (prod) · Spring Security · Maven
+**Stack:** Java 25 (local and CI) · Java 17 (cloud Maven profile) · Temurin 21 (current Docker image baseline) · Spring Boot 3.5.13 · H2 · Spring Security · Maven
+
+Related governance documents:
+- [EXECUTION_PLAYBOOK.md](./EXECUTION_PLAYBOOK.md)
+- [API.md](./API.md)
+- [GLOSSARY.md](./GLOSSARY.md)
+- [STATE_MACHINES.md](./STATE_MACHINES.md)
 
 ---
 

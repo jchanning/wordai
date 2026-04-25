@@ -15,6 +15,12 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.Table;
 
+/**
+ * Persisted application user for local and OAuth-backed authentication flows.
+ *
+ * <p>The entity stores login identity, optional local credentials, role membership,
+ * provider metadata, and lifecycle timestamps used across the security and admin surfaces.
+ */
 @Entity
 @Table(name = "users")
 public class User {

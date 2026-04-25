@@ -1,6 +1,8 @@
 package com.fistraltech.server.dto;
 
+import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
 /**
@@ -26,10 +28,14 @@ import jakarta.validation.constraints.Size;
  */
 public class CreateGameRequest {
     @Size(min = 2, max = 20, message = "targetWord must be between 2 and 20 characters")
+    @Pattern(regexp = "^[A-Za-z]+$", message = "targetWord must contain only letters")
     private String targetWord; // Optional - if not provided, a random word will be selected
     @Min(value = 2, message = "wordLength must be at least 2")
+    @Max(value = 20, message = "wordLength must be at most 20")
     private Integer wordLength; // Optional - defaults to 5
+    @Pattern(regexp = ".*\\S.*", message = "dictionaryId must not be blank")
     private String dictionaryId; // Optional - ID of the dictionary to use (e.g., "default", "easy", "hard")
+    @Pattern(regexp = ".*\\S.*", message = "browserSessionId must not be blank")
     private String browserSessionId; // Optional - per-browser-window key used to isolate resumable sessions
     private Boolean resumeExisting; // Optional - when true, reuses an existing active session for this browser context
     

@@ -4,6 +4,13 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Mutable runtime configuration for dictionary loading, gameplay defaults, and analysis options.
+ *
+ * <p>This type is used as a lightweight configuration holder across core, analysis, and
+ * server flows. When dictionary options are provided, it also maintains a lookup map by
+ * dictionary identifier for efficient resolution during request handling.
+ */
 public class Config {
 
     private int wordLength;
@@ -117,7 +124,10 @@ public class Config {
     }
     
     /**
-     * Get dictionary path by ID
+     * Resolves the configured dictionary path for a known dictionary identifier.
+     *
+     * @param id dictionary identifier
+     * @return resolved dictionary path, or {@code null} when the dictionary is unknown
      */
     public String getDictionaryPathById(String id) {
         DictionaryOption option = dictionaryOptionsMap.get(id);
@@ -125,7 +135,10 @@ public class Config {
     }
     
     /**
-     * Get word length for a specific dictionary
+     * Resolves the configured word length for a dictionary identifier.
+     *
+     * @param dictionaryId dictionary identifier
+     * @return configured word length for the dictionary, or the default word length when unknown
      */
     public int getWordLengthForDictionary(String dictionaryId) {
         DictionaryOption option = dictionaryOptionsMap.get(dictionaryId);

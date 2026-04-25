@@ -22,6 +22,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.fistraltech.security.dto.UserDto;
 import com.fistraltech.security.service.UserService;
+import com.fistraltech.web.ApiErrors;
 
 /**
  * REST controller for user management (Admin only)
@@ -42,31 +43,25 @@ public class UserManagementController {
      * GET /api/admin/users?page=0&size=20&sort=createdAt,desc
      */
     @GetMapping
-    public ResponseEntity<Map<String, Object>> getAllUsers(
+    public ResponseEntity<?> getAllUsers(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size,
             @RequestParam(defaultValue = "createdAt") String sortBy,
             @RequestParam(defaultValue = "desc") String sortDir) {
-        
-        try {
-            Sort sort = Sort.by(Sort.Direction.fromString(sortDir), sortBy);
-            PageRequest pageRequest = PageRequest.of(page, size, sort);
-            Page<UserDto> users = userService.getUsersPaged(pageRequest);
-            
-            Map<String, Object> response = new HashMap<>();
-            response.put("users", users.getContent());
-            response.put("currentPage", users.getNumber());
-            response.put("totalItems", users.getTotalElements());
-            response.put("totalPages", users.getTotalPages());
-            response.put("hasNext", users.hasNext());
-            response.put("hasPrevious", users.hasPrevious());
-            
-            return ResponseEntity.ok(response);
-        } catch (Exception e) {
-            Map<String, Object> error = new HashMap<>();
-            error.put("error", "Failed to retrieve users: " + e.getMessage());
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
-        }
+
+        Sort sort = Sort.by(Sort.Direction.fromString(sortDir), sortBy);
+        PageRequest pageRequest = PageRequest.of(page, size, sort);
+        Page<UserDto> users = userService.getUsersPaged(pageRequest);
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("users", users.getContent());
+        response.put("currentPage", users.getNumber());
+        response.put("totalItems", users.getTotalElements());
+        response.put("totalPages", users.getTotalPages());
+        response.put("hasNext", users.hasNext());
+        response.put("hasPrevious", users.hasPrevious());
+
+        return ResponseEntity.ok(response);
     }
     
     /**
@@ -75,9 +70,12 @@ public class UserManagementController {
      */
     @GetMapping("/{id}")
     public ResponseEntity<?> getUserById(@PathVariable Long id) {
-        return userService.getUserById(id)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
+        UserDto user = userService.getUserById(id).orElse(null);
+        if (user != null) {
+            return ResponseEntity.ok(user);
+        }
+        return ApiErrors.response(HttpStatus.NOT_FOUND,
+            "User not found", "User " + id + " does not exist");
     }
     
     /**
@@ -86,14 +84,8 @@ public class UserManagementController {
      */
     @PutMapping("/{id}/roles")
     public ResponseEntity<?> updateUserRoles(@PathVariable Long id, @RequestBody List<String> roles) {
-        try {
-            UserDto updatedUser = userService.updateUserRoles(id, roles);
-            return ResponseEntity.ok(updatedUser);
-        } catch (RuntimeException e) {
-            Map<String, String> error = new HashMap<>();
-            error.put("error", e.getMessage());
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
-        }
+        UserDto updatedUser = userService.updateUserRoles(id, roles);
+        return ResponseEntity.ok(updatedUser);
     }
     
     /**
@@ -102,14 +94,8 @@ public class UserManagementController {
      */
     @PostMapping("/{id}/roles/{role}")
     public ResponseEntity<?> addRoleToUser(@PathVariable Long id, @PathVariable String role) {
-        try {
-            UserDto updatedUser = userService.addRoleToUser(id, role);
-            return ResponseEntity.ok(updatedUser);
-        } catch (RuntimeException e) {
-            Map<String, String> error = new HashMap<>();
-            error.put("error", e.getMessage());
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
-        }
+        UserDto updatedUser = userService.addRoleToUser(id, role);
+        return ResponseEntity.ok(updatedUser);
     }
     
     /**
@@ -118,14 +104,8 @@ public class UserManagementController {
      */
     @DeleteMapping("/{id}/roles/{role}")
     public ResponseEntity<?> removeRoleFromUser(@PathVariable Long id, @PathVariable String role) {
-        try {
-            UserDto updatedUser = userService.removeRoleFromUser(id, role);
-            return ResponseEntity.ok(updatedUser);
-        } catch (RuntimeException e) {
-            Map<String, String> error = new HashMap<>();
-            error.put("error", e.getMessage());
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
-        }
+        UserDto updatedUser = userService.removeRoleFromUser(id, role);
+        return ResponseEntity.ok(updatedUser);
     }
     
     /**
@@ -134,14 +114,8 @@ public class UserManagementController {
      */
     @PutMapping("/{id}/enable")
     public ResponseEntity<?> enableUser(@PathVariable Long id) {
-        try {
-            UserDto updatedUser = userService.enableUser(id);
-            return ResponseEntity.ok(updatedUser);
-        } catch (RuntimeException e) {
-            Map<String, String> error = new HashMap<>();
-            error.put("error", e.getMessage());
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
-        }
+        UserDto updatedUser = userService.enableUser(id);
+        return ResponseEntity.ok(updatedUser);
     }
     
     /**
@@ -150,14 +124,8 @@ public class UserManagementController {
      */
     @PutMapping("/{id}/disable")
     public ResponseEntity<?> disableUser(@PathVariable Long id) {
-        try {
-            UserDto updatedUser = userService.disableUser(id);
-            return ResponseEntity.ok(updatedUser);
-        } catch (RuntimeException e) {
-            Map<String, String> error = new HashMap<>();
-            error.put("error", e.getMessage());
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
-        }
+        UserDto updatedUser = userService.disableUser(id);
+        return ResponseEntity.ok(updatedUser);
     }
     
     /**
@@ -165,13 +133,9 @@ public class UserManagementController {
      * GET /api/admin/users/role/{role}
      */
     @GetMapping("/role/{role}")
-    public ResponseEntity<List<UserDto>> getUsersByRole(@PathVariable String role) {
-        try {
-            List<UserDto> users = userService.getUsersByRole(role);
-            return ResponseEntity.ok(users);
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-        }
+    public ResponseEntity<?> getUsersByRole(@PathVariable String role) {
+        List<UserDto> users = userService.getUsersByRole(role);
+        return ResponseEntity.ok(users);
     }
     
     /**
@@ -179,22 +143,16 @@ public class UserManagementController {
      * GET /api/admin/users/stats
      */
     @GetMapping("/stats")
-    public ResponseEntity<Map<String, Object>> getUserStats() {
-        try {
-            Map<String, Object> stats = new HashMap<>();
-            stats.put("totalUsers", userService.getTotalUserCount());
-            stats.put("activeUsers", userService.getActiveUserCount());
-            stats.put("adminUsers", userService.getUsersByRole("ROLE_ADMIN").size());
-            stats.put("premiumUsers", userService.getUsersByRole("ROLE_PREMIUM").size());
-            stats.put("registeredUsers", userService.getUsersByRole("ROLE_USER").size());
-            stats.put("guestSessions", userService.getUsersByRole("ROLE_GUEST").size());
-            
-            return ResponseEntity.ok(stats);
-        } catch (Exception e) {
-            Map<String, Object> error = new HashMap<>();
-            error.put("error", "Failed to retrieve user statistics: " + e.getMessage());
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
-        }
+    public ResponseEntity<?> getUserStats() {
+        Map<String, Object> stats = new HashMap<>();
+        stats.put("totalUsers", userService.getTotalUserCount());
+        stats.put("activeUsers", userService.getActiveUserCount());
+        stats.put("adminUsers", userService.getUsersByRole("ROLE_ADMIN").size());
+        stats.put("premiumUsers", userService.getUsersByRole("ROLE_PREMIUM").size());
+        stats.put("registeredUsers", userService.getUsersByRole("ROLE_USER").size());
+        stats.put("guestSessions", userService.getUsersByRole("ROLE_GUEST").size());
+
+        return ResponseEntity.ok(stats);
     }
     
     /**
@@ -205,20 +163,14 @@ public class UserManagementController {
     public ResponseEntity<?> resetPassword(@PathVariable Long id, @RequestBody Map<String, String> body) {
         String newPassword = body.get("password");
         if (newPassword == null || newPassword.isBlank()) {
-            Map<String, String> error = new HashMap<>();
-            error.put("error", "password is required");
-            return ResponseEntity.badRequest().body(error);
+            return ApiErrors.response(HttpStatus.BAD_REQUEST,
+                    "Invalid request", "Password is required");
         }
-        try {
-            UserDto updated = userService.resetPassword(id, newPassword);
-            Map<String, Object> response = new HashMap<>();
-            response.put("message", "Password reset successfully");
-            response.put("user", updated);
-            return ResponseEntity.ok(response);
-        } catch (RuntimeException e) {
-            Map<String, String> error = new HashMap<>();
-            error.put("error", e.getMessage());
-            return ResponseEntity.badRequest().body(error);
-        }
+
+        UserDto updated = userService.resetPassword(id, newPassword);
+        Map<String, Object> response = new HashMap<>();
+        response.put("message", "Password reset successfully");
+        response.put("user", updated);
+        return ResponseEntity.ok(response);
     }
 }

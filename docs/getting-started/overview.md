@@ -1,7 +1,7 @@
 # WordAI - Intelligent Word Guessing Game with Advanced Bot Strategies
 
-[![Java](https://img.shields.io/badge/Java-21-blue.svg)](https://www.oracle.com/java/)
-[![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.4.0-brightgreen.svg)](https://spring.io/projects/spring-boot)
+[![Java](https://img.shields.io/badge/Java-25%20dev%20%7C%2021%20docker%20%7C%2017%20cloud-blue.svg)](https://www.oracle.com/java/)
+[![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.5.13-brightgreen.svg)](https://spring.io/projects/spring-boot)
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 **WordAI** is a sophisticated word-guessing game (similar to Wordle) with an intelligent bot system that implements and compares multiple word selection algorithms. The project includes a Spring Boot REST API, interactive web interface, and comprehensive analytics for algorithm performance evaluation.
@@ -10,16 +10,15 @@
 
 ### Interactive Web Game
 - Clean, modern UI with real-time feedback
-- Multiple dictionary options (4, 5, 6, and 7-letter words)
+- Multiple dictionary options (4, 5, and 6-letter words)
 - Session statistics and game history tracking
 - AI-powered word suggestions with multiple strategies
 
 ### Intelligent Bot System
 Multiple bot algorithms for automated gameplay:
 - **Random Selection** - Baseline strategy
-- **Most Common Letters** - Frequency-based selection
 - **Maximum Entropy** - Information theory-based optimization
-- **Fixed First Word** - Optimal opening combined with adaptive play
+- **Bellman Full Dictionary** - Bellman-optimal across complete dictionary
 
 ### Comprehensive Analytics
 - CSV export of game metrics
@@ -36,15 +35,16 @@ Multiple bot algorithms for automated gameplay:
 ## 🚀 Quick Start
 
 ### Prerequisites
-- Java 21 or higher
+- Java 25 for local development and CI
+- Java 17 for the cloud Maven profile
 - Maven 3.8.9+ (or use included Maven wrapper)
 
 ### Running the Application
 
 ```bash
 # Clone the repository
-git clone https://github.com/YOUR_USERNAME/WordAI.git
-cd WordAI
+git clone https://github.com/jchanning/wordai.git
+cd wordai
 
 # Run with Maven
 mvn spring-boot:run
@@ -155,7 +155,7 @@ Iteration,Algorithm,Target,Attempts,Status
 ### Details CSV
 ```csv
 Iteration,Attempt,Guess,Response,RemainingWords
-1,1,CRANE,RAARG,128
+mvn clean verify
 1,2,STALE,AAGGG,5
 ```
 
@@ -172,7 +172,7 @@ mvn test
 mvn test -Dtest=GameControllerTest
 
 # Generate test coverage report
-mvn clean test jacoco:report
+mvn clean verify
 ```
 
 ## 📡 API Documentation

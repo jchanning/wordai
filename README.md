@@ -1,7 +1,7 @@
 # WordAI - Intelligent Word Guessing Game with Advanced Bot Strategies
 
-[![Java](https://img.shields.io/badge/Java-21-blue.svg)](https://www.oracle.com/java/)
-[![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.4.0-brightgreen.svg)](https://spring.io/projects/spring-boot)
+[![Java](https://img.shields.io/badge/Java-25%20dev%20%7C%2021%20docker%20%7C%2017%20cloud-blue.svg)](https://www.oracle.com/java/)
+[![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.5.13-brightgreen.svg)](https://spring.io/projects/spring-boot)
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 **WordAI** is a sophisticated word-guessing game (similar to Wordle) with an intelligent bot system that implements and compares multiple word selection algorithms. The project includes a Spring Boot REST API, interactive web interface, and comprehensive analytics for algorithm performance evaluation.
@@ -35,8 +35,15 @@ Multiple bot algorithms for automated gameplay:
 ## 🚀 Quick Start
 
 ### Prerequisites
-- Java 21 or higher
+- Java 25 for local development and CI
+- Java 17 for the cloud Maven profile
 - Maven 3.8.9+ (or use included Maven wrapper)
+
+### Runtime Baseline
+
+- `pom.xml` targets Java 25 by default.
+- The `cloud` Maven profile compiles for Java 17.
+- The current Dockerfile is still pinned to Temurin 21.
 
 ### Running the Application
 
@@ -65,7 +72,7 @@ docker compose up --build
 The application will be available at `http://localhost:8080`.
 
 Containerization files:
-- `Dockerfile` - multi-stage build using Java 21
+- `Dockerfile` - multi-stage build using Temurin 21 images
 - `docker-compose.yml` - local runtime with persistent named volumes
 - `docker/wordai.properties` - container-specific configuration for `ConfigManager`
 - `.dockerignore` - optimized build context
@@ -185,14 +192,16 @@ Tracks letter frequency distributions per position for statistical analysis.
 
 ```bash
 # Run all tests
-mvn test
+mvn clean verify
 
 # Run specific test class
 mvn test -Dtest=WordGameServiceTest
 
-# Generate test coverage report
-mvn clean test jacoco:report
+# Lint frontend static assets
+npm run lint
 ```
+
+CI now runs `npm run lint` plus `mvn clean verify`, and Maven enforces a staged JaCoCo line-coverage floor during `verify`.
 
 ## 📡 API Documentation
 
@@ -224,6 +233,8 @@ GET /api/wordai/games/{gameId}/suggestion?strategy=ENTROPY
 
 See API documentation at `http://localhost:8080/swagger-ui.html` when running.
 
+For the human-readable route map, see [docs/API.md](./docs/API.md).
+
 ## 🏗️ Architecture
 
 ### Core Game Engine
@@ -246,13 +257,9 @@ Spring Boot REST API with:
 
 ## 🤝 Contributing
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+Use [CONTRIBUTING.md](./CONTRIBUTING.md) for the repository workflow.
 
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
+For significant changes, start from one ticket in [specs/](./specs/), run the narrowest relevant validation, and update [docs/IMPLEMENTATION_STATUS.md](./docs/IMPLEMENTATION_STATUS.md) in the same branch.
 
 ## 📝 License
 
@@ -270,29 +277,33 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 📚 Documentation
 
-For detailed class-level documentation, see:
-- [Documentation Status](DOCUMENTATION_STATUS.md) - Overview of documentation coverage
-- JavaDoc - Generate with `mvn javadoc:javadoc`
+Authoritative governance documents:
+- [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md) - blueprint and master-plan equivalent
+- [docs/EXECUTION_PLAYBOOK.md](./docs/EXECUTION_PLAYBOOK.md) - required spec, test, and validation workflow
+- [CONTRIBUTING.md](./CONTRIBUTING.md) - minimum contributor workflow for ticket, test, and status updates
+- [docs/coding-standards.md](./docs/coding-standards.md) - repository coding standards
+- [docs/API.md](./docs/API.md) - API sketch
+- [docs/GLOSSARY.md](./docs/GLOSSARY.md) - shared terms and boundaries
+- [docs/STATE_MACHINES.md](./docs/STATE_MACHINES.md) - runtime lifecycle documentation
+- [docs/IMPLEMENTATION_STATUS.md](./docs/IMPLEMENTATION_STATUS.md) - current completion status
 
 ## 🐛 Known Issues
 
 See the [Issues](https://github.com/jchanning/wordai/issues) page for current bugs and feature requests.
-
-## � Documentation
 
 **Complete documentation is available in the [`docs/`](./docs/) directory:**
 
 - 🚀 **[Getting Started](./docs/getting-started/)** - Quick start and setup
 - 👤 **[User Guide](./docs/user-guides/)** - How to play and use the application
 - 🛠️ **[Deployment](./docs/deployment/)** - Oracle Cloud, HTTPS, DNS, and other deployment guides
-- 💻 **[Development](./docs/development/)** - Architecture, Java 21 upgrade, performance optimization
+- 💻 **[Development](./docs/development/)** - Architecture, Java 25 baseline, performance optimization
 - ✨ **[Features](./docs/features/)** - Game history, UI improvements, and planned features
 - 📦 **[Releases](./docs/releases/)** - Release notes and deployment reports
 - ❓ **[Troubleshooting](./docs/troubleshooting/)** - Common issues and solutions
 
 **For a complete index of all documentation**, see [docs/README.md](./docs/README.md).
 
-## �📊 Stats
+## 📊 Stats
 
 ![Code Size](https://img.shields.io/github/languages/code-size/jchanning/wordai)
 ![Repo Size](https://img.shields.io/github/repo-size/jchanning/wordai)

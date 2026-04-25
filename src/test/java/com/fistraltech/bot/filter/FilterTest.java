@@ -26,6 +26,7 @@ import com.fistraltech.util.ConfigManager;
  * 3. MOURN/FUROR scenario - Duplicate letters in guess with mixed G/A/X statuses
  * 4. STUDY/MUCUS scenario - Multiple duplicate letters with excess instances
  */
+@DisplayName("Filter Tests")
 class FilterTest {
 
     @Test

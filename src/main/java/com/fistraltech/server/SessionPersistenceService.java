@@ -25,8 +25,7 @@ import com.fistraltech.server.repository.ActiveGameSessionRepository;
  * <p><strong>Policy:</strong>
  * <ul>
  *   <li>Only sessions belonging to authenticated users (non-null userId) are persisted.</li>
- *   <li>All write methods swallow exceptions silently so persistence failures never
- *       break the HTTP response flow.</li>
+ *   <li>Persistence failures are treated as explicit operational errors and are rethrown to callers.</li>
  * </ul>
  */
 @Service
@@ -68,8 +67,9 @@ public class SessionPersistenceService {
             entity.setUpdatedAt(now);
             repository.save(entity);
             logger.fine(() -> "Persisted new active session: " + session.getGameId());
-        } catch (Exception e) {
-            logger.log(Level.WARNING, "Failed to persist new active session: " + session.getGameId(), e);
+        } catch (RuntimeException e) {
+            logger.log(Level.SEVERE, "Failed to persist new active session: " + session.getGameId(), e);
+            throw new IllegalStateException("Failed to persist active session " + session.getGameId(), e);
         }
     }
 
@@ -95,8 +95,9 @@ public class SessionPersistenceService {
                 repository.save(entity);
                 logger.fine(() -> "Updated active session: " + session.getGameId());
             });
-        } catch (Exception e) {
-            logger.log(Level.WARNING, "Failed to update active session: " + session.getGameId(), e);
+        } catch (RuntimeException e) {
+            logger.log(Level.SEVERE, "Failed to update active session: " + session.getGameId(), e);
+            throw new IllegalStateException("Failed to update active session " + session.getGameId(), e);
         }
     }
 
@@ -110,8 +111,9 @@ public class SessionPersistenceService {
         try {
             repository.deleteById(gameId);
             logger.fine(() -> "Deleted active session: " + gameId);
-        } catch (Exception e) {
-            logger.log(Level.WARNING, "Failed to delete active session: " + gameId, e);
+        } catch (RuntimeException e) {
+            logger.log(Level.SEVERE, "Failed to delete active session: " + gameId, e);
+            throw new IllegalStateException("Failed to delete active session " + gameId, e);
         }
     }
 

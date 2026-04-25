@@ -31,7 +31,7 @@ import com.fistraltech.server.GameHistoryService;
  * </ol>
  */
 @RestController
-@RequestMapping("/api/wordai/history")
+@RequestMapping({ApiRoutes.LEGACY_ROOT + "/history", ApiRoutes.V1_ROOT + "/history"})
 public class HistoryController {
 
     private static final Logger logger = Logger.getLogger(HistoryController.class.getName());

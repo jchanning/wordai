@@ -4,7 +4,7 @@
 > Reviewer: Claude Code (claude-sonnet-4.6)
 > Codebase version: v1.9.0 (recommendations made); current version: v1.14.7
 >
-> Status update (March 2026): recommendations 1–10 and 15 have been implemented. The summary table below now lists only open follow-up work. Historical sections for completed items are retained below for audit context.
+> Status update (April 2026): recommendations 1–15 have been implemented, including the API version boundary follow-up in `ARCH-24`. Historical sections for completed items are retained below for audit context.
 
 ---
 
@@ -12,10 +12,7 @@
 
 | Priority | # | Open issue |
 |----------|---|------------|
-| **Low** | 11 | Entropy recomputation has no memoization |
-| **Low** | 12 | `GameSession` is a God Object |
-| **Low** | 13 | Feature toggles in application properties |
-| **Low** | 14 | No API versioning |
+| None | — | All items from this review are complete |
 
 ---
 
@@ -214,21 +211,25 @@ Active game sessions live only in JVM memory. A server restart (deployment, cras
 
 ### 11. Entropy Recomputation Has No Memoization
 
+**Status:** Resolved by `ARCH-22`. Shared `WordEntropy` instances now memoize lazy best-word lookups behind a bounded cache keyed by canonical candidate/target word-set signatures, and filtered `ENTROPY` session suggestions route through that shared cache instead of rebuilding one-off analyzers.
+
 **File:** `SelectMaximumEntropy.java`, `GameSession.java`
 
 Entropy computation is O(n²) over the candidate word set and is recomputed from scratch on every `suggestWord()` call. Many different game sessions will reach identical filter states (same first two guesses, for example) and redundantly repeat the same computation.
 
-**Fix:** Cache entropy results keyed on the canonical filter state (a value object representing the position constraints and must-contain set). Use a `LoadingCache<FilterState, Map<String, Double>>` with soft-reference eviction.
+**Fix (implemented):** Cache entropy results keyed on a canonical representation of the candidate and target word sets, with bounded eviction so equivalent filtered states can reuse prior lazy entropy computations without unbounded memory growth.
 
 ---
 
-### 12. `GameSession` is a God Object
+### 12. `GameSession` is a God Object - COMPLETED
+
+**Status:** Resolved by `ARCH-21`. `GameSession` now delegates metadata to `GameSessionMetadata` and mutable filter/strategy/suggestion state to `GameSessionContext`, leaving the session type as a thinner coordinator around `WordGame` and config.
 
 **File:** `GameSession.java` (251 lines)
 
 `GameSession` owns: the `WordGame`, a `Filter`, the original `Dictionary`, a filtered `Dictionary`, a `Config`, a cached `SelectionAlgo`, a cached `WordEntropy`, and the strategy name. It manages too many concerns.
 
-**Fix:** Decompose:
+**Fix (implemented):** Decompose:
 - `GameState` — immutable snapshot (guesses, results, target word)
 - `GameContext` — mutable: filter, filtered dictionary, active algorithm
 - `GameMetadata` — strategy name, config, creation timestamp
@@ -237,6 +238,8 @@ Entropy computation is O(n²) over the candidate word set and is recomputed from
 ---
 
 ### 13. Feature Toggles in Application Properties
+
+**Status:** Resolved by `ARCH-23`. Runtime algorithm enablement now lives in the `algorithm_policies` table, `AlgorithmFeatureService` applies persisted policy ahead of static defaults, and admins can change exposure through the secured admin API without redeploying.
 
 **File:** `application.properties`
 
@@ -247,15 +250,17 @@ wordai.algorithm.entropy.enabled=true
 
 These flags require a redeploy to toggle, making A/B testing, gradual rollouts, or incident response (disabling a misbehaving algorithm) impractical.
 
-**Fix:** Move feature flags to a `feature_flags` database table. Add a simple admin endpoint to toggle them at runtime. The `ROLE_ADMIN` user role is already in place.
+**Fix (implemented):** Move feature flags to a persisted runtime policy table and add a secured admin endpoint to toggle them at runtime. Static application properties no longer act as the operational source of truth.
 
 ---
 
 ### 14. No API Versioning
 
-All endpoints are at `/api/wordai/*` with no version prefix. Any breaking change to the API contract forces all clients to upgrade simultaneously with no transition period.
+**Status:** Resolved by `ARCH-24`. `/api/v1/wordai` is now the explicit API root, and the existing `/api/wordai` routes remain in place as a documented compatibility bridge while callers migrate.
 
-**Fix:** Add a `/v1` prefix now, before external consumers exist. This is a low-cost structural change.
+All endpoints were previously at `/api/wordai/*` with no version prefix. Any breaking change to the API contract would have forced all clients to upgrade simultaneously with no transition period.
+
+**Fix (implemented):** Add a `/api/v1/wordai` prefix as the primary API surface and keep the legacy routes available temporarily as a compatibility bridge.
 
 ```java
 // Before

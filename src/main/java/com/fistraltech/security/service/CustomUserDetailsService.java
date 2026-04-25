@@ -13,6 +13,12 @@ import java.time.LocalDateTime;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+/**
+ * Bridges persisted WordAI users into Spring Security {@link UserDetails} instances.
+ *
+ * <p>Lookups accept either username or email address, update the last-login timestamp,
+ * and project the stored role set into granted authorities for authentication flows.
+ */
 @Service
 public class CustomUserDetailsService implements UserDetailsService {
     
@@ -22,6 +28,13 @@ public class CustomUserDetailsService implements UserDetailsService {
         this.userRepository = userRepository;
     }
     
+    /**
+     * Loads a user by username or email for Spring Security authentication.
+     *
+     * @param usernameOrEmail username or email supplied by the caller
+     * @return Spring Security user details for the matching user
+     * @throws UsernameNotFoundException if no matching user exists
+     */
     @Override
     public UserDetails loadUserByUsername(String usernameOrEmail) throws UsernameNotFoundException {
         User user = userRepository.findByUsername(usernameOrEmail)

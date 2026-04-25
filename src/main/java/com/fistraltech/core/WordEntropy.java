@@ -14,8 +14,11 @@ package com.fistraltech.core;
  * </ul>
  */
 
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -27,6 +30,8 @@ import com.fistraltech.util.Config;
 import com.fistraltech.util.ConfigManager;
 
 public class WordEntropy {
+    private static final int LAZY_ENTROPY_MEMOIZATION_LIMIT = 256;
+
     private Dictionary dictionary;
     
     /** Interned word set - ensures all words share the same String instances for memory efficiency */
@@ -39,11 +44,13 @@ public class WordEntropy {
     // Additional caches for other selection algorithms
     private final Map<String, Double> dictionaryReductionCache = new HashMap<>();
     private final Map<String, Float> columnLengthCache = new HashMap<>();
-
-    private WordGame wordGame;
-    
-    /** Word length for response pattern encoding/decoding */
-    private byte wordLength;
+    private final Map<LazyEntropyKey, String> lazyEntropyWordCache = Collections.synchronizedMap(
+        new LinkedHashMap<>(16, 0.75f, true) {
+            @Override
+            protected boolean removeEldestEntry(Map.Entry<LazyEntropyKey, String> eldest) {
+                return size() > LAZY_ENTROPY_MEMOIZATION_LIMIT;
+            }
+        });
     
     /** 
      * Memory-efficient response matrix for this dictionary.
@@ -92,8 +99,6 @@ public class WordEntropy {
      */
     public WordEntropy(Dictionary dictionary, Config config, boolean precompute) {
         this.dictionary = dictionary;
-        this.wordGame = new WordGame(dictionary, config);
-        this.wordLength = (byte) dictionary.getWordLength();
         
         // Intern all dictionary words to ensure reference sharing across caches
         this.internedWords = dictionary.getMasterSetOfWords().stream()
@@ -125,7 +130,7 @@ public class WordEntropy {
         int wordCount = dictionary.getWordCount();
         
         // Convert to array for indexed parallel access
-        String[] wordArray = internedWords.toArray(new String[0]);
+        String[] wordArray = internedWords.toArray(new String[internedWords.size()]);
         
         // Use parallel computation for larger dictionaries
         if (wordCount >= 100) {
@@ -254,11 +259,10 @@ public class WordEntropy {
             for (int targetId = 0; targetId < wordCount; targetId++) {
                 String targetWord = responseMatrix.getWord(targetId);
                 try {
-                    wordGame.setTargetWord(targetWord);
-                    Response r = wordGame.evaluate(guessWord);
-                    short pattern = encodeResponse(r);
+                    Response response = ResponseHelper.evaluate(targetWord, guessWord);
+                    short pattern = encodeResponse(response);
                     result.computeIfAbsent(pattern, k -> new HashSet<>()).add(targetWord);
-                } catch (Exception ex) {
+                } catch (InvalidWordException ex) {
                     logger.warning(() -> "Error computing response for " + guessWord + " vs " + targetWord + ": " + ex.getMessage());
                 }
             }
@@ -272,35 +276,7 @@ public class WordEntropy {
      * @return the encoded short value
      */
     private short encodeResponse(Response response) {
-        short encoded = 0;
-        int position = 0;
-        for (ResponseEntry entry : response.getStatuses()) {
-            int code = switch (entry.status) {
-                case 'G' -> 0;
-                case 'A' -> 1;
-                case 'R' -> 2;
-                case 'X' -> 3;
-                default -> 2; // Default to RED for unknown
-            };
-            encoded |= (short) (code << (position * 2));
-            position++;
-        }
-        return encoded;
-    }
-    
-    /**
-     * Decodes a short-encoded response pattern back to a string for display/debugging.
-     * @param encoded the encoded response pattern
-     * @return the decoded string (e.g., "GARXR")
-     */
-    private String decodeResponse(short encoded) {
-        char[] chars = new char[wordLength];
-        char[] codeToChar = {'G', 'A', 'R', 'X'};
-        for (int i = 0; i < wordLength; i++) {
-            int code = (encoded >> (i * 2)) & 0b11;
-            chars[i] = codeToChar[code];
-        }
-        return new String(chars);
+        return ResponsePattern.encode(response.toString()).getEncoded();
     }
 
     /**
@@ -310,8 +286,7 @@ public class WordEntropy {
      * Complexity: O(N * (B + response cost)) due to repeated entropy computations.
      */
     public String getMaximumEntropyWord(){
-        String result = entropyCache.entrySet().stream().max(Map.Entry.comparingByValue()).map(Map.Entry::getKey).orElse(null);
-        return result;
+        return entropyCache.entrySet().stream().max(Map.Entry.comparingByValue()).map(Map.Entry::getKey).orElse(null);
     }
     
     /**
@@ -443,6 +418,14 @@ public class WordEntropy {
         if (targetWords.size() >= dictionary.getWordCount() * 0.8) {
             return getMaximumEntropyWord(candidateWords);
         }
+
+        LazyEntropyKey cacheKey = createLazyEntropyKey(candidateWords, targetWords);
+        String cachedWord = lazyEntropyWordCache.get(cacheKey);
+        if (cachedWord != null) {
+            logger.fine(() -> "Reusing memoized lazy entropy result for filtered target set of "
+                + targetWords.size() + " words");
+            return cachedWord;
+        }
         
         // Convert to arrays for matrix operations
         int[] candidateIds = new int[candidateWords.size()];
@@ -475,8 +458,44 @@ public class WordEntropy {
             bestId = responseMatrix.findMaxEntropyWordId(
                 candidateIds, candidateCount, targetIds, targetCount);
         }
-        
-        return responseMatrix.getWord(bestId);
+
+        String bestWord = responseMatrix.getWord(bestId);
+        if (bestWord != null) {
+            lazyEntropyWordCache.put(cacheKey, bestWord);
+        }
+        return bestWord;
+    }
+
+    private LazyEntropyKey createLazyEntropyKey(Set<String> candidateWords, Set<String> targetWords) {
+        return new LazyEntropyKey(buildWordSetSignature(candidateWords), buildWordSetSignature(targetWords));
+    }
+
+    private String buildWordSetSignature(Set<String> words) {
+        if (words.size() == dictionary.getWordCount() && words.containsAll(internedWords)) {
+            return "ALL";
+        }
+
+        int[] wordIds = new int[words.size()];
+        int index = 0;
+        for (String word : words) {
+            int wordId = responseMatrix.getWordId(word);
+            if (wordId >= 0) {
+                wordIds[index++] = wordId;
+            }
+        }
+        Arrays.sort(wordIds, 0, index);
+
+        StringBuilder signature = new StringBuilder(index * 6);
+        for (int i = 0; i < index; i++) {
+            if (i > 0) {
+                signature.append(',');
+            }
+            signature.append(wordIds[i]);
+        }
+        return signature.toString();
+    }
+
+    private record LazyEntropyKey(String candidateSignature, String targetSignature) {
     }
     
     /**
@@ -561,14 +580,7 @@ public class WordEntropy {
     }
 
     public float getEntropy(String word){
-        // Check cache first
-        if(entropyCache.containsKey(word)){
-            return entropyCache.get(word);
-        }
-        // Compute entropy and store in cache
-        float entropy = calculateEntropy(word);
-        entropyCache.put(word, entropy);
-        return entropy;
+        return entropyCache.computeIfAbsent(word, this::calculateEntropy);
     }
 
     /**
@@ -578,42 +590,15 @@ public class WordEntropy {
      * @return entropy value in bits (0 if dictionary empty)
      */
     private float calculateEntropy(String word) {
-        int dictionarySize = dictionary.getWordCount();
-        
-        // Early exit for edge cases
-        if (dictionarySize == 0) {
+        if (dictionary.getWordCount() == 0) {
             return 0f;
         }
-        
-        Map<Short, Set<String>> buckets = getResponseBuckets(word);
-        return calculateEntropyFromBuckets(buckets, dictionarySize);
-    }
-    
-    /**
-     * Calculates Shannon entropy from pre-computed response buckets.
-     */
-    private float calculateEntropyFromBuckets(Map<Short, Set<String>> buckets, int dictionarySize) {
-        if (dictionarySize == 0) {
+
+        int wordId = responseMatrix.getWordId(word);
+        if (wordId < 0) {
             return 0f;
         }
-        
-        float entropy = 0f;
-        
-        for (Set<String> bucket : buckets.values()) {
-            int bucketSize = bucket.size();
-            
-            // Skip empty buckets (shouldn't happen but safe to check)
-            if (bucketSize == 0) {
-                continue;
-            }
-            
-            // Calculate probability and entropy contribution
-            double probability = (double) bucketSize / dictionarySize;
-            
-            // Shannon entropy formula: -sum(p * log2(p))
-            double logProbability = Math.log(probability) / Math.log(2);
-            entropy += -(probability * logProbability);
-        }
-        return entropy;
+
+        return responseMatrix.computeEntropy(wordId);
     }
 }

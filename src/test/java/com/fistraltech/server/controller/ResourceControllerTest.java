@@ -1,6 +1,7 @@
 package com.fistraltech.server.controller;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
@@ -31,16 +32,11 @@ import com.fistraltech.server.AlgorithmFeatureService;
 import com.fistraltech.server.DictionaryService;
 import com.fistraltech.server.GameHistoryService;
 import com.fistraltech.server.WordGameService;
-import com.fistraltech.server.algo.AlgorithmRegistry;
-import com.fistraltech.server.algo.BellmanFullDictAlgorithmDescriptor;
-import com.fistraltech.server.algo.EntropyAlgorithmDescriptor;
-import com.fistraltech.server.algo.RandomAlgorithmDescriptor;
 import com.fistraltech.server.dto.GameHistoryDto;
 import com.fistraltech.util.DictionaryOption;
 
 @WebMvcTest({DictionaryController.class, AlgorithmController.class, AnalysisController.class, HistoryController.class})
-@Import({SecurityConfig.class, AlgorithmFeatureService.class, AlgorithmRegistry.class,
-    RandomAlgorithmDescriptor.class, EntropyAlgorithmDescriptor.class, BellmanFullDictAlgorithmDescriptor.class})
+@Import(SecurityConfig.class)
 @DisplayName("Resource Controller Tests")
 class ResourceControllerTest {
 
@@ -55,6 +51,9 @@ class ResourceControllerTest {
 
     @MockitoBean
     private GameHistoryService gameHistoryService;
+
+    @MockitoBean
+    private AlgorithmFeatureService algorithmFeatureService;
 
     @MockitoBean
     @SuppressWarnings("unused")
@@ -76,6 +75,23 @@ class ResourceControllerTest {
             .andExpect(content().string(containsString("\"id\":\"5\"")))
             .andExpect(content().string(containsString("\"wordLength\":5")));
     }
+
+            @Test
+            @DisplayName("getDictionaries_versionedRoute_returnsCatalog")
+            void getDictionaries_versionedRoute_returnsCatalog() throws Exception {
+            DictionaryOption option = new DictionaryOption();
+            option.setId("5");
+            option.setName("Default");
+            option.setWordLength(5);
+            option.setAvailable(true);
+
+            when(dictionaryService.getAvailableDictionaries()).thenReturn(List.of(option));
+
+            mockMvc.perform(get("/api/v1/wordai/dictionaries"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("\"id\":\"5\"")))
+                .andExpect(content().string(containsString("\"wordLength\":5")));
+            }
 
             @Test
             @DisplayName("getDictionary_returnsDictionaryDetailAndEntropy")
@@ -120,6 +136,29 @@ class ResourceControllerTest {
     @Test
     @DisplayName("getAlgorithms_returnsServiceMetadata")
     void getAlgorithms_returnsServiceMetadata() throws Exception {
+        when(algorithmFeatureService.getAllAlgorithms()).thenReturn(Map.of(
+            "RANDOM", new AlgorithmFeatureService.AlgorithmInfo(
+                "RANDOM",
+                "Random",
+                "Picks words at random from valid candidates",
+                false,
+                "algorithm.features.random.enabled",
+                true),
+            "ENTROPY", new AlgorithmFeatureService.AlgorithmInfo(
+                "ENTROPY",
+                "Maximum Entropy",
+                "Chooses the guess with the highest expected information gain",
+                false,
+                "algorithm.features.entropy.enabled",
+                true),
+            "BELLMAN_FULL_DICTIONARY", new AlgorithmFeatureService.AlgorithmInfo(
+                "BELLMAN_FULL_DICTIONARY",
+                "Expert — Bellman Optimality",
+                "Prefers guesses outside the remaining set to maximise reduction",
+                true,
+                "algorithm.features.bellman-full-dictionary.enabled",
+                true)));
+
         mockMvc.perform(get("/api/wordai/algorithms"))
                 .andExpect(status().isOk())
             .andExpect(content().string(containsString("\"id\":\"RANDOM\"")))
@@ -151,6 +190,18 @@ class ResourceControllerTest {
                 .andExpect(status().isOk())
         .andExpect(content().string(containsString("\"algorithm\":\"ENTROPY\"")))
         .andExpect(content().string(containsString("\"totalGames\":10")));
+    }
+
+    @Test
+    @DisplayName("runAnalysis_blankAlgorithm_returnsBadRequest")
+    @WithMockUser
+    void runAnalysis_blankAlgorithm_returnsBadRequest() throws Exception {
+        mockMvc.perform(post("/api/wordai/analysis")
+                        .contentType("application/json")
+                        .content("""
+                                {"algorithm":"","dictionaryId":"5","maxGames":10}
+                                """))
+                .andExpect(status().isBadRequest());
     }
 
     @Test

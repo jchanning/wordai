@@ -71,6 +71,17 @@ class ChallengeControllerTest {
                 .andExpect(content().string(containsString("\"currentPuzzleAssistsRemaining\":3")));
     }
 
+        @Test
+        @DisplayName("createChallenge_invalidWordLength_returnsBadRequest")
+        void createChallenge_invalidWordLength_returnsBadRequest() throws Exception {
+                mockMvc.perform(post("/api/wordai/challenges")
+                                                .contentType("application/json")
+                                                .content("""
+                                                                {"wordLength":1}
+                                                                """))
+                                .andExpect(status().isBadRequest());
+        }
+
     @Test
     @DisplayName("makeGuess_withBlankWord_returnsBadRequest")
     void makeGuess_withBlankWord_returnsBadRequest() throws Exception {
@@ -79,8 +90,18 @@ class ChallengeControllerTest {
                         .content("""
                                 {"word":""}
                                 """))
-                .andExpect(status().isBadRequest())
-                .andExpect(content().string(containsString("Word is required")));
+                                .andExpect(status().isBadRequest());
+        }
+
+        @Test
+        @DisplayName("useAssist_withBlankStrategy_returnsBadRequest")
+        void useAssist_withBlankStrategy_returnsBadRequest() throws Exception {
+                mockMvc.perform(post("/api/wordai/challenges/challenge-1/assist")
+                                                .contentType("application/json")
+                                                .content("""
+                                                                {"strategy":""}
+                                                                """))
+                                .andExpect(status().isBadRequest());
     }
 
     @Test
@@ -100,6 +121,24 @@ class ChallengeControllerTest {
                 .andExpect(content().string(containsString("\"username\":\"alice\"")))
                 .andExpect(content().string(containsString("\"totalScore\":320")));
     }
+
+        @Test
+        @DisplayName("leaderboard_versionedRoute_returnsEntries")
+        void leaderboard_versionedRoute_returnsEntries() throws Exception {
+                ChallengeResultEntity entity = new ChallengeResultEntity();
+                entity.setChallengeId("challenge-1");
+                entity.setUsernameSnapshot("alice");
+                entity.setTotalScore(320);
+                entity.setPuzzlesCompleted(4);
+                entity.setStatus("FAILED_TIMEOUT");
+                entity.setCompletedAt(java.time.LocalDateTime.parse("2026-03-26T10:15:00"));
+                when(challengeService.getLeaderboard(20)).thenReturn(List.of(entity));
+
+                mockMvc.perform(get("/api/v1/wordai/challenges/leaderboard"))
+                                .andExpect(status().isOk())
+                                .andExpect(content().string(containsString("\"username\":\"alice\"")))
+                                .andExpect(content().string(containsString("\"totalScore\":320")));
+        }
 
     @Test
     @DisplayName("makeGuess_invalidChallengeRequest_returnsBadRequest")

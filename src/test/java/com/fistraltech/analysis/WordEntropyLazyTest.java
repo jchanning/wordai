@@ -1,6 +1,9 @@
 package com.fistraltech.analysis;
 
+import java.lang.reflect.Field;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
+import java.util.Map;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -63,6 +66,7 @@ class WordEntropyLazyTest {
     // ============================================
     
     @Test
+    @DisplayName("testGetMaximumEntropyWordLazyBasic")
     void testGetMaximumEntropyWordLazyBasic() {
         Set<String> candidates = dictionary.getMasterSetOfWords();
         Set<String> targets = dictionary.getMasterSetOfWords();
@@ -74,6 +78,7 @@ class WordEntropyLazyTest {
     }
     
     @Test
+    @DisplayName("testGetMaximumEntropyWordLazyConsistency")
     void testGetMaximumEntropyWordLazyConsistency() {
         // When targets = full dictionary, lazy should match precomputed
         Set<String> candidates = dictionary.getMasterSetOfWords();
@@ -91,6 +96,7 @@ class WordEntropyLazyTest {
     }
     
     @Test
+    @DisplayName("testGetMaximumEntropyWordLazyWithFilteredTargets")
     void testGetMaximumEntropyWordLazyWithFilteredTargets() {
         Set<String> candidates = dictionary.getMasterSetOfWords();
         
@@ -105,8 +111,31 @@ class WordEntropyLazyTest {
         assertNotNull(best, "Should return a word");
         assertTrue(candidates.contains(best), "Result should be from candidates");
     }
+
+    @Test
+    @DisplayName("Equivalent filtered target sets reuse one memoized lazy entropy entry")
+    void equivalentFilteredTargetSetsReuseOneMemoizedLazyEntropyEntry() throws Exception {
+        Set<String> candidates = dictionary.getMasterSetOfWords();
+
+        Set<String> firstTargets = new LinkedHashSet<>();
+        firstTargets.add("SLATE");
+        firstTargets.add("STARE");
+        firstTargets.add("RATES");
+
+        Set<String> secondTargets = new LinkedHashSet<>();
+        secondTargets.add("RATES");
+        secondTargets.add("SLATE");
+        secondTargets.add("STARE");
+
+        String firstBest = wordEntropy.getMaximumEntropyWordLazy(candidates, firstTargets);
+        String secondBest = wordEntropy.getMaximumEntropyWordLazy(candidates, secondTargets);
+
+        assertEquals(firstBest, secondBest, "Equivalent target sets should resolve to the same best word");
+        assertEquals(1, lazyEntropyCache().size(), "Equivalent target sets should share one memoized cache entry");
+    }
     
     @Test
+    @DisplayName("testGetMaximumEntropyWordLazyWithEmptySets")
     void testGetMaximumEntropyWordLazyWithEmptySets() {
         Set<String> candidates = dictionary.getMasterSetOfWords();
         Set<String> emptyTargets = new HashSet<>();
@@ -120,12 +149,20 @@ class WordEntropyLazyTest {
         result = wordEntropy.getMaximumEntropyWordLazy(emptyCandidates, targets);
         assertEquals(null, result, "Empty candidates should return null");
     }
+
+    @SuppressWarnings("unchecked")
+    private Map<Object, String> lazyEntropyCache() throws Exception {
+        Field field = WordEntropy.class.getDeclaredField("lazyEntropyWordCache");
+        field.setAccessible(true);
+        return (Map<Object, String>) field.get(wordEntropy);
+    }
     
     // ============================================
     // Top-N Entropy Tests
     // ============================================
     
     @Test
+    @DisplayName("testGetTopNEntropyWordsBasic")
     void testGetTopNEntropyWordsBasic() {
         Set<String> candidates = dictionary.getMasterSetOfWords();
         Set<String> targets = dictionary.getMasterSetOfWords();
@@ -141,6 +178,7 @@ class WordEntropyLazyTest {
     }
     
     @Test
+    @DisplayName("testGetTopNEntropyWordsOrdering")
     void testGetTopNEntropyWordsOrdering() {
         Set<String> candidates = dictionary.getMasterSetOfWords();
         Set<String> targets = dictionary.getMasterSetOfWords();
@@ -158,6 +196,7 @@ class WordEntropyLazyTest {
     }
     
     @Test
+    @DisplayName("testGetTopNEntropyWordsConsistentWithMax")
     void testGetTopNEntropyWordsConsistentWithMax() {
         Set<String> candidates = dictionary.getMasterSetOfWords();
         Set<String> targets = dictionary.getMasterSetOfWords();
@@ -174,6 +213,7 @@ class WordEntropyLazyTest {
     }
     
     @Test
+    @DisplayName("testGetTopNEntropyWordsRequestMoreThanAvailable")
     void testGetTopNEntropyWordsRequestMoreThanAvailable() {
         Set<String> candidates = dictionary.getMasterSetOfWords();
         Set<String> targets = dictionary.getMasterSetOfWords();
@@ -185,6 +225,7 @@ class WordEntropyLazyTest {
     }
     
     @Test
+    @DisplayName("testGetTopNEntropyWordsEmptySets")
     void testGetTopNEntropyWordsEmptySets() {
         Set<String> candidates = dictionary.getMasterSetOfWords();
         Set<String> emptyTargets = new HashSet<>();
@@ -204,6 +245,7 @@ class WordEntropyLazyTest {
     // ============================================
     
     @Test
+    @DisplayName("testComputeEntropyAgainstTargetsBasic")
     void testComputeEntropyAgainstTargetsBasic() {
         Set<String> targets = dictionary.getMasterSetOfWords();
         
@@ -213,6 +255,7 @@ class WordEntropyLazyTest {
     }
     
     @Test
+    @DisplayName("testComputeEntropyAgainstTargetsConsistency")
     void testComputeEntropyAgainstTargetsConsistency() {
         // When targets = full dictionary, should match cached entropy
         Set<String> targets = dictionary.getMasterSetOfWords();
@@ -225,6 +268,7 @@ class WordEntropyLazyTest {
     }
     
     @Test
+    @DisplayName("testComputeEntropyAgainstTargetsFiltered")
     void testComputeEntropyAgainstTargetsFiltered() {
         // Entropy against subset should be different (usually lower)
         Set<String> fullTargets = dictionary.getMasterSetOfWords();
@@ -243,6 +287,7 @@ class WordEntropyLazyTest {
     }
     
     @Test
+    @DisplayName("testComputeEntropyAgainstEmptyTargets")
     void testComputeEntropyAgainstEmptyTargets() {
         Set<String> emptyTargets = new HashSet<>();
         
@@ -251,11 +296,29 @@ class WordEntropyLazyTest {
     }
     
     @Test
+    @DisplayName("testComputeEntropyAgainstTargetsUnknownWord")
     void testComputeEntropyAgainstTargetsUnknownWord() {
         Set<String> targets = dictionary.getMasterSetOfWords();
         
         float entropy = wordEntropy.computeEntropyAgainstTargets("XXXXX", targets);
         assertEquals(0f, entropy, "Entropy for unknown word should be 0");
+    }
+
+    @Test
+    @DisplayName("testGetEntropyUnknownWordReturnsZero")
+    void testGetEntropyUnknownWordReturnsZero() {
+        assertEquals(0f, wordEntropy.getEntropy("XXXXX"), "Unknown word entropy should be 0");
+    }
+
+    @Test
+    @DisplayName("testGetResponseBucketsSupportsExternalGuessWord")
+    void testGetResponseBucketsSupportsExternalGuessWord() {
+        Map<Short, Set<String>> buckets = wordEntropy.getResponseBuckets("SLING");
+
+        assertNotNull(buckets, "Buckets should be created for external guess words");
+        int totalBucketedWords = buckets.values().stream().mapToInt(Set::size).sum();
+        assertEquals(dictionary.getWordCount(), totalBucketedWords,
+            "External guesses should still partition the full target dictionary");
     }
     
     // ============================================
@@ -263,6 +326,7 @@ class WordEntropyLazyTest {
     // ============================================
     
     @Test
+    @DisplayName("testGetResponseMatrix")
     void testGetResponseMatrix() {
         ResponseMatrix matrix = wordEntropy.getResponseMatrix();
         

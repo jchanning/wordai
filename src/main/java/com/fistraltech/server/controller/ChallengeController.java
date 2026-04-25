@@ -31,6 +31,9 @@ import com.fistraltech.server.dto.GuessRequest;
 import com.fistraltech.server.model.ChallengeResultEntity;
 import com.fistraltech.server.model.ChallengeSession;
 import com.fistraltech.server.model.GameSession;
+import com.fistraltech.web.ApiErrors;
+
+import jakarta.validation.Valid;
 
 /**
  * REST controller for Challenge Mode endpoints.
@@ -47,7 +50,7 @@ import com.fistraltech.server.model.GameSession;
  */
 @RestController
 @CrossOrigin
-@RequestMapping("/api/wordai/challenges")
+@RequestMapping({ApiRoutes.LEGACY_ROOT + "/challenges", ApiRoutes.V1_ROOT + "/challenges"})
 public class ChallengeController {
     private static final Logger logger = Logger.getLogger(ChallengeController.class.getName());
 
@@ -67,7 +70,7 @@ public class ChallengeController {
     }
 
     @PostMapping
-    public ResponseEntity<?> createChallenge(@RequestBody(required = false) CreateChallengeRequest request,
+    public ResponseEntity<?> createChallenge(@Valid @RequestBody(required = false) CreateChallengeRequest request,
             Authentication authentication) {
         try {
             Long userId = gameHistoryService.resolveUser(authentication).map(user -> user.getId()).orElse(null);
@@ -81,11 +84,11 @@ public class ChallengeController {
                     .body(toStateResponse(challenge, null, null, "Challenge created."));
         } catch (InvalidWordException e) {
             logger.log(Level.WARNING, "Failed to create challenge: {0}", e.getMessage());
-            return ResponseEntity.badRequest().body(error("Invalid request", e.getMessage()));
+            return ApiErrors.response(HttpStatus.BAD_REQUEST, "Invalid request", e.getMessage());
         } catch (Exception e) {
             logger.log(Level.SEVERE, "Unexpected error creating challenge", e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(error("Internal server error", "Failed to create challenge"));
+            return ApiErrors.response(HttpStatus.INTERNAL_SERVER_ERROR,
+                    "Internal server error", "Failed to create challenge");
         }
     }
 
@@ -93,46 +96,44 @@ public class ChallengeController {
     public ResponseEntity<?> getChallenge(@PathVariable String challengeId) {
         ChallengeSession challenge = challengeService.getChallenge(challengeId);
         if (challenge == null) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body(error("Challenge not found", "Challenge session " + challengeId + " does not exist"));
+            return ApiErrors.response(HttpStatus.NOT_FOUND,
+                "Challenge not found", "Challenge session " + challengeId + " does not exist");
         }
         return ResponseEntity.ok(toStateResponse(challenge, null, null, null));
     }
 
     @PostMapping("/{challengeId}/guess")
-    public ResponseEntity<?> makeGuess(@PathVariable String challengeId, @RequestBody GuessRequest request) {
+    public ResponseEntity<?> makeGuess(@PathVariable String challengeId,
+            @Valid @RequestBody GuessRequest request) {
         try {
-            if (request == null || request.getWord() == null || request.getWord().trim().isEmpty()) {
-                return ResponseEntity.badRequest().body(error("Invalid request", "Word is required"));
-            }
             ChallengeService.ChallengeActionResult result = challengeService.makeGuess(challengeId,
                     request.getWord().trim());
             return ResponseEntity.ok(toStateResponse(result.getChallengeSession(), result.getGuessResponse(),
                     result.getSuggestedWord(), result.getMessage()));
         } catch (InvalidWordException e) {
             logger.log(Level.WARNING, "Failed challenge guess for {0}: {1}", new Object[] { challengeId, e.getMessage() });
-            return ResponseEntity.badRequest().body(error("Invalid word", e.getMessage()));
+            return ApiErrors.response(HttpStatus.BAD_REQUEST, "Invalid word", e.getMessage());
         } catch (Exception e) {
             logger.log(Level.SEVERE, "Unexpected error processing challenge guess " + challengeId, e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(error("Internal server error", "Failed to process challenge guess"));
+            return ApiErrors.response(HttpStatus.INTERNAL_SERVER_ERROR,
+                    "Internal server error", "Failed to process challenge guess");
         }
     }
 
     @PostMapping("/{challengeId}/assist")
     public ResponseEntity<?> useAssist(@PathVariable String challengeId,
-            @RequestBody(required = false) ChallengeAssistRequest request) {
+            @Valid @RequestBody(required = false) ChallengeAssistRequest request) {
         try {
             String strategy = request != null ? request.getStrategy() : null;
             ChallengeService.ChallengeActionResult result = challengeService.useAssist(challengeId, strategy);
             return ResponseEntity.ok(toStateResponse(result.getChallengeSession(), null, result.getSuggestedWord(),
                     result.getMessage()));
         } catch (InvalidWordException e) {
-            return ResponseEntity.badRequest().body(error("Invalid request", e.getMessage()));
+            return ApiErrors.response(HttpStatus.BAD_REQUEST, "Invalid request", e.getMessage());
         } catch (Exception e) {
             logger.log(Level.SEVERE, "Unexpected error processing challenge assist " + challengeId, e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(error("Internal server error", "Failed to process challenge assist"));
+            return ApiErrors.response(HttpStatus.INTERNAL_SERVER_ERROR,
+                    "Internal server error", "Failed to process challenge assist");
         }
     }
 
@@ -142,11 +143,11 @@ public class ChallengeController {
             ChallengeService.ChallengeActionResult result = challengeService.pauseChallenge(challengeId);
             return ResponseEntity.ok(toStateResponse(result.getChallengeSession(), null, null, result.getMessage()));
         } catch (InvalidWordException e) {
-            return ResponseEntity.badRequest().body(error("Invalid request", e.getMessage()));
+            return ApiErrors.response(HttpStatus.BAD_REQUEST, "Invalid request", e.getMessage());
         } catch (Exception e) {
             logger.log(Level.SEVERE, "Unexpected error pausing challenge " + challengeId, e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(error("Internal server error", "Failed to pause challenge"));
+            return ApiErrors.response(HttpStatus.INTERNAL_SERVER_ERROR,
+                    "Internal server error", "Failed to pause challenge");
         }
     }
 
@@ -156,11 +157,11 @@ public class ChallengeController {
             ChallengeService.ChallengeActionResult result = challengeService.skipPuzzle(challengeId);
             return ResponseEntity.ok(toStateResponse(result.getChallengeSession(), null, null, result.getMessage()));
         } catch (InvalidWordException e) {
-            return ResponseEntity.badRequest().body(error("Invalid request", e.getMessage()));
+            return ApiErrors.response(HttpStatus.BAD_REQUEST, "Invalid request", e.getMessage());
         } catch (Exception e) {
             logger.log(Level.SEVERE, "Unexpected error skipping challenge puzzle " + challengeId, e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(error("Internal server error", "Failed to skip puzzle"));
+            return ApiErrors.response(HttpStatus.INTERNAL_SERVER_ERROR,
+                    "Internal server error", "Failed to skip puzzle");
         }
     }
 

@@ -18,6 +18,7 @@ import com.fistraltech.core.Response;
 class SelectBellmanFullDictionaryTest {
 
     @Test
+        @DisplayName("prefersGuessesOutsideRemainingWhenAvailable")
     void prefersGuessesOutsideRemainingWhenAvailable() {
         Set<String> fullWords = new LinkedHashSet<>(Arrays.asList(
                 "AROSE",
@@ -46,6 +47,7 @@ class SelectBellmanFullDictionaryTest {
     }
 
     @Test
+        @DisplayName("throwsWhenNoExternalGuessesAvailable")
     void throwsWhenNoExternalGuessesAvailable() {
         Set<String> remainingWords = new LinkedHashSet<>(Arrays.asList(
                 "AROSE",
@@ -66,6 +68,7 @@ class SelectBellmanFullDictionaryTest {
     }
 
     @Test
+        @DisplayName("neverSelectsSameWordTwice")
     void neverSelectsSameWordTwice() {
         Set<String> fullWords = new LinkedHashSet<>(Arrays.asList(
                 "AROSE",

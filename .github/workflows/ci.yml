@@ -8,12 +8,24 @@ on:
 
 jobs:
   build-and-test:
-    name: Build & Test (Java 21)
+    name: Build, Lint & Test (Java 25)
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Install frontend lint dependencies
+        run: npm ci --ignore-scripts
+
+      - name: Lint frontend static assets
+        run: npm run lint
 
       - name: Set up Java 25
         uses: actions/setup-java@v4

@@ -46,26 +46,31 @@ class SelectBellmanFullDictionaryRepeatedGuessTest {
     }
 
     @Test
+    @DisplayName("iteration430_NICHE_shouldNotRepeatGuess")
     void iteration430_NICHE_shouldNotRepeatGuess() throws InvalidWordException {
         assertNoRepeatedGuesses("niche");
     }
 
     @Test
+    @DisplayName("iteration643_PALER_shouldNotRepeatGuess")
     void iteration643_PALER_shouldNotRepeatGuess() throws InvalidWordException {
         assertNoRepeatedGuesses("paler");
     }
 
     @Test
+    @DisplayName("iteration1861_VOCAL_shouldNotRepeatGuess")
     void iteration1861_VOCAL_shouldNotRepeatGuess() throws InvalidWordException {
         assertNoRepeatedGuesses("vocal");
     }
 
     @Test
+    @DisplayName("iteration1849_AROSE_shouldNotRepeatGuess")
     void iteration1849_AROSE_shouldNotRepeatGuess() throws InvalidWordException {
         assertNoRepeatedGuesses("arose");
     }
 
     @Test
+    @DisplayName("noRepeatedGuessesAcrossSampleTargets")
     void noRepeatedGuessesAcrossSampleTargets() throws InvalidWordException {
         String[] targets = {"crane", "slate", "stare", "raise", "tears", "bread", "brown", "ghost"};
         for (String target : targets) {

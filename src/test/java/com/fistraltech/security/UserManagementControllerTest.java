@@ -1,39 +1,48 @@
 package com.fistraltech.security;
 
-import com.fistraltech.security.config.SecurityConfig;
-import com.fistraltech.security.controller.UserManagementController;
-import com.fistraltech.security.dto.UserDto;
-import com.fistraltech.security.service.CustomOAuth2UserService;
-import com.fistraltech.security.service.CustomUserDetailsService;
-import com.fistraltech.security.service.UserService;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.context.annotation.Import;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.Pageable;
-import org.springframework.http.MediaType;
-import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.test.web.servlet.MockMvc;
-
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
-import static org.hamcrest.Matchers.*;
+import static org.hamcrest.Matchers.hasItem;
+import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.context.annotation.Import;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
+import org.springframework.http.MediaType;
+import org.springframework.security.test.context.support.WithMockUser;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.web.servlet.MockMvc;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+import com.fistraltech.security.config.SecurityConfig;
+import com.fistraltech.security.controller.UserManagementController;
+import com.fistraltech.security.dto.UserDto;
+import com.fistraltech.security.exception.InvalidOperationException;
+import com.fistraltech.security.service.CustomOAuth2UserService;
+import com.fistraltech.security.service.CustomUserDetailsService;
+import com.fistraltech.security.service.UserService;
 
 @WebMvcTest(UserManagementController.class)
 @Import(SecurityConfig.class)
+@DisplayName("UserManagementController Tests")
 class UserManagementControllerTest {
 
     @Autowired
@@ -186,13 +195,15 @@ class UserManagementControllerTest {
     @DisplayName("should return 400 when resetting password for OAuth user")
     void admin_resetPassword_oauthUser() throws Exception {
         when(userService.resetPassword(eq(2L), eq("NewPass123!")))
-                .thenThrow(new IllegalStateException("Cannot reset password for OAuth users"));
+                .thenThrow(new InvalidOperationException("Cannot reset password for OAuth users"));
 
         mockMvc.perform(put("/api/admin/users/2/password")
                         .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"password\": \"NewPass123!\"}"))
-                .andExpect(status().isBadRequest());
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error", is("Invalid request")))
+                .andExpect(jsonPath("$.message", is("Cannot reset password for OAuth users")));
     }
 
     @Test

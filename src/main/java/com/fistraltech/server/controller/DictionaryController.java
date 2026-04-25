@@ -37,7 +37,7 @@ import com.fistraltech.util.DictionaryOption;
  * </ol>
  */
 @RestController
-@RequestMapping("/api/wordai/dictionaries")
+@RequestMapping({ApiRoutes.LEGACY_ROOT + "/dictionaries", ApiRoutes.V1_ROOT + "/dictionaries"})
 public class DictionaryController {
 
     private static final Logger logger = Logger.getLogger(DictionaryController.class.getName());

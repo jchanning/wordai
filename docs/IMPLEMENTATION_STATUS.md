@@ -2,7 +2,7 @@
 
 Single source of truth for what is built, what is in progress, and what is planned. Update this file when completing or starting any significant piece of work.
 
-*Last updated: March 2026 — v1.14.7 documentation refresh*
+*Last updated: April 2026 — ARCH-24 API version boundary added*
 
 ---
 
@@ -19,11 +19,23 @@ Single source of truth for what is built, what is in progress, and what is plann
 | REST API — analysis and algorithm catalog | `POST /analysis` in `AnalysisController`, `GET /algorithms` in `AlgorithmController` |
 | Performance optimisation (all 4 phases) | `ResponseMatrix` (~98% memory saving), `WordIdSet` (~92%), bitmask column length, parallel/lazy computation |
 | Spring Security + OAuth2 | Login, user registration, role management (`ROLE_USER`, `ROLE_ADMIN`) |
-| Admin endpoints | User management via `AdminController` |
+| Admin endpoints | Session/stats/activity operations plus runtime algorithm policy updates via `AdminController` |
 | Game history panel | Session stats + last 5 games in UI |
 | Web UI | `index.html`, `game.js`, `style.css` with Play, Auto, Analyse, Dictionary, History screens |
 | Help page | `help.html` |
-| GitHub Actions CI | `.github/workflows/ci.yml` — runs `mvn clean test` on push/PR to `main` |
+| GitHub Actions CI | `.github/workflows/ci.yml` — runs `npm run lint` plus `mvn clean verify` on Java 25 for push/PR to `main`; `.github/workflows/security.yml` now also runs on dependency-sensitive pull requests |
+| Governance documentation baseline | `ARCHITECTURE.md`, `EXECUTION_PLAYBOOK.md`, `API.md`, `GLOSSARY.md`, `STATE_MACHINES.md`, `coding-standards.md` now form the authoritative governance set for the current remediation wave |
+| Spec-driven contribution workflow | `specs/TEMPLATE.md`, `CONTRIBUTING.md`, and the refreshed execution/docs indexes now define the minimum ticket, validation, and status-update path for significant changes |
+| Staged coverage gate | `pom.xml` now enforces a 60% JaCoCo bundle line-coverage floor during `verify`, ratcheted upward in ARCH-19 and still satisfied after ARCH-22 raised the measured baseline to 72% line coverage |
+| API boundary validation | Server request DTOs now carry bean-validation constraints across game, analysis, and challenge flows, and controller-local blank-request checks have been reduced to boundary validation |
+| API error contract and explicit failure handling | `ApiErrors`, `ApiExceptionHandler`, and `SecurityApiExceptionHandler` now align handled REST failures across server/security controllers, while session persistence and persisted-session reconstruction failures surface as explicit operational errors instead of silently degrading |
+| High-risk server regression coverage | `SessionTrackingServiceTest`, `PlayerGameServiceTest`, and `CustomOAuth2UserServiceTest` now cover three of the highest-risk low-coverage server/security classes, with the later ARCH-20 verify baseline reaching 71% overall line coverage |
+| WordEntropy matrix-only execution path | `WordEntropy` now uses the `ResponseMatrix` for cache-miss entropy lookup, keeps only the Bellman-specific external-guess bucket fallback, and no longer carries the mutable `WordGame`/decode helper scaffolding from the removed legacy path |
+| GameSession responsibility split | `GameSession` now delegates mutable metadata to `GameSessionMetadata` and filter/strategy/suggestion state to `GameSessionContext`, reducing the session type to a smaller coordinator while preserving the existing public API |
+| Entropy memoization for equivalent filter states | Shared `WordEntropy` instances now memoize bounded lazy-entropy best-word results by canonical candidate/target word-set signatures, and filtered `ENTROPY` session suggestions reuse that cache instead of rebuilding per-session analyzers |
+| Runtime algorithm policy | Algorithm enablement now persists in the `algorithm_policies` table, `AlgorithmFeatureService` reads/writes the effective state, and admins can update algorithm exposure at runtime through `PUT /api/v1/wordai/admin/algorithms/{algorithmId}` with the legacy admin route retained as a bridge |
+| API version boundary | `/api/v1/wordai` is now the primary documented REST root, while the legacy `/api/wordai` routes remain available as a compatibility bridge during migration |
+| EntropyKey encapsulation | `EntropyKey` is now an explicitly constructed immutable value object with focused regression coverage for null validation, equality/hashCode, and ordering semantics |
 | Architectural fitness tests | `ArchitectureFitnessTest` — layer rules, runtime-boundary rule, and package cycle rule all active |
 | Architecture cleanup tranche | Shared DTO/filter moves, legacy runtime removal, controller split, registry-driven algorithm metadata/toggles, and cycle cleanup completed; see `specs/` |
 | Dictionaries | 4, 5, 6 letter word files in `src/main/resources/dictionaries/` (7-letter file also present but not configured) |
@@ -46,8 +58,9 @@ Single source of truth for what is built, what is in progress, and what is plann
 | Javadoc — `util` package | Medium | `Config`, `ConfigManager`, `ConfigFile`, `Timer` — flagged in legacy DOCUMENTATION_STATUS |
 | Javadoc — `analysis` package | Medium | `DictionaryAnalytics`, `PlayerAnalyser`, `ComplexityAnalyser`, `Entropy`, `EntropyKey` |
 | Javadoc — new server classes | Medium | `ActivityService`, `SessionPersistenceService`, `SessionTrackingService`, `PlayerGameService`, `SessionInfo`, `UserActivityDto` |
-| `package-info.java` files | Low | One per package to document package-level responsibility |
-| CONTRIBUTING.md | Low | Contribution guidelines for open-source readiness |
+| Public interface documentation backlog | Medium | Tracked by `ARCH-25`; folds remaining Javadocs and package-level docs into the active ticket backlog |
+| Remaining server coordination split | Medium | Tracked by `ARCH-26` for `WordGameController` and `WordGameService` |
+| Test convention cleanup | Low | Tracked by `ARCH-27` |
 
 ---
 
@@ -62,17 +75,21 @@ The previously documented ArchUnit violations are closed. Active architecture wo
 | Package | Test class(es) | Tests |
 |---|---|---|
 | `core` | `DictionaryTest`, `WordGameTest` | 26 |
-| `core` | `FilterTest`, `DictionaryTest`, `WordGameTest` | core filtering and engine coverage |
+| `core` | `FilterTest`, `DictionaryTest`, `WordGameTest`, `ResponsePatternTest` | core filtering, engine, and response-pattern encoding coverage |
 | `bot.selection` | `SelectionAlgoTest`, `SelectBellman*Test` | 20+ |
 | `bot` | `WordGamePlayerTest` | 11 |
-| `analysis` | `DictionaryAnalyticsTest`, `ResponseCacheTest`, `ResponseMatrixTest`, `WordEntropyLazyTest`, `WordIdSetTest` | ~70 |
-| `security` | `UserManagementControllerTest`, `UserServiceTest`, `AdminCredentialsValidatorTest`, `CorsConfigTest` | 20+ |
+| `analysis` | `DictionaryAnalyticsTest`, `ResponseMatrixTest`, `WordEntropyLazyTest`, `WordIdSetTest` | matrix/lazy entropy coverage |
+| `security` | `UserManagementControllerTest`, `UserServiceTest`, `AdminCredentialsValidatorTest`, `CorsConfigTest`, `CustomOAuth2UserServiceTest`, `AuthControllerTest` | 30+ |
 | `util` | `ConfigManagerTest` | 6 |
 | `(root)` | `ArchitectureFitnessTest`, `FlywayMigrationTest` | architecture rules active, no documented skipped violations |
-| `server` | `SessionTtlTest`, `SessionConcurrencyTest` | 9 |
-| **Total** | | **277 pass, 0 skipped** |
+| `server` | `SessionTtlTest`, `SessionConcurrencyTest`, `SessionTrackingServiceTest`, `PlayerGameServiceTest`, `SessionPersistenceServiceTest` | targeted session/persistence regression coverage |
+| **Total** | | **346 pass, 0 skipped** |
 
-Run the full suite: `mvn clean test`
+Run the full suite: `mvn clean verify`
+
+Current measured line-coverage baseline: 71.99% bundle line coverage (`target/site/jacoco/index.html`)
+
+Current staged coverage gate: 60% bundle line coverage enforced in Maven during `verify`
 
 ---
 

@@ -6,21 +6,19 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-/*
- class used to manage a dictionary of words for a game like Wordle.  The interface enables identification of words that
- meet the feedback criteria received when making a guess.  It allows the rapid identification of:
-1) Letter match: Remove Words that do not contain the matching letter
-2) Wrong position: Remove Words that contain the matching letter in the wrong position
-3) Valid word: A word is a valid guess if it is contained in the dictionary
-
-The class needs to provide the following functionality:
-1) Maintain a Set of all words
-2) Be able to search if a word is contained in the Dictionary
-3) Find all words that contain a given letter at given position
-4) Find all words with a given letter at any position other than index n
-5) Find all words that do not contain a given letter
+/**
+ * Manages the dictionary of valid words for a Wordle-like game.
+ *
+ * <p>The dictionary supports rapid pruning of the word set based on guess feedback:
+ * <ul>
+ *   <li><strong>Letter match</strong> — remove words that do not contain the matching letter at a position.</li>
+ *   <li><strong>Wrong position</strong> — remove words that contain the letter at the guessed position.</li>
+ *   <li><strong>Valid word</strong> — a word is a valid guess if it is present in the dictionary.</li>
+ * </ul>
+ *
+ * <p>The class maintains a master set of all words, per-position column statistics, and helper
+ * methods that implement the filter criteria above.
  */
-
 public class Dictionary {
     /** The master set of all words of length wordLength*/
     private Set<String> masterSetOfWords = new HashSet<>();

@@ -2,10 +2,8 @@ package com.fistraltech.server.model;
 
 import java.util.logging.Logger;
 
-import com.fistraltech.bot.selection.SelectionAlgo;
 import com.fistraltech.core.Dictionary;
 import com.fistraltech.core.Filter;
-import com.fistraltech.core.Response;
 import com.fistraltech.core.WordEntropy;
 import com.fistraltech.core.WordGame;
 import com.fistraltech.server.algo.AlgorithmRegistry;
@@ -47,34 +45,16 @@ public class GameSession {
     private final String gameId;
     private final WordGame wordGame;
     private final Config config;
-    private final Dictionary originalDictionary;
-    private final Filter wordFilter;
-    private final AlgorithmRegistry algorithmRegistry;
-    private boolean gameEnded = false;
-    /** Dictionary identifier this session was created with (e.g. {@code "default"}, {@code "easy"}). */
-    private String dictionaryId = "default";
-    /** Numeric user ID of the authenticated player who owns this session; {@code null} for guests. */
-    private Long userId;
-    /** Per-browser-window identifier used to keep authenticated tabs isolated while still supporting resume. */
-    private String browserSessionId;
-    // Only valid in auto-play mode. In user interactive mode, strategy is chosen per guess.
-    private String selectedStrategy = "RANDOM"; // Default strategy
-    
-    // Cached WordEntropy from DictionaryService for fast entropy-based suggestions
-    private WordEntropy cachedWordEntropy;
-    
-    // Cached algorithm instance to maintain state (e.g., guessedWords) across suggestions
-    private SelectionAlgo cachedAlgorithm;
-    private String cachedAlgorithmStrategy;
+    private final GameSessionContext context;
+    private final GameSessionMetadata metadata;
     
     public GameSession(String gameId, WordGame wordGame, Config config, Dictionary dictionary,
                        AlgorithmRegistry algorithmRegistry) {
         this.gameId = gameId;
         this.wordGame = wordGame;
         this.config = config;
-        this.originalDictionary = dictionary;
-        this.wordFilter = new Filter(dictionary.getWordLength());
-        this.algorithmRegistry = algorithmRegistry;
+        this.context = new GameSessionContext(dictionary, algorithmRegistry);
+        this.metadata = new GameSessionMetadata();
     }
     
     public String getGameId() {
@@ -90,35 +70,35 @@ public class GameSession {
     }
     
     public boolean isGameEnded() {
-        return gameEnded;
+        return metadata.isGameEnded();
     }
     
     public void setGameEnded(boolean gameEnded) {
-        this.gameEnded = gameEnded;
+        metadata.setGameEnded(gameEnded);
     }
 
     public String getDictionaryId() {
-        return dictionaryId;
+        return metadata.getDictionaryId();
     }
 
     public void setDictionaryId(String dictionaryId) {
-        this.dictionaryId = dictionaryId;
+        metadata.setDictionaryId(dictionaryId);
     }
 
     public Long getUserId() {
-        return userId;
+        return metadata.getUserId();
     }
 
     public void setUserId(Long userId) {
-        this.userId = userId;
+        metadata.setUserId(userId);
     }
 
     public String getBrowserSessionId() {
-        return browserSessionId;
+        return metadata.getBrowserSessionId();
     }
 
     public void setBrowserSessionId(String browserSessionId) {
-        this.browserSessionId = browserSessionId;
+        metadata.setBrowserSessionId(browserSessionId);
     }
 
     public int getCurrentAttempts() {
@@ -134,24 +114,23 @@ public class GameSession {
     }
     
     public Filter getWordFilter() {
-        return wordFilter;
+        return context.getWordFilter();
     }
     
     public int getRemainingWordsCount() {
-        Dictionary filteredDictionary = wordFilter.apply(originalDictionary);
-        return filteredDictionary.getWordCount();
+        return context.getRemainingWordsCount();
     }
     
     public int getTotalWordsCount() {
-        return originalDictionary.getWordCount();
+        return context.getTotalWordsCount();
     }
     
     public String getSelectedStrategy() {
-        return selectedStrategy;
+        return context.getSelectedStrategy();
     }
     
     public synchronized void setSelectedStrategy(String strategy) {
-        this.selectedStrategy = strategy;
+        context.setSelectedStrategy(strategy);
     }
     
     /**
@@ -161,14 +140,14 @@ public class GameSession {
      * @param wordEntropy the pre-computed WordEntropy instance
      */
     public void setCachedWordEntropy(WordEntropy wordEntropy) {
-        this.cachedWordEntropy = wordEntropy;
+        context.setCachedWordEntropy(wordEntropy);
     }
     
     /**
      * Gets the current filtered dictionary based on all guesses made so far.
      */
     public Dictionary getFilteredDictionary() {
-        return wordFilter.apply(originalDictionary);
+        return context.getFilteredDictionary();
     }
     
     /**
@@ -189,69 +168,7 @@ public class GameSession {
      * @return a suggested word, or {@code null} if no valid words remain
      */
     public synchronized String suggestWord() {
-        Dictionary filteredDictionary = getFilteredDictionary();
-
-        if (filteredDictionary.getWordCount() == 0) {
-            return null;
-        }
-
-        String strategyUpper = normalizeStrategy(selectedStrategy);
-
-        // Cached values are only valid when the dictionary is unfiltered (first guess).
-        // After filtering, the dictionary composition changes, so entropy/reduction/column-length
-        // values must be recomputed - they depend on how the word partitions the CURRENT dictionary.
-        boolean isUnfilteredDictionary = filteredDictionary.getWordCount() == originalDictionary.getWordCount();
-
-        if (cachedWordEntropy != null && isUnfilteredDictionary) {
-            switch (strategyUpper) {
-                case "ENTROPY" -> {
-                    logger.fine(() -> "Using cached WordEntropy for first ENTROPY suggestion (full dict)");
-                    return cachedWordEntropy.getMaximumEntropyWord(filteredDictionary.getMasterSetOfWords());
-                }
-                case "BELLMAN_FULL_DICTIONARY" -> {
-                    logger.fine(() -> "Using cached WordEntropy for first BELLMAN_FULL_DICTIONARY suggestion (full dict)");
-                    return cachedWordEntropy.getWordWithMaximumReduction(filteredDictionary.getMasterSetOfWords());
-                }
-            }
-        }
-
-        // Dictionary has been filtered — must recompute values based on remaining words.
-        // For stateful algorithms (e.g. Bellman tracks guessedWords), use a cached instance.
-        // For stateless algorithms, create a fresh instance with the filtered dictionary.
-        Response emptyResponse = new Response("");
-        if (algorithmRegistry.isStateful(strategyUpper)) {
-            SelectionAlgo algo = getCachedOrCreateAlgorithm(strategyUpper, originalDictionary);
-            return algo.selectWord(emptyResponse, filteredDictionary);
-        }
-
-        SelectionAlgo algo = algorithmRegistry.create(strategyUpper, filteredDictionary);
-        return algo.selectWord(emptyResponse, filteredDictionary);
-    }
-
-    /** Normalises strategy aliases to a canonical upper-case ID. */
-    private String normalizeStrategy(String strategy) {
-        return algorithmRegistry.normalizeId(strategy);
-    }
-
-    /**
-     * Gets or creates a cached algorithm instance for strategies that maintain state.
-     *
-     * <p>Algorithms like SelectBellmanFullDictionary track guessedWords across calls.
-     * Creating a new instance per suggestion would reset this state, allowing duplicates.
-     * This method caches the instance for the game's lifetime.
-     *
-     * @param strategy the strategy identifier (already normalised to upper-case)
-     * @param fullDict the full dictionary (for algorithms that use it across all guesses)
-     * @return the cached or newly created algorithm instance
-     */
-    private SelectionAlgo getCachedOrCreateAlgorithm(String strategy, Dictionary fullDict) {
-        if (cachedAlgorithm != null && strategy.equals(cachedAlgorithmStrategy)) {
-            logger.fine(() -> "Reusing cached algorithm instance for " + strategy);
-            return cachedAlgorithm;
-        }
-        logger.fine(() -> "Creating new algorithm instance for " + strategy);
-        cachedAlgorithm = algorithmRegistry.create(strategy, fullDict);
-        cachedAlgorithmStrategy = strategy;
-        return cachedAlgorithm;
+        logger.fine(() -> "Delegating suggestion generation for session " + gameId);
+        return context.suggestWord();
     }
 }

@@ -44,6 +44,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
         // Only this origin is explicitly allowed — used to verify echo and exclusion
         "wordai.cors.allowed-origins=http://test-origin.example.com"
 })
+    @DisplayName("CorsConfig Tests")
 class CorsConfigTest {
 
     private static final String ALLOWED_ORIGIN     = "http://test-origin.example.com";
@@ -51,6 +52,7 @@ class CorsConfigTest {
 
     /** Public endpoint, no auth required — safe for CORS tests. */
     private static final String PUBLIC_PATH = "/api/wordai/dictionaries";
+    private static final String VERSIONED_PUBLIC_PATH = "/api/v1/wordai/dictionaries";
 
     @Autowired
     private MockMvc mockMvc;
@@ -90,6 +92,14 @@ class CorsConfigTest {
     @DisplayName("T3: GET from allowed origin reflects origin in Access-Control-Allow-Origin")
     void simpleGet_allowedOrigin_echoesOriginHeader() throws Exception {
         mockMvc.perform(get(PUBLIC_PATH)
+                        .header("Origin", ALLOWED_ORIGIN))
+                .andExpect(header().string("Access-Control-Allow-Origin", ALLOWED_ORIGIN));
+    }
+
+    @Test
+    @DisplayName("T4: GET on versioned API path reflects origin in Access-Control-Allow-Origin")
+    void simpleGet_versionedPath_echoesOriginHeader() throws Exception {
+        mockMvc.perform(get(VERSIONED_PUBLIC_PATH)
                         .header("Origin", ALLOWED_ORIGIN))
                 .andExpect(header().string("Access-Control-Allow-Origin", ALLOWED_ORIGIN));
     }

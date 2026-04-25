@@ -17,6 +17,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -31,6 +32,7 @@ import com.fistraltech.server.AlgorithmFeatureService;
 import com.fistraltech.server.GameHistoryService;
 import com.fistraltech.server.WordGameService;
 import com.fistraltech.server.model.GameSession;
+import com.fistraltech.web.ApiResourceNotFoundException;
 
 @WebMvcTest(WordGameController.class)
 @Import(SecurityConfig.class)
@@ -93,6 +95,17 @@ class WordGameControllerTest {
                 .andExpect(jsonPath("$.dictionaryMetrics.totalWords").value(5));
     }
 
+        @Test
+        @DisplayName("createGame_versionedRoute_returns201WithDictionaryMetrics")
+        void createGame_versionedRoute_returns201WithDictionaryMetrics() throws Exception {
+                mockMvc.perform(post("/api/v1/wordai/games")
+                                                .contentType("application/json"))
+                                .andExpect(status().isCreated())
+                                .andExpect(jsonPath("$.gameId").value("test-game-1"))
+                                .andExpect(jsonPath("$.dictionaryMetrics").value(notNullValue()))
+                                .andExpect(jsonPath("$.dictionaryMetrics.totalWords").value(5));
+        }
+
     @Test
     @DisplayName("createGame_withDictionaryId_returns201")
     void createGame_withDictionaryId_returns201() throws Exception {
@@ -104,6 +117,17 @@ class WordGameControllerTest {
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.gameId").value("test-game-1"));
     }
+
+        @Test
+        @DisplayName("createGame_invalidWordLength_returns400")
+        void createGame_invalidWordLength_returns400() throws Exception {
+                mockMvc.perform(post("/api/wordai/games")
+                                                .contentType("application/json")
+                                                .content("""
+                                                                {"wordLength":1}
+                                                                """))
+                                .andExpect(status().isBadRequest());
+        }
 
     @Test
     @DisplayName("createGame_returnsMetricsWithOccurrenceCountByPosition")
@@ -181,14 +205,29 @@ class WordGameControllerTest {
     @Test
     @DisplayName("makeGuess_gameNotFound_returns404")
     void makeGuess_gameNotFound_returns404() throws Exception {
-        when(gameService.makeGuess("missing-game", "arose")).thenReturn(mock(Response.class));
-        when(gameService.getGameSession("missing-game")).thenReturn(null);
+        when(gameService.makeGuess("missing-game", "arose"))
+                .thenThrow(new ApiResourceNotFoundException("Game not found",
+                        "Game session missing-game does not exist"));
 
         mockMvc.perform(post("/api/wordai/games/missing-game/guess")
                         .contentType("application/json")
                         .content("""
                                 {"word":"arose"}
                                 """))
-                .andExpect(status().isNotFound());
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.error").value("Game not found"))
+                .andExpect(jsonPath("$.message").value("Game session missing-game does not exist"));
+    }
+
+    @Test
+    @DisplayName("getGameState_reconstructionFailure_returns500WithErrorBody")
+    void getGameState_reconstructionFailure_returns500WithErrorBody() throws Exception {
+        when(gameService.getGameSession("broken-game"))
+                .thenThrow(new IllegalStateException("Failed to reconstruct session broken-game"));
+
+        mockMvc.perform(get("/api/wordai/games/broken-game"))
+                .andExpect(status().isInternalServerError())
+                .andExpect(jsonPath("$.error").value("Internal server error"))
+                .andExpect(jsonPath("$.message").value("Failed to get game state"));
     }
 }

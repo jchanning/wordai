@@ -91,12 +91,14 @@ class ResponseMatrixTest {
     // ============================================
     
     @Test
+    @DisplayName("testMatrixConstruction")
     void testMatrixConstruction() {
         assertEquals(10, smallMatrix.getWordCount());
         assertEquals(5, smallMatrix.getWordLength());
     }
     
     @Test
+    @DisplayName("testWordIdMapping")
     void testWordIdMapping() {
         // Every word should have a valid ID
         for (String word : smallDictionary.getMasterSetOfWords()) {
@@ -108,6 +110,7 @@ class ResponseMatrixTest {
     }
     
     @Test
+    @DisplayName("testContainsWord")
     void testContainsWord() {
         assertTrue(smallMatrix.containsWord("SLATE"));
         assertTrue(smallMatrix.containsWord("AROSE"));
@@ -116,12 +119,14 @@ class ResponseMatrixTest {
     }
     
     @Test
+    @DisplayName("testUnknownWordReturnsNegativeId")
     void testUnknownWordReturnsNegativeId() {
         assertEquals(-1, smallMatrix.getWordId("UNKNOWN"));
         assertEquals(-1, smallMatrix.getWordId("XXXXX"));
     }
     
     @Test
+    @DisplayName("testGetPatternUnknownWord")
     void testGetPatternUnknownWord() {
         assertEquals(-1, smallMatrix.getPattern("UNKNOWN", "SLATE"));
         assertEquals(-1, smallMatrix.getPattern("SLATE", "UNKNOWN"));
@@ -132,6 +137,7 @@ class ResponseMatrixTest {
     // ============================================
     
     @Test
+    @DisplayName("testPatternEncodingAllGreen")
     void testPatternEncodingAllGreen() {
         // Guessing the correct word should give all greens (pattern = 0)
         String word = "SLATE";
@@ -141,6 +147,7 @@ class ResponseMatrixTest {
     }
     
     @Test
+    @DisplayName("testPatternEncodingVerifyWithWordGame")
     void testPatternEncodingVerifyWithWordGame() {
         // Test consistency between matrix and WordGame for various word pairs
         WordGame game = new WordGame(mediumDictionary, config);
@@ -175,6 +182,7 @@ class ResponseMatrixTest {
     }
     
     @Test
+    @DisplayName("testPatternConsistencyWithWordGame")
     void testPatternConsistencyWithWordGame() {
         // Test multiple word pairs to ensure matrix matches WordGame
         WordGame game = new WordGame(smallDictionary, config);
@@ -208,6 +216,7 @@ class ResponseMatrixTest {
     }
     
     @Test
+    @DisplayName("testDecodePattern")
     void testDecodePattern() {
         // Test known pattern values
         // GGGGG = 00_00_00_00_00 = 0
@@ -233,6 +242,7 @@ class ResponseMatrixTest {
     // ============================================
     
     @Test
+    @DisplayName("testBucketCountsNonNegative")
     void testBucketCountsNonNegative() {
         int guessId = smallMatrix.getWordId("SLATE");
         int[] counts = smallMatrix.getBucketCounts(guessId);
@@ -243,6 +253,7 @@ class ResponseMatrixTest {
     }
     
     @Test
+    @DisplayName("testBucketCountsSumToWordCount")
     void testBucketCountsSumToWordCount() {
         int guessId = smallMatrix.getWordId("SLATE");
         int[] counts = smallMatrix.getBucketCounts(guessId);
@@ -257,6 +268,7 @@ class ResponseMatrixTest {
     }
     
     @Test
+    @DisplayName("testBucketCountsWithSubset")
     void testBucketCountsWithSubset() {
         // Create subset of target IDs
         int[] targetIds = new int[5];
@@ -282,6 +294,7 @@ class ResponseMatrixTest {
     // ============================================
     
     @Test
+    @DisplayName("testEntropyNonNegative")
     void testEntropyNonNegative() {
         for (int guessId = 0; guessId < smallMatrix.getWordCount(); guessId++) {
             float entropy = smallMatrix.computeEntropy(guessId);
@@ -290,6 +303,7 @@ class ResponseMatrixTest {
     }
     
     @Test
+    @DisplayName("testEntropyMaxBound")
     void testEntropyMaxBound() {
         // Maximum entropy for N words is log2(N)
         double maxPossibleEntropy = Math.log(smallMatrix.getWordCount()) / Math.log(2);
@@ -302,6 +316,7 @@ class ResponseMatrixTest {
     }
     
     @Test
+    @DisplayName("testEntropyConsistencyWithOriginal")
     void testEntropyConsistencyWithOriginal() {
         // Compare with original WordEntropy calculation
         WordEntropy originalEntropy = new WordEntropy(smallDictionary, config, true);
@@ -317,6 +332,7 @@ class ResponseMatrixTest {
     }
     
     @Test
+    @DisplayName("testFindMaxEntropyWord")
     void testFindMaxEntropyWord() {
         // Find max entropy using matrix
         int maxEntropyId = smallMatrix.findMaxEntropyWordId();
@@ -340,6 +356,7 @@ class ResponseMatrixTest {
     }
     
     @Test
+    @DisplayName("testEntropyWithSubset")
     void testEntropyWithSubset() {
         // Subset of target words
         int[] targetIds = new int[5];
@@ -362,6 +379,7 @@ class ResponseMatrixTest {
     // ============================================
     
     @Test
+    @DisplayName("testSingleWordDictionary")
     void testSingleWordDictionary() {
         Dictionary singleWord = new Dictionary(5);
         Set<String> words = new HashSet<>();
@@ -380,6 +398,7 @@ class ResponseMatrixTest {
     }
     
     @Test
+    @DisplayName("testAllWordIdsArray")
     void testAllWordIdsArray() {
         int[] ids = smallMatrix.getAllWordIds();
         assertEquals(smallMatrix.getWordCount(), ids.length);
@@ -394,6 +413,7 @@ class ResponseMatrixTest {
     // ============================================
     
     @Test
+    @DisplayName("testMemoryEstimation")
     void testMemoryEstimation() {
         long memory = smallMatrix.getEstimatedMemoryBytes();
         assertTrue(memory > 0, "Memory estimate should be positive");
@@ -404,6 +424,7 @@ class ResponseMatrixTest {
     }
     
     @Test
+    @DisplayName("testMemoryEstimationScales")
     void testMemoryEstimationScales() {
         long smallMemory = smallMatrix.getEstimatedMemoryBytes();
         long mediumMemory = mediumMatrix.getEstimatedMemoryBytes();
@@ -422,6 +443,7 @@ class ResponseMatrixTest {
     // ============================================
     
     @Test
+    @DisplayName("testIdBasedLookupMatchesStringLookup")
     void testIdBasedLookupMatchesStringLookup() {
         String guess = "CRANE";
         String target = "STARE";
@@ -437,6 +459,7 @@ class ResponseMatrixTest {
     }
     
     @Test
+    @DisplayName("testFindMaxEntropyWithCandidates")
     void testFindMaxEntropyWithCandidates() {
         // Create candidate and target arrays
         int[] candidateIds = new int[5];
@@ -468,6 +491,7 @@ class ResponseMatrixTest {
     // ============================================
     
     @Test
+    @DisplayName("testExpectedColumnLengthNotNegative")
     void testExpectedColumnLengthNotNegative() {
         // Column length should always be non-negative
         for (String word : smallDictionary.getMasterSetOfWords()) {
@@ -479,6 +503,7 @@ class ResponseMatrixTest {
     }
     
     @Test
+    @DisplayName("testExpectedColumnLengthWithSubset")
     void testExpectedColumnLengthWithSubset() {
         int guessId = smallMatrix.getWordId("SLATE");
         
@@ -499,6 +524,7 @@ class ResponseMatrixTest {
     }
     
     @Test
+    @DisplayName("testColumnLengthConsistency")
     void testColumnLengthConsistency() {
         // For identical words (guessing the target), column length contribution should be 1
         // because all positions have exactly one unique letter
@@ -511,6 +537,7 @@ class ResponseMatrixTest {
     }
     
     @Test
+    @DisplayName("testDictionaryReductionNotNegative")
     void testDictionaryReductionNotNegative() {
         for (String word : smallDictionary.getMasterSetOfWords()) {
             int guessId = smallMatrix.getWordId(word);
@@ -521,6 +548,7 @@ class ResponseMatrixTest {
     }
     
     @Test
+    @DisplayName("testDictionaryReductionBounds")
     void testDictionaryReductionBounds() {
         // Reduction should be between 1 (perfect guess) and N (worst case)
         int n = smallMatrix.getWordCount();
@@ -537,6 +565,7 @@ class ResponseMatrixTest {
     }
     
     @Test
+    @DisplayName("testDictionaryReductionWithSubset")
     void testDictionaryReductionWithSubset() {
         int guessId = smallMatrix.getWordId("CRANE");
         
@@ -553,6 +582,7 @@ class ResponseMatrixTest {
     }
     
     @Test
+    @DisplayName("testFindMinColumnLengthWordId")
     void testFindMinColumnLengthWordId() {
         int[] candidateIds = new int[5];
         candidateIds[0] = smallMatrix.getWordId("SLATE");
@@ -583,6 +613,7 @@ class ResponseMatrixTest {
     }
     
     @Test
+    @DisplayName("testFindMaxReductionWordId")
     void testFindMaxReductionWordId() {
         int[] candidateIds = new int[4];
         candidateIds[0] = smallMatrix.getWordId("SLATE");
@@ -612,6 +643,7 @@ class ResponseMatrixTest {
     }
     
     @Test
+    @DisplayName("testEmptyTargetSetHandling")
     void testEmptyTargetSetHandling() {
         int guessId = smallMatrix.getWordId("SLATE");
         
@@ -624,6 +656,7 @@ class ResponseMatrixTest {
     }
     
     @Test
+    @DisplayName("testColumnLengthPerformance")
     void testColumnLengthPerformance() {
         // Test that column length calculation completes quickly for medium dictionary
         long startTime = System.currentTimeMillis();
@@ -642,6 +675,7 @@ class ResponseMatrixTest {
     // ============================================
     
     @Test
+    @DisplayName("testFindMaxEntropyWordIdParallelConsistency")
     void testFindMaxEntropyWordIdParallelConsistency() {
         // Build arrays of all word IDs
         int wordCount = mediumMatrix.getWordCount();
@@ -663,6 +697,7 @@ class ResponseMatrixTest {
     }
     
     @Test
+    @DisplayName("testFindMaxEntropyWordIdParallelWithSubset")
     void testFindMaxEntropyWordIdParallelWithSubset() {
         // Test with a subset of candidates
         int[] candidateIds = new int[20];
@@ -686,6 +721,7 @@ class ResponseMatrixTest {
     }
     
     @Test
+    @DisplayName("testComputeTopNEntropy")
     void testComputeTopNEntropy() {
         // Build arrays of all word IDs
         int wordCount = mediumMatrix.getWordCount();
@@ -717,6 +753,7 @@ class ResponseMatrixTest {
     }
     
     @Test
+    @DisplayName("testComputeTopNEntropySmallN")
     void testComputeTopNEntropySmallN() {
         // Test with N larger than available words
         int wordCount = smallMatrix.getWordCount(); // 10 words
@@ -732,6 +769,7 @@ class ResponseMatrixTest {
     }
     
     @Test
+    @DisplayName("testComputeTopNEntropyWithSubset")
     void testComputeTopNEntropyWithSubset() {
         // Test with a subset of candidates and targets
         int[] candidateIds = new int[10];
@@ -762,6 +800,7 @@ class ResponseMatrixTest {
     }
     
     @Test
+    @DisplayName("testParallelMatrixConstructionProducesSameResults")
     void testParallelMatrixConstructionProducesSameResults() {
         // Both small and medium matrices should produce correct responses
         // regardless of whether they were built sequentially or in parallel

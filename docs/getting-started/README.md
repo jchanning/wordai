@@ -14,7 +14,7 @@ WordAI is an intelligent word-guessing game (similar to Wordle) with:
 
 ### Prerequisites
 
-- **Java 21** or higher (for development)
+- **Java 25** for local development and CI
 - **Java 17** (for Oracle Cloud deployment)
 - **Maven 3.8.9+** (or use Maven wrapper)
 
@@ -43,7 +43,7 @@ mvn spring-boot:run -Dspring-boot.run.arguments="--spring.profiles.active=prod"
 
 | Component | Requirement |
 |-----------|-------------|
-| **Java** | 21 (development) or 17 (production) |
+| **Java** | 25 (development and CI), 17 (cloud profile), 21 (current Docker image) |
 | **Maven** | 3.8.9+ |
 | **Database** | H2 (embedded, no setup needed) |
 | **Memory** | Minimum 512MB, Recommended 2GB+ |

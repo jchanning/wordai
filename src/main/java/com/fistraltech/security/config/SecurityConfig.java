@@ -19,6 +19,13 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import com.fistraltech.security.service.CustomOAuth2UserService;
 
+/**
+ * Spring Security configuration for the WordAI application.
+ *
+ * <p>Configures HTTP security (CSRF, CORS, session management, form login, OAuth2 login),
+ * the password encoder bean, and the CORS configuration source. CORS allowed origins are
+ * driven by the {@code wordai.cors.allowed-origins} property.
+ */
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity(prePostEnabled = true)
@@ -55,13 +62,16 @@ public class SecurityConfig {
                                "/css/**", "/js/**", "/h2-console/**", "/error", "/static/**").permitAll()
                 // Guest access - basic game functionality
                 .requestMatchers("/api/wordai/games/**", "/api/wordai/dictionaries/**",
-                               "/api/wordai/algorithms", "/api/wordai/challenges/**").permitAll()
+                               "/api/wordai/algorithms", "/api/wordai/challenges/**",
+                               "/api/v1/wordai/games/**", "/api/v1/wordai/dictionaries/**",
+                               "/api/v1/wordai/algorithms", "/api/v1/wordai/challenges/**").permitAll()
                 // Removed placeholder routes should resolve as 404 rather than gated pseudo-features
-                .requestMatchers("/api/wordai/stats/**", "/api/wordai/analytics/**", "/api/wordai/export/**").permitAll()
+                .requestMatchers("/api/wordai/stats/**", "/api/wordai/analytics/**", "/api/wordai/export/**",
+                               "/api/v1/wordai/stats/**", "/api/v1/wordai/analytics/**", "/api/v1/wordai/export/**").permitAll()
                 // Authenticated user endpoints
-                .requestMatchers("/api/auth/user", "/api/wordai/history").authenticated()
+                .requestMatchers("/api/auth/user", "/api/wordai/history", "/api/v1/wordai/history").authenticated()
                 // Admin only endpoints
-                .requestMatchers("/api/wordai/admin/**", "/api/admin/**").hasRole("ADMIN")
+                .requestMatchers("/api/wordai/admin/**", "/api/v1/wordai/admin/**", "/api/admin/**").hasRole("ADMIN")
                 .anyRequest().authenticated()
             )
             .formLogin(form -> form

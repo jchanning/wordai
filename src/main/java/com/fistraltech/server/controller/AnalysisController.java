@@ -1,11 +1,8 @@
 package com.fistraltech.server.controller;
 
-import java.util.HashMap;
-import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -15,6 +12,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.fistraltech.analysis.AnalysisResponse;
 import com.fistraltech.server.WordGameService;
 import com.fistraltech.server.dto.AnalysisRequest;
+import com.fistraltech.web.ApiErrors;
 
 import jakarta.validation.Valid;
 
@@ -35,7 +33,7 @@ import jakarta.validation.Valid;
  * </ol>
  */
 @RestController
-@RequestMapping("/api/wordai/analysis")
+@RequestMapping({ApiRoutes.LEGACY_ROOT + "/analysis", ApiRoutes.V1_ROOT + "/analysis"})
 public class AnalysisController {
 
     private static final Logger logger = Logger.getLogger(AnalysisController.class.getName());
@@ -64,11 +62,9 @@ public class AnalysisController {
 
             return ResponseEntity.ok(response);
         } catch (Exception e) {
-            logger.log(Level.SEVERE, "Error running analysis: {0}", e.getMessage());
-            Map<String, String> error = new HashMap<>();
-            error.put("error", "Analysis failed");
-            error.put("message", e.getMessage());
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
+            logger.log(Level.SEVERE, "Error running analysis", e);
+            return ApiErrors.response(org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR,
+                    "Analysis failed", e.getMessage());
         }
     }
 }

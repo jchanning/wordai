@@ -1,5 +1,9 @@
 package com.fistraltech.server.dto;
 
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.Pattern;
+
 /**
  * Request DTO for creating a Challenge Mode session.
  *
@@ -13,8 +17,12 @@ package com.fistraltech.server.dto;
  * }</pre>
  */
 public class CreateChallengeRequest {
+    @Pattern(regexp = ".*\\S.*", message = "dictionaryId must not be blank")
     private String dictionaryId;
+    @Min(value = 2, message = "wordLength must be at least 2")
+    @Max(value = 20, message = "wordLength must be at most 20")
     private Integer wordLength;
+    @Pattern(regexp = ".*\\S.*", message = "browserSessionId must not be blank")
     private String browserSessionId;
 
     public CreateChallengeRequest() {

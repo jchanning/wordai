@@ -26,7 +26,7 @@ import com.fistraltech.server.AlgorithmFeatureService;
  * </ol>
  */
 @RestController
-@RequestMapping("/api/wordai/algorithms")
+@RequestMapping({ApiRoutes.LEGACY_ROOT + "/algorithms", ApiRoutes.V1_ROOT + "/algorithms"})
 public class AlgorithmController {
 
     private final AlgorithmFeatureService algorithmFeatureService;

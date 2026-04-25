@@ -39,7 +39,7 @@ import com.fistraltech.server.repository.ActiveGameSessionRepository;
         "spring.jpa.hibernate.ddl-auto=validate",
         "spring.h2.console.enabled=false"
 })
-@DisplayName("SessionPersistenceTest")
+    @DisplayName("SessionPersistence Tests")
 class SessionPersistenceTest {
 
     private static final String BROWSER_A = "browser-a";

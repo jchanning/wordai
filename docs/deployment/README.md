@@ -54,7 +54,7 @@ WordAI can be deployed to multiple platforms:
 ## Pre-Deployment Checklist
 
 - [ ] Application builds successfully: `mvn clean install`
-- [ ] All tests pass: `mvn clean test`
+- [ ] All tests pass: `mvn clean verify`
 - [ ] Version bumped in `pom.xml`
 - [ ] Release notes written
 - [ ] Git tag created: `git tag v1.x.x`

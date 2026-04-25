@@ -14,6 +14,12 @@ import org.springframework.stereotype.Component;
 import com.fistraltech.security.model.User;
 import com.fistraltech.security.repository.UserRepository;
 
+/**
+ * Seeds or upgrades the configured administrative account during application startup.
+ *
+ * <p>The initializer ensures the configured admin identity exists and has the
+ * {@code ROLE_ADMIN} authority, without overwriting an existing user unnecessarily.
+ */
 @Component
 public class DataInitializer implements ApplicationRunner {
 
@@ -39,6 +45,11 @@ public class DataInitializer implements ApplicationRunner {
         this.passwordEncoder = passwordEncoder;
     }
 
+    /**
+     * Ensures the configured admin account exists and carries {@code ROLE_ADMIN}.
+     *
+     * @param args application startup arguments
+     */
     @Override
     public void run(ApplicationArguments args) {
         Optional<User> existingByEmail = userRepository.findByEmail(adminEmail);

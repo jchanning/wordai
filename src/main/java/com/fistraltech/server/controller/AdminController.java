@@ -10,15 +10,24 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.fistraltech.server.ActivityService;
+import com.fistraltech.server.AlgorithmFeatureService;
 import com.fistraltech.server.SessionTrackingService;
 import com.fistraltech.server.WordGameService;
+import com.fistraltech.server.dto.AlgorithmPolicyResponse;
+import com.fistraltech.server.dto.UpdateAlgorithmPolicyRequest;
 import com.fistraltech.server.dto.UserActivityDto;
 import com.fistraltech.server.model.SessionInfo;
+import com.fistraltech.web.ApiErrors;
+
+import jakarta.validation.Valid;
 
 /**
  * REST controller for administrative functions.
@@ -27,13 +36,14 @@ import com.fistraltech.server.model.SessionInfo;
  * <ul>
  *   <li>Session monitoring and management</li>
  *   <li>System health and statistics</li>
+ *   <li>Runtime algorithm policy updates</li>
  *   <li>User management (future)</li>
  * </ul>
  * 
  * <p>All endpoints require ADMIN role.
  */
 @RestController
-@RequestMapping("/api/wordai/admin")
+@RequestMapping({ApiRoutes.LEGACY_ROOT + "/admin", ApiRoutes.V1_ROOT + "/admin"})
 @PreAuthorize("hasRole('ADMIN')")
 public class AdminController {
     private static final Logger logger = Logger.getLogger(AdminController.class.getName());
@@ -41,13 +51,16 @@ public class AdminController {
     private final SessionTrackingService sessionTrackingService;
     private final WordGameService wordGameService;
     private final ActivityService activityService;
+    private final AlgorithmFeatureService algorithmFeatureService;
 
     public AdminController(SessionTrackingService sessionTrackingService,
                            WordGameService wordGameService,
-                           ActivityService activityService) {
+                           ActivityService activityService,
+                           AlgorithmFeatureService algorithmFeatureService) {
         this.sessionTrackingService = sessionTrackingService;
         this.wordGameService = wordGameService;
         this.activityService = activityService;
+        this.algorithmFeatureService = algorithmFeatureService;
     }
     
     /**
@@ -55,7 +68,7 @@ public class AdminController {
      * GET /api/wordai/admin/sessions
      */
     @GetMapping("/sessions")
-    public ResponseEntity<Map<String, Object>> getActiveSessions() {
+    public ResponseEntity<?> getActiveSessions() {
         try {
             Collection<SessionInfo> sessions = sessionTrackingService.getActiveSessions();
             
@@ -68,11 +81,9 @@ public class AdminController {
             return ResponseEntity.ok(response);
             
         } catch (Exception e) {
-            logger.severe("Error retrieving session information: " + e.getMessage());
-            Map<String, Object> errorResponse = new HashMap<>();
-            errorResponse.put("error", "Failed to retrieve session information");
-            errorResponse.put("message", e.getMessage());
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+            logger.log(java.util.logging.Level.SEVERE, "Error retrieving session information", e);
+            return ApiErrors.response(HttpStatus.INTERNAL_SERVER_ERROR,
+                    "Failed to retrieve session information", e.getMessage());
         }
     }
     
@@ -81,7 +92,7 @@ public class AdminController {
      * GET /api/wordai/admin/stats
      */
     @GetMapping("/stats")
-    public ResponseEntity<Map<String, Object>> getSystemStats() {
+    public ResponseEntity<?> getSystemStats() {
         try {
             Map<String, Object> stats = new HashMap<>();
             
@@ -109,11 +120,9 @@ public class AdminController {
             return ResponseEntity.ok(stats);
             
         } catch (Exception e) {
-            logger.severe("Error retrieving system stats: " + e.getMessage());
-            Map<String, Object> errorResponse = new HashMap<>();
-            errorResponse.put("error", "Failed to retrieve system statistics");
-            errorResponse.put("message", e.getMessage());
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+            logger.log(java.util.logging.Level.SEVERE, "Error retrieving system stats", e);
+            return ApiErrors.response(HttpStatus.INTERNAL_SERVER_ERROR,
+                    "Failed to retrieve system statistics", e.getMessage());
         }
     }
     
@@ -122,7 +131,7 @@ public class AdminController {
      * POST /api/wordai/admin/cleanup-sessions
      */
     @PostMapping("/cleanup-sessions")
-    public ResponseEntity<Map<String, Object>> cleanupSessions() {
+    public ResponseEntity<?> cleanupSessions() {
         try {
             int beforeCount = sessionTrackingService.getActiveSessionCount();
             sessionTrackingService.cleanupInactiveSessions(30); // Remove sessions inactive for 30+ minutes
@@ -136,11 +145,9 @@ public class AdminController {
             return ResponseEntity.ok(response);
 
         } catch (Exception e) {
-            logger.severe("Error during session cleanup: " + e.getMessage());
-            Map<String, Object> errorResponse = new HashMap<>();
-            errorResponse.put("error", "Failed to cleanup sessions");
-            errorResponse.put("message", e.getMessage());
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+            logger.log(java.util.logging.Level.SEVERE, "Error during session cleanup", e);
+            return ApiErrors.response(HttpStatus.INTERNAL_SERVER_ERROR,
+                    "Failed to cleanup sessions", e.getMessage());
         }
     }
 
@@ -152,7 +159,7 @@ public class AdminController {
         * including anonymous players grouped by client IP.
      */
     @GetMapping("/activity")
-    public ResponseEntity<Map<String, Object>> getUserActivity() {
+    public ResponseEntity<?> getUserActivity() {
         try {
             List<UserActivityDto> stats = activityService.getUserActivityStats();
 
@@ -170,11 +177,30 @@ public class AdminController {
             return ResponseEntity.ok(response);
 
         } catch (Exception e) {
-            logger.severe("Error retrieving activity stats: " + e.getMessage());
-            Map<String, Object> error = new HashMap<>();
-            error.put("error", "Failed to retrieve activity statistics");
-            error.put("message", e.getMessage());
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
+            logger.log(java.util.logging.Level.SEVERE, "Error retrieving activity stats", e);
+            return ApiErrors.response(HttpStatus.INTERNAL_SERVER_ERROR,
+                    "Failed to retrieve activity statistics", e.getMessage());
+        }
+    }
+
+    /**
+     * Updates the runtime enabled state for a registered algorithm.
+     * PUT /api/wordai/admin/algorithms/{algorithmId}
+     */
+    @PutMapping("/algorithms/{algorithmId}")
+    public ResponseEntity<?> updateAlgorithmPolicy(@PathVariable String algorithmId,
+                                                   @Valid @RequestBody UpdateAlgorithmPolicyRequest request) {
+        try {
+            AlgorithmPolicyResponse response = AlgorithmPolicyResponse.from(
+                    algorithmFeatureService.updateAlgorithmEnabled(algorithmId, request.getEnabled()));
+            return ResponseEntity.ok(response);
+        } catch (IllegalArgumentException e) {
+            return ApiErrors.response(HttpStatus.BAD_REQUEST, "Invalid algorithm", e.getMessage());
+        } catch (Exception e) {
+            logger.log(java.util.logging.Level.SEVERE,
+                    "Error updating algorithm policy for " + algorithmId, e);
+            return ApiErrors.response(HttpStatus.INTERNAL_SERVER_ERROR,
+                    "Failed to update algorithm policy", e.getMessage());
         }
     }
 }

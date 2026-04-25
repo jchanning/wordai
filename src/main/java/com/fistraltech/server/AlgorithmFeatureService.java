@@ -1,39 +1,28 @@
 package com.fistraltech.server;
 
+import java.time.Clock;
+import java.time.LocalDateTime;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.logging.Logger;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Service;
 
 import com.fistraltech.server.algo.AlgorithmDescriptor;
 import com.fistraltech.server.algo.AlgorithmRegistry;
+import com.fistraltech.server.model.AlgorithmPolicyEntity;
+import com.fistraltech.server.repository.AlgorithmPolicyRepository;
 
 import jakarta.annotation.PostConstruct;
 
 /**
- * Service for managing algorithm feature toggles.
+ * Service for managing algorithm runtime policy.
  * 
- * <p>Provides configuration-based control over which selection algorithms are available.
- * This allows administrators to disable resource-intensive algorithms when running on
- * lightweight hardware or cloud services.
- * 
- * <p><strong>Configuration:</strong><br>
- * Feature toggles are controlled via {@code application.properties}:
- * <pre>
- * algorithm.features.random.enabled=true
- * algorithm.features.entropy.enabled=true
- * algorithm.features.bellman-full-dictionary.enabled=true
- * </pre>
- * 
- * <p><strong>Minimal Configuration:</strong><br>
- * For lightweight environments, disable all except RANDOM:
- * <pre>
- * algorithm.features.random.enabled=true
- * algorithm.features.entropy.enabled=false
- * algorithm.features.bellman-full-dictionary.enabled=false
- * </pre>
+ * <p>Persisted runtime policy rows take precedence over static defaults so administrators
+ * can change algorithm exposure without a redeploy. When no runtime row exists, the
+ * service falls back to descriptor defaults or an explicit environment override.
  * 
  * @author Fistral Technologies
  */
@@ -44,10 +33,24 @@ public class AlgorithmFeatureService {
 
     private final AlgorithmRegistry algorithmRegistry;
     private final Environment environment;
+    private final AlgorithmPolicyRepository algorithmPolicyRepository;
+    private final Clock clock;
 
-    public AlgorithmFeatureService(AlgorithmRegistry algorithmRegistry, Environment environment) {
+    @Autowired
+    public AlgorithmFeatureService(AlgorithmRegistry algorithmRegistry,
+                                   Environment environment,
+                                   AlgorithmPolicyRepository algorithmPolicyRepository) {
+        this(algorithmRegistry, environment, algorithmPolicyRepository, Clock.systemDefaultZone());
+    }
+
+    AlgorithmFeatureService(AlgorithmRegistry algorithmRegistry,
+                            Environment environment,
+                            AlgorithmPolicyRepository algorithmPolicyRepository,
+                            Clock clock) {
         this.algorithmRegistry = algorithmRegistry;
         this.environment = environment;
+        this.algorithmPolicyRepository = algorithmPolicyRepository;
+        this.clock = clock;
     }
     
     @PostConstruct
@@ -80,23 +83,58 @@ public class AlgorithmFeatureService {
     public Map<String, AlgorithmInfo> getAllAlgorithms() {
         Map<String, AlgorithmInfo> algorithms = new LinkedHashMap<>();
         for (AlgorithmDescriptor descriptor : algorithmRegistry.getDescriptors()) {
-            algorithms.put(descriptor.getId(), new AlgorithmInfo(
-                    descriptor.getId(),
-                    descriptor.getDisplayName(),
-                    descriptor.getDescription(),
-                    descriptor.isStateful(),
-                    getFeatureProperty(descriptor),
-                    isEnabled(descriptor)));
+            algorithms.put(descriptor.getId(), toAlgorithmInfo(descriptor));
         }
         return algorithms;
     }
 
+        /**
+         * Persists the runtime enabled state for a registered algorithm.
+         *
+         * @param algorithmId algorithm identifier or supported alias
+         * @param enabled desired runtime state
+         * @return the updated algorithm metadata snapshot
+         */
+        public AlgorithmInfo updateAlgorithmEnabled(String algorithmId, boolean enabled) {
+        AlgorithmDescriptor descriptor = algorithmRegistry.getDescriptor(algorithmId)
+            .orElseThrow(() -> new IllegalArgumentException("Unknown algorithm: " + algorithmId));
+
+        AlgorithmPolicyEntity policy = algorithmPolicyRepository.findById(descriptor.getId())
+            .orElseGet(AlgorithmPolicyEntity::new);
+        policy.setAlgorithmId(descriptor.getId());
+        policy.setEnabled(enabled);
+        policy.setUpdatedAt(LocalDateTime.now(clock));
+        algorithmPolicyRepository.save(policy);
+
+        logger.info(() -> "Runtime policy for algorithm " + descriptor.getId() + " set to "
+            + (enabled ? "ENABLED" : "DISABLED"));
+        return new AlgorithmInfo(
+            descriptor.getId(),
+            descriptor.getDisplayName(),
+            descriptor.getDescription(),
+            descriptor.isStateful(),
+            getFeatureProperty(descriptor),
+            enabled);
+        }
+
     private boolean isEnabled(AlgorithmDescriptor descriptor) {
-        return environment.getProperty(
+        return algorithmPolicyRepository.findById(descriptor.getId())
+            .map(AlgorithmPolicyEntity::isEnabled)
+            .orElseGet(() -> environment.getProperty(
                 getFeatureProperty(descriptor),
                 Boolean.class,
-                descriptor.isEnabledByDefault());
+                descriptor.isEnabledByDefault()));
     }
+
+        private AlgorithmInfo toAlgorithmInfo(AlgorithmDescriptor descriptor) {
+        return new AlgorithmInfo(
+            descriptor.getId(),
+            descriptor.getDisplayName(),
+            descriptor.getDescription(),
+            descriptor.isStateful(),
+            getFeatureProperty(descriptor),
+            isEnabled(descriptor));
+        }
 
     private String getFeatureProperty(AlgorithmDescriptor descriptor) {
         return "algorithm.features." + descriptor.getFeatureToggleKey() + ".enabled";

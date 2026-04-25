@@ -2,7 +2,6 @@ package com.fistraltech.server;
 
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,9 +16,9 @@ import com.fistraltech.core.InvalidWordException;
 import com.fistraltech.core.Response;
 import com.fistraltech.core.WordGame;
 import com.fistraltech.server.algo.AlgorithmRegistry;
-import com.fistraltech.server.model.ActiveGameSessionEntity;
 import com.fistraltech.server.model.GameSession;
 import com.fistraltech.util.Config;
+import com.fistraltech.web.ApiResourceNotFoundException;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.RemovalCause;
@@ -63,6 +62,7 @@ public class WordGameService {
     private final DictionaryService dictionaryService;
     private final Config config;
     private final AlgorithmRegistry algorithmRegistry;
+    private final SessionReconstructor sessionReconstructor;
 
     /**
      * Optional: injected only when persistence is configured (always in production,
@@ -77,10 +77,12 @@ public class WordGameService {
     @Autowired
     public WordGameService(DictionaryService dictionaryService,
                            AlgorithmRegistry algorithmRegistry,
+                                                   SessionReconstructor sessionReconstructor,
                            @Value("${wordai.session.ttl-minutes:30}") int sessionTtlMinutes) {
         logger.info("Initializing WordGameService...");
         this.dictionaryService = dictionaryService;
         this.algorithmRegistry = algorithmRegistry;
+            this.sessionReconstructor = sessionReconstructor;
         this.config = dictionaryService.getConfig();
         this.activeSessions = Caffeine.newBuilder()
                 .expireAfterAccess(sessionTtlMinutes, TimeUnit.MINUTES)
@@ -109,6 +111,11 @@ public class WordGameService {
         this.config = dictionaryService.getConfig();
         this.activeSessions = sessionCache;
         this.algorithmRegistry = AlgorithmRegistry.withDefaults();
+        this.sessionReconstructor = new SessionReconstructor(
+            dictionaryService,
+            this.config,
+            this.algorithmRegistry,
+            null);
     }
 
     // ------------------------------------------------------------------
@@ -172,7 +179,7 @@ public class WordGameService {
         // Resumption is explicit so different game flows in the same browser do not collide.
         if (resumeExisting && userId != null && sessionPersistenceService != null
             && effectiveBrowserSessionId != null) {
-            String existingGameId = findOrReconstructExistingSession(
+            String existingGameId = sessionReconstructor.findAndReconstructActiveSession(
                 userId, effectiveDictionaryId, effectiveBrowserSessionId);
             if (existingGameId != null) {
                 return existingGameId;
@@ -225,7 +232,12 @@ public class WordGameService {
 
         // Persist for authenticated users
         if (userId != null && sessionPersistenceService != null) {
-            sessionPersistenceService.save(session, userId);
+            try {
+                sessionPersistenceService.save(session, userId);
+            } catch (RuntimeException e) {
+                activeSessions.invalidate(gameId);
+                throw e;
+            }
         }
 
         logger.info(() -> "Created new game session: " + gameId);
@@ -251,7 +263,7 @@ public class WordGameService {
         // Cache miss — try to reconstruct from DB
         return sessionPersistenceService.findById(gameId)
                 .map(entity -> {
-                    GameSession reconstructed = reconstructSession(entity);
+                    GameSession reconstructed = sessionReconstructor.reconstructFromEntity(entity);
                     if (reconstructed != null) {
                         activeSessions.put(gameId, reconstructed);
                     }
@@ -277,7 +289,8 @@ public class WordGameService {
     public Response makeGuess(String gameId, String word) throws InvalidWordException {
         GameSession session = activeSessions.getIfPresent(gameId);
         if (session == null) {
-            throw new InvalidWordException("Game session not found: " + gameId);
+            throw new ApiResourceNotFoundException("Game not found",
+                    "Game session " + gameId + " does not exist");
         }
 
         Response response;
@@ -287,7 +300,7 @@ public class WordGameService {
             }
 
             response = session.getWordGame().guess(word.toLowerCase());
-            updateFilterBasedOnResponse(session.getWordFilter(), response);
+            session.getWordFilter().update(response);
             response.setRemainingWordsCount(session.getRemainingWordsCount());
 
             if (response.getWinner() || session.isMaxAttemptsReached()) {
@@ -381,101 +394,4 @@ public class WordGameService {
     // ------------------------------------------------------------------
     // Private helpers
     // ------------------------------------------------------------------
-
-    /**
-     * Looks for an existing ACTIVE session for the given user + dictionary + browser session in the DB.
-     * If found, reconstructs and caches it, then returns its game ID.
-     *
-     * @return the game ID of the reconstructed session, or {@code null} if none found
-     */
-    private String findOrReconstructExistingSession(
-            Long userId, String dictionaryId, String browserSessionId) {
-        return sessionPersistenceService.findActiveForUser(userId, dictionaryId, browserSessionId)
-                .map(entity -> {
-                    String existingId = entity.getGameId();
-                    // Return from cache if already loaded
-                    GameSession cached = activeSessions.getIfPresent(existingId);
-                    if (cached != null && !cached.isGameEnded()) {
-                        logger.info(() -> "Returning cached active session " + existingId + " for user " + userId);
-                        return existingId;
-                    }
-                    // Reconstruct from DB
-                    GameSession reconstructed = reconstructSession(entity);
-                    if (reconstructed != null && !reconstructed.isGameEnded()) {
-                        activeSessions.put(existingId, reconstructed);
-                        logger.info(() -> "Reconstructed active session " + existingId + " for user " + userId);
-                        return existingId;
-                    }
-                    return null;
-                })
-                .orElse(null);
-    }
-
-    /**
-     * Reconstructs a {@link GameSession} from a persisted {@link ActiveGameSessionEntity}
-     * by replaying all stored guesses.
-     *
-     * @param entity the persisted entity
-     * @return the reconstructed session, or {@code null} if reconstruction fails
-     */
-    private GameSession reconstructSession(ActiveGameSessionEntity entity) {
-        try {
-            String dictId = entity.getDictionaryId();
-            Dictionary dict = dictionaryService.getDictionaryForGame(dictId);
-            if (dict == null) {
-                logger.warning(() -> "Cannot reconstruct session " + entity.getGameId()
-                        + " — dictionary not found: " + dictId);
-                return null;
-            }
-
-            Config gameConfig = new Config();
-            gameConfig.setWordLength(dict.getWordLength());
-            gameConfig.setMaxAttempts(config.getMaxAttempts());
-
-            WordGame wordGame = new WordGame(dict, gameConfig);
-            wordGame.setTargetWord(entity.getTargetWord());
-
-            GameSession session = new GameSession(
-                    entity.getGameId(), wordGame, gameConfig, dict, algorithmRegistry);
-            session.setDictionaryId(dictId);
-            session.setUserId(entity.getUserId());
-                session.setBrowserSessionId(entity.getBrowserSessionId());
-            session.setSelectedStrategy(entity.getStrategy());
-
-            com.fistraltech.core.WordEntropy cachedEntropy = dictionaryService.getWordEntropy(dictId);
-            if (cachedEntropy != null) {
-                session.setCachedWordEntropy(cachedEntropy);
-            }
-
-            // Replay stored guesses to restore in-memory filter and WordGame state
-            String guessWordsStr = entity.getGuessWords();
-            if (guessWordsStr != null && !guessWordsStr.isEmpty()) {
-                for (String guess : guessWordsStr.split(",")) {
-                    if (!guess.isEmpty()) {
-                        Response response = wordGame.guess(guess);
-                        updateFilterBasedOnResponse(session.getWordFilter(), response);
-                        response.setRemainingWordsCount(session.getRemainingWordsCount());
-                        if (response.getWinner() || session.isMaxAttemptsReached()) {
-                            session.setGameEnded(true);
-                        }
-                    }
-                }
-            }
-
-            logger.info(() -> "Reconstructed session " + entity.getGameId()
-                    + " with " + session.getCurrentAttempts() + " guesses");
-            return session;
-
-        } catch (Exception e) {
-            logger.log(Level.WARNING, "Failed to reconstruct session " + entity.getGameId(), e);
-            return null;
-        }
-    }
-
-    /**
-     * Updates the filter based on a guess response.
-     */
-    private void updateFilterBasedOnResponse(Filter filter, Response response) {
-        filter.update(response);
-    }
 }
