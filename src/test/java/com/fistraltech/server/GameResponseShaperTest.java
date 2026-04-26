@@ -76,7 +76,7 @@ class GameResponseShaperTest {
         // Arrange
         String gameId = "test-game-456";
         WordGame wordGame = new WordGame(testDictionary, testConfig);
-        wordGame.setTargetWord("arise");
+        wordGame.setTargetWord("raise");
         GameSession session = new GameSession(gameId, wordGame, testConfig, testDictionary,
                 AlgorithmRegistry.withDefaults());
 
@@ -101,7 +101,7 @@ class GameResponseShaperTest {
         // Arrange
         String gameId = "test-game-789";
         WordGame wordGame = new WordGame(testDictionary, testConfig);
-        wordGame.setTargetWord("arise");
+        wordGame.setTargetWord("raise");
         GameSession session = new GameSession(gameId, wordGame, testConfig, testDictionary,
                 AlgorithmRegistry.withDefaults());
 

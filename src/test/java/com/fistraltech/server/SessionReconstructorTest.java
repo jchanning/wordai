@@ -68,7 +68,6 @@ class SessionReconstructorTest {
 
         reconstructor = new SessionReconstructor(
                 dictionaryService,
-                testConfig,
                 algorithmRegistry,
                 sessionPersistenceService);
     }
@@ -79,7 +78,7 @@ class SessionReconstructorTest {
         // Arrange
         String gameId = "test-game-123";
         Long userId = 42L;
-        String targetWord = "arise";
+        String targetWord = "raise";
         
         ActiveGameSessionEntity entity = new ActiveGameSessionEntity();
         entity.setGameId(gameId);
@@ -107,7 +106,7 @@ class SessionReconstructorTest {
         // Arrange
         String gameId = "test-game-456";
         Long userId = 42L;
-        String targetWord = "arise";
+        String targetWord = "raise";
         
         ActiveGameSessionEntity entity = new ActiveGameSessionEntity();
         entity.setGameId(gameId);
@@ -140,7 +139,7 @@ class SessionReconstructorTest {
         ActiveGameSessionEntity entity = new ActiveGameSessionEntity();
         entity.setGameId("test-game-789");
         entity.setDictionaryId("missing");
-        entity.setTargetWord("arise");
+        entity.setTargetWord("raise");
         entity.setGuessWords("");
 
         // Act & Assert

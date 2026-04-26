@@ -113,7 +113,6 @@ public class WordGameService {
         this.algorithmRegistry = AlgorithmRegistry.withDefaults();
         this.sessionReconstructor = new SessionReconstructor(
             dictionaryService,
-            this.config,
             this.algorithmRegistry,
             null);
     }

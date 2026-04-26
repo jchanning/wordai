@@ -1,6 +1,7 @@
 package com.fistraltech.server.controller;
 
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
@@ -30,7 +31,10 @@ import com.fistraltech.security.config.SecurityConfig;
 import com.fistraltech.security.service.CustomOAuth2UserService;
 import com.fistraltech.server.AlgorithmFeatureService;
 import com.fistraltech.server.GameHistoryService;
+import com.fistraltech.server.GameResponseShaper;
 import com.fistraltech.server.WordGameService;
+import com.fistraltech.server.dto.CreateGameResponse;
+import com.fistraltech.server.dto.GameResponse;
 import com.fistraltech.server.model.GameSession;
 import com.fistraltech.web.ApiResourceNotFoundException;
 
@@ -51,6 +55,9 @@ class WordGameControllerTest {
 
     @MockitoBean
     private GameHistoryService gameHistoryService;
+
+        @MockitoBean
+        private GameResponseShaper gameResponseShaper;
 
     @MockitoBean
     @SuppressWarnings("unused")
@@ -82,6 +89,19 @@ class WordGameControllerTest {
         when(gameService.createGame(any(), any(), any(), any(), any(), anyBoolean()))
                 .thenReturn("test-game-1");
         when(gameService.getGameSession("test-game-1")).thenReturn(mockSession);
+
+        CreateGameResponse createGameResponse = new CreateGameResponse("test-game-1", 5, 6);
+        CreateGameResponse.DictionaryMetrics createMetrics =
+                new CreateGameResponse.DictionaryMetrics(5, 25, 8, testDictionary.getColumnLengths());
+        createMetrics.setOccurrenceCountByPosition(Map.of());
+        createGameResponse.setDictionaryMetrics(createMetrics);
+        when(gameResponseShaper.buildCreateGameResponse(mockSession)).thenReturn(createGameResponse);
+
+        Response shapedGuess = new Response("arose");
+        GameResponse gameResponse = new GameResponse("test-game-1", shapedGuess, 1, 6);
+        gameResponse.setDictionaryMetrics(
+                new GameResponse.DictionaryMetrics(25, 8, testDictionary.getColumnLengths()));
+        when(gameResponseShaper.buildGameResponse(any(), any(), any())).thenReturn(gameResponse);
     }
 
     @Test
