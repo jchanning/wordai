@@ -114,8 +114,8 @@ class PlayerGameServiceTest {
         List<GameHistoryDto> history = service.getHistory(7L);
 
         assertEquals(100, history.size());
-        assertEquals(1L, history.getFirst().getId());
-        assertEquals(100L, history.getLast().getId());
+        assertEquals(1L, history.get(0).getId());
+        assertEquals(100L, history.get(history.size() - 1).getId());
     }
 
     @Test

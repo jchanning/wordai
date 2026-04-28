@@ -759,24 +759,46 @@ function createChallengeCell(letter, status) {
 function renderCompletedPuzzleList() {
     const host = document.getElementById('challengeCompletedList');
     if (!host) return;
-    if (!state.challenge.completedPuzzles.length) {
-        host.innerHTML = '<p class="challenge-muted">No completed puzzles yet.</p>';
-        return;
-    }
 
-    host.innerHTML = state.challenge.completedPuzzles.map(summary => `
-        <article class="challenge-summary-item status-${summary.status.toLowerCase()}">
-            <div class="challenge-summary-top">
-                <strong>Puzzle ${summary.puzzleNumber}</strong>
-                <span>${summary.status.replaceAll('_', ' ')}</span>
-            </div>
-            <div class="challenge-summary-bottom">
-                <span>${summary.targetWord?.toUpperCase() || '?????'}</span>
-                <span>${summary.scoreAwarded > 0 ? '+' : ''}${summary.scoreAwarded} pts</span>
-                <span>${summary.attemptsUsed}/${summary.maxAttempts} attempts</span>
-            </div>
-        </article>
-    `).join('');
+    const total = state.challenge.totalPuzzles || 10;
+    const completedMap = new Map(
+        state.challenge.completedPuzzles.map(p => [p.puzzleNumber, p]),
+    );
+
+    const rows = [];
+    for (let index = 1; index <= total; index++) {
+        const summary = completedMap.get(index);
+        if (summary) {
+            rows.push(`
+                <article class="challenge-summary-item status-${summary.status.toLowerCase()}">
+                    <div class="challenge-summary-top">
+                        <strong>Puzzle ${summary.puzzleNumber}</strong>
+                        <span>${summary.status.replaceAll('_', ' ')}</span>
+                    </div>
+                    <div class="challenge-summary-bottom">
+                        <span>${summary.targetWord?.toUpperCase() || '?????'}</span>
+                        <span>${summary.scoreAwarded > 0 ? '+' : ''}${summary.scoreAwarded} pts</span>
+                        <span>${summary.attemptsUsed}/${summary.maxAttempts} attempts</span>
+                    </div>
+                </article>
+            `);
+        } else {
+            rows.push(`
+                <article class="challenge-summary-item status-pending">
+                    <div class="challenge-summary-top">
+                        <strong>Puzzle ${index}</strong>
+                        <span class="challenge-muted">&mdash;</span>
+                    </div>
+                    <div class="challenge-summary-bottom challenge-muted">
+                        <span>&mdash;</span>
+                        <span>&mdash;</span>
+                        <span>&mdash;</span>
+                    </div>
+                </article>
+            `);
+        }
+    }
+    host.innerHTML = rows.join('');
 }
 
 function updateChallengeControls() {
