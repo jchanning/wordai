@@ -15,13 +15,15 @@ import com.fistraltech.util.ConfigManager;
  * they are not currently valid candidates, prioritizing maximum reduction of the
  * remaining search space.
  *
- * <p>If more than one candidate remains, this strategy prefers guesses outside the
- * remaining set ("known incorrect") to maximize information gain. When only one
- * candidate remains, it returns that word to finish the game.
+ * <p>When multiple guesses are equally good at shrinking the remaining search
+ * space, this strategy prefers a word from the remaining set over a guess that
+ * is already known to be incorrect. When only one candidate remains, it returns
+ * that word to finish the game.
  */
 public class SelectBellmanFullDictionary extends SelectionAlgo {
 
     private static final Logger logger = Logger.getLogger(SelectBellmanFullDictionary.class.getName());
+    private static final double SCORE_TIE_EPSILON = 1e-9;
     private final Dictionary fullDictionary;
     private final Set<String> guessedWords;
 
@@ -60,11 +62,6 @@ public class SelectBellmanFullDictionary extends SelectionAlgo {
         // Remove already guessed words from ALL candidates first
         candidateGuesses.removeAll(guessedWords);
 
-        if (remainingDictionary.getWordCount() > 1) {
-            // Prefer guesses outside remaining (Bellman strategy)
-            candidateGuesses.removeAll(remainingWords);
-        }
-
         // Fail fast if no candidates available
         if (candidateGuesses.isEmpty()) {
             throw new IllegalStateException(
@@ -80,12 +77,15 @@ public class SelectBellmanFullDictionary extends SelectionAlgo {
 
         String bestWord = null;
         double bestScore = Double.MAX_VALUE;
+        boolean bestWordCanBeCorrect = false;
 
         for (String guess : candidateGuesses) {
             double expectedRemaining = calculateExpectedRemaining(analyser.getResponseBuckets(guess), remainingSize);
-            if (expectedRemaining < bestScore) {
+            boolean guessCanBeCorrect = remainingWords.contains(guess);
+            if (isBetterGuess(expectedRemaining, guessCanBeCorrect, bestScore, bestWordCanBeCorrect)) {
                 bestScore = expectedRemaining;
                 bestWord = guess;
+                bestWordCanBeCorrect = guessCanBeCorrect;
             }
         }
 
@@ -105,6 +105,18 @@ public class SelectBellmanFullDictionary extends SelectionAlgo {
 
         guessedWords.add(bestWord);
         return bestWord;
+    }
+
+    private boolean isBetterGuess(double score, boolean guessCanBeCorrect, double bestScore, boolean bestWordCanBeCorrect) {
+        if (score + SCORE_TIE_EPSILON < bestScore) {
+            return true;
+        }
+
+        if (Math.abs(score - bestScore) <= SCORE_TIE_EPSILON) {
+            return guessCanBeCorrect && !bestWordCanBeCorrect;
+        }
+
+        return false;
     }
 
     private double calculateExpectedRemaining(Map<Short, Set<String>> buckets, int remainingSize) {

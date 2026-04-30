@@ -88,9 +88,9 @@ class SelectBellmanFullDictionaryRepeatedGuessTest {
      *   (GameSession uses getWordWithMaximumReduction for the first guess).
      * - Subsequent guesses go through {@code algo.selectWord(filteredDictionary)}.
      *
-     * SelectBellmanFullDictionary cannot be driven via WordGamePlayer because the
-     * first call would receive fullDictionary as the remaining dict, causing an
-     * IllegalStateException (no external candidates when remaining == full).
+        * This helper still drives the game manually so the regression follows the
+        * same first-guess flow as production rather than exercising a different
+        * opening strategy through WordGamePlayer.
      */
     private void assertNoRepeatedGuesses(String target) throws InvalidWordException {
         WordGame game = new WordGame(dictionary, config);
