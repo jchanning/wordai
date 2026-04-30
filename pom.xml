@@ -14,9 +14,8 @@
         <maven.compiler.target>25</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <java.version>25</java.version>
-        <!-- Staged ARCH-16 ratchet: keep the first enforced floor below the current 57% baseline and
-             raise it in later tickets instead of jumping directly to the long-term target. -->
-        <jacoco.line.coverage.minimum>0.60</jacoco.line.coverage.minimum>
+        <!-- Ratcheted: baseline measured at 72% after ARCH-22; gate raised from 0.60 to match. -->
+        <jacoco.line.coverage.minimum>0.72</jacoco.line.coverage.minimum>
     </properties>
 
     <profiles>

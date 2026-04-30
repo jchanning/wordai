@@ -2,7 +2,7 @@
 
 Single source of truth for what is built, what is in progress, and what is planned. Update this file when completing or starting any significant piece of work.
 
-*Last updated: April 2026 — ARCH-24 API version boundary added*
+*Last updated: April 2026 — v1.15.10 Bellman tie-break preference for potentially-correct words*
 
 ---
 
@@ -50,6 +50,7 @@ Single source of truth for what is built, what is in progress, and what is plann
 | **Session persistence across restarts** | `SessionPersistenceService` persists active game sessions to the database via `ActiveGameSessionEntity`. Flyway migrations V2 (`active_game_sessions` table) and V3 (browser session scoping) manage the schema. |
 | **Browser session isolation** | Sessions scoped to browser via `browser-session.js` and Flyway V3 migration. Each browser tab/instance gets its own game state. |
 | **Anonymous activity tracking** | `ActivityService` tracks game activity for both authenticated and anonymous users. `AdminController` exposes `/activity` endpoint. Flyway V4 adds tracking support. |
+| **Bellman full-dictionary tie-break** | `SelectBellmanFullDictionary` now prefers words that are still potentially correct over known-incorrect words when multiple candidates produce equal expected remaining-dictionary reduction (within epsilon 1e-9). Prevents informationally equivalent but strategically inferior guesses from dominating. See `specs/ARCH-29-bellman-tiebreak-prefer-remaining-candidates.md`. |
 
 ### 🔲 Planned / Backlog
 
@@ -76,20 +77,20 @@ The previously documented ArchUnit violations are closed. Active architecture wo
 |---|---|---|
 | `core` | `DictionaryTest`, `WordGameTest` | 26 |
 | `core` | `FilterTest`, `DictionaryTest`, `WordGameTest`, `ResponsePatternTest` | core filtering, engine, and response-pattern encoding coverage |
-| `bot.selection` | `SelectionAlgoTest`, `SelectBellman*Test` | 20+ |
+| `bot.selection` | `SelectionAlgoTest`, `SelectBellman*Test` | 23+ |
 | `bot` | `WordGamePlayerTest` | 11 |
 | `analysis` | `DictionaryAnalyticsTest`, `ResponseMatrixTest`, `WordEntropyLazyTest`, `WordIdSetTest` | matrix/lazy entropy coverage |
 | `security` | `UserManagementControllerTest`, `UserServiceTest`, `AdminCredentialsValidatorTest`, `CorsConfigTest`, `CustomOAuth2UserServiceTest`, `AuthControllerTest` | 30+ |
 | `util` | `ConfigManagerTest` | 6 |
 | `(root)` | `ArchitectureFitnessTest`, `FlywayMigrationTest` | architecture rules active, no documented skipped violations |
 | `server` | `SessionTtlTest`, `SessionConcurrencyTest`, `SessionTrackingServiceTest`, `PlayerGameServiceTest`, `SessionPersistenceServiceTest` | targeted session/persistence regression coverage |
-| **Total** | | **346 pass, 0 skipped** |
+| **Total** | | **349 pass, 0 skipped** |
 
 Run the full suite: `mvn clean verify`
 
 Current measured line-coverage baseline: 71.99% bundle line coverage (`target/site/jacoco/index.html`)
 
-Current staged coverage gate: 60% bundle line coverage enforced in Maven during `verify`
+Current staged coverage gate: 72% bundle line coverage enforced in Maven during `verify`
 
 ---
 

@@ -1,1 +1,4 @@
 npx lint-staged
+
+# Fast Java compile check (skips tests to stay under 5s)
+mvn -q compile -DskipTests 2>&1 || { echo "Java compilation failed — fix errors before committing."; exit 1; }

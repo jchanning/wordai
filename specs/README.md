@@ -34,6 +34,7 @@ Use [TEMPLATE.md](./TEMPLATE.md) for every new backlog ticket so status, scope, 
 26. [ARCH-26 Decompose Remaining Server Coordination Classes](ARCH-26-decompose-remaining-server-coordination-classes.md) `completed`
 27. [ARCH-27 Normalize Test Conventions](ARCH-27-normalize-test-conventions.md) `completed`
 28. [ARCH-28 Tighten EntropyKey Encapsulation](ARCH-28-tighten-entropykey-encapsulation.md) `completed`
+29. [ARCH-29 Bellman Tie-Break: Prefer Potentially-Correct Candidates](ARCH-29-bellman-tiebreak-prefer-remaining-candidates.md) `completed`
 
 ## First Sprint Candidate
 
