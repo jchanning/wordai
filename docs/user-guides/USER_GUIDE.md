@@ -129,6 +129,28 @@ Choose how the bot (or your hints) should suggest words:
 - **Minimize Column Length**: Strategy that aims to minimise the number of remaining choices for each column after the guess
 - **Dictionary Reduction**: Works in a similar way to Maximise Entropy, the objective function identifies the word that would filter the dictionary to the smallest size.
 
+### Manual Wordle Assist (External Feedback)
+
+Use this when you are playing the NYT Wordle directly and want WordAI to recommend the next guess.
+
+1. Open the **External Assist** page from the top navigation.
+2. Choose the dictionary and strategy you want to use.
+3. Enter the guess you played in NYT Wordle.
+4. Enter the feedback pattern from NYT Wordle.
+5. Click **Apply Feedback**.
+6. Click **Get Recommendation** to receive the next suggested guess.
+7. Repeat for each turn until solved.
+8. Use **Reset Session** to start over at any time.
+
+Supported feedback formats:
+- Emoji squares: `🟩` (green), `🟨` (amber), `⬛` or `⬜` (gray)
+- Compact status letters: `G`, `A`, `R` (optional `X` also accepted)
+- Whitespace-separated status letters are accepted (example: `G A R R R`)
+
+Tips:
+- Keep using the same assistant session for each turn so candidate tracking remains consistent.
+- Changing dictionary automatically resets the external assistant session.
+
 ### Game Controls
 
 - **New Game**: Start a fresh game with a new target word

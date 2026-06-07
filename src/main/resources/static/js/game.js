@@ -29,6 +29,15 @@ import {
     switchDictTab,
 } from './analytics.js';
 import {
+    initExternalAssistantUI,
+    applyManualFeedback,
+    requestAssistantSuggestion,
+    changeAssistantStrategy,
+    resetAssistantSession,
+    onAssistantDictionaryChange,
+    clearAssistantFeedbackPattern,
+} from './external-assistant.js';
+import {
     initRouter, initMobileNavigation, switchMobileView, switchMobilePanel,
 } from './navigation.js';
 import { filterAutoplayDictionaries, toggleAutoplay, syncAutoStrategyDisplay } from './autoplay.js';
@@ -59,6 +68,7 @@ window.addEventListener('DOMContentLoaded', function () {
     updateHistoryDisplay();
     updateStats();
     updateHelpCounter();
+    initExternalAssistantUI();
 
     // ---- CustomEvent bridge from autoplay.js and other modules ----
     document.addEventListener('wordai:refreshHistory', () => {
@@ -84,6 +94,12 @@ window.newSession              = newSession;
 window.makeGuess               = makeGuess;
 window.getSuggestion           = getSuggestion;
 window.changeStrategy          = changeStrategy;
+window.applyManualFeedback     = applyManualFeedback;
+window.getAssistantSuggestion  = requestAssistantSuggestion;
+window.changeAssistantStrategy = changeAssistantStrategy;
+window.resetAssistantSession   = resetAssistantSession;
+window.onAssistantDictionaryChange = onAssistantDictionaryChange;
+window.clearAssistantFeedbackPattern = clearAssistantFeedbackPattern;
 window.checkHealth             = checkHealth;
 window.logout                  = logout;
 window.showSessionViewer       = showSessionViewer;
@@ -156,7 +172,7 @@ async function checkAuthentication() {
             showGuestOptions();
             updateUIForUserRole();
         }
-    } catch (error) {
+    } catch {
         console.log('Playing as guest');
         state.currentUser = null;
         showGuestOptions();
@@ -169,7 +185,7 @@ async function loadAlgorithms() {
         const response = await apiGetAlgorithms();
         if (!response.ok) { console.error('Failed to load algorithms, status:', response.status); return; }
         const algorithms = await response.json();
-        ['strategySelector', 'autoplayStrategy', 'analysisStrategy'].forEach(selectorId => {
+        ['strategySelector', 'externalStrategySelector', 'autoplayStrategy', 'analysisStrategy'].forEach(selectorId => {
             const selector = document.getElementById(selectorId);
             if (!selector) return;
             const currentValue = selector.value;
@@ -488,15 +504,17 @@ export async function checkHealth() {
 // ============================================================
 
 export async function changeStrategy() {
-    if (!state.currentGameId) return;
     const strategy = document.getElementById('strategySelector')?.value;
     if (!strategy) return;
-    try {
-        const response = await apiSetStrategy(state.currentGameId, strategy);
-        if (response.ok) console.log('Strategy changed to:', _getStrategyDisplayName(strategy));
-        else             console.error('Failed to change strategy');
-    } catch (error) {
-        console.error('Error changing strategy:', error);
+
+    if (state.currentGameId) {
+        try {
+            const response = await apiSetStrategy(state.currentGameId, strategy);
+            if (response.ok) console.log('Strategy changed to:', _getStrategyDisplayName(strategy));
+            else             console.error('Failed to change strategy');
+        } catch (error) {
+            console.error('Error changing strategy:', error);
+        }
     }
 }
 
@@ -507,6 +525,7 @@ export async function getSuggestion() {
         showStatus('Maximum help requests reached (3/3)', 'error');
         return;
     }
+
     try {
         const response = await apiGetSuggestion(state.currentGameId);
         const data     = await response.json();
@@ -836,13 +855,15 @@ function populateDictionarySelector() {
     const selector     = document.getElementById('dictionarySelector');
     const selectorDict = document.getElementById('dictionarySelectorDict');
     const selectorChallenge = document.getElementById('challengeDictionarySelector');
+    const selectorAssistant = document.getElementById('assistantDictionarySelector');
 
     if (selector)     selector.innerHTML     = '';
     if (selectorDict) selectorDict.innerHTML = '';
     if (selectorChallenge) selectorChallenge.innerHTML = '';
+    if (selectorAssistant) selectorAssistant.innerHTML = '';
 
     state.availableDictionaries.forEach(dict => {
-        [selector, selectorDict, selectorChallenge].forEach(sel => {
+        [selector, selectorDict, selectorChallenge, selectorAssistant].forEach(sel => {
             if (!sel) return;
             const opt = document.createElement('option');
             opt.value       = dict.id;
@@ -859,6 +880,7 @@ function populateDictionarySelector() {
         if (selector)     selector.value     = defaultDict.id;
         if (selectorDict) selectorDict.value = defaultDict.id;
         if (selectorChallenge) selectorChallenge.value = defaultDict.id;
+        if (selectorAssistant) selectorAssistant.value = defaultDict.id;
         adjustLetterInputGrid(defaultDict.wordLength);
     }
 
@@ -902,7 +924,7 @@ function populateDictionarySelector() {
     if (state.currentView === 'dictionary') refreshDictionaryScreen();
 }
 
-function onDictionaryChange() {
+async function onDictionaryChange() {
     const selector     = document.getElementById('dictionarySelector');
     const selectorDict = document.getElementById('dictionarySelectorDict');
 
@@ -924,8 +946,9 @@ function onDictionaryChange() {
         state.dictionaryScreenState.dictionaryId = null;
         refreshDictionaryScreen();
     } else if (state.currentView === 'play') {
-        newGame().catch(err => console.error('Failed to start new game after dictionary change:', err));
+        await newGame();
     }
+
 }
 
 // Kick off dictionary load as soon as the module is evaluated.

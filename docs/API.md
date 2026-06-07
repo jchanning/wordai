@@ -39,6 +39,45 @@ This document is the human-readable API sketch for WordAI. It complements the ge
 - `remainingWordsCount`
 - `message`
 
+### Manual Assistant Sessions
+
+| Method | Route | Purpose |
+|---|---|---|
+| `POST` | `/api/v1/wordai/assistant/sessions` | Create a target-free assistant session for external Wordle feedback |
+| `POST` | `/api/v1/wordai/assistant/sessions/{sessionId}/feedback` | Submit guessed word plus feedback pattern from NYT Wordle |
+| `GET` | `/api/v1/wordai/assistant/sessions/{sessionId}/suggestion` | Get next recommended guess from the selected strategy |
+| `PUT` | `/api/v1/wordai/assistant/sessions/{sessionId}/strategy` | Change recommendation strategy for the assistant session |
+| `DELETE` | `/api/v1/wordai/assistant/sessions/{sessionId}` | Delete assistant session state |
+
+Legacy compatibility routes remain available under `/api/wordai/assistant/...`.
+
+`POST /api/v1/wordai/assistant/sessions` accepts an optional body:
+- `dictionaryId` (optional, defaults to `default`)
+- `strategy` (optional, defaults to server default)
+
+`POST /api/v1/wordai/assistant/sessions/{sessionId}/feedback` accepts:
+- `guessedWord` (required, must match dictionary word length)
+- `feedbackPattern` (required)
+
+Supported `feedbackPattern` forms:
+- Emoji squares: `🟩` (green), `🟨` (amber), `⬛`/`⬜` (gray)
+- Compact statuses: `G`, `A`, `R` (and optional `X`)
+- Optional whitespace separators between compact statuses
+
+`POST /feedback` returns `ManualAssistantFeedbackResponse`:
+- `sessionId`
+- `guessedWord`
+- `normalizedFeedback` (WordAI status string used for filtering)
+- `attemptNumber`
+- `remainingWords`
+- `winner`
+
+`GET /suggestion` returns `ManualAssistantSuggestionResponse`:
+- `sessionId`
+- `suggestion`
+- `strategy`
+- `remainingWords`
+
 ### Dictionaries
 
 | Method | Route | Purpose |

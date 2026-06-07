@@ -19,6 +19,22 @@ export const state = {
     latestOccurrenceData: null,
     letterStatusMap:     {},   // letter → 'G'|'A'|'R' across current game guesses
 
+    // ---- External assistant session state ----
+    manualAssistant: {
+        sessionId: null,
+        dictionaryId: null,
+        wordLength: 5,
+        strategy: 'ENTROPY',
+        totalWords: null,
+        attemptCount: 0,
+        remainingWords: null,
+        eliminatedWords: 0,
+        reductionPercent: 0,
+        lastSuggestion: null,
+        lastFeedback: null,
+        history: [],
+    },
+
     // ---- Challenge mode ----
     challenge: {
         currentChallengeId:     null,

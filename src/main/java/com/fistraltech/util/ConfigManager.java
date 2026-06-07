@@ -204,6 +204,12 @@ public class ConfigManager {
             logger.info(() -> "Using dictionary path: " + finalPath);
             return finalPath.toString();
         }
+
+        Path oneDriveAdjustedPath = tryResolveWithCurrentOneDrive(primaryPath);
+        if (oneDriveAdjustedPath != null && Files.exists(oneDriveAdjustedPath)) {
+            logger.info(() -> "Using dictionary path via current OneDrive location: " + oneDriveAdjustedPath);
+            return oneDriveAdjustedPath.toString();
+        }
         
         throw new IllegalArgumentException("Dictionary file not found: " + primaryPath + " (resolved to: " + finalPath + ")");
     }
@@ -300,8 +306,48 @@ public class ConfigManager {
             logger.info(() -> "Using filesystem path: " + finalPath);
             return finalPath.toString();
         }
+
+        Path oneDriveAdjustedPath = tryResolveWithCurrentOneDrive(dictionaryPath);
+        if (oneDriveAdjustedPath != null && Files.exists(oneDriveAdjustedPath)) {
+            logger.info(() -> "Using filesystem path via current OneDrive location: " + oneDriveAdjustedPath);
+            return oneDriveAdjustedPath.toString();
+        }
         
         // Fail explicitly if dictionary not found
         throw new IllegalArgumentException("Dictionary file not found: " + dictionaryPath + " (resolved to: " + finalPath + ")");
+    }
+
+    /**
+     * If a configured path still points to an old OneDrive drive location,
+     * remap it to the current OneDrive root from environment variables.
+     */
+    private Path tryResolveWithCurrentOneDrive(String configuredPath) {
+        if (configuredPath == null || configuredPath.isBlank()) {
+            return null;
+        }
+
+        String normalized = configuredPath.replace('\\', '/');
+        int marker = normalized.toLowerCase().indexOf("/onedrive/");
+        if (marker < 0) {
+            return null;
+        }
+
+        String oneDriveRoot = getCurrentOneDriveRoot();
+        if (oneDriveRoot == null || oneDriveRoot.isBlank()) {
+            return null;
+        }
+
+        // Keep path inside OneDrive (for example: /Projects/Wordlex/5_Letter_Words_Official.txt)
+        String relativeInsideOneDrive = normalized.substring(marker + "/onedrive".length());
+        String rebuilt = oneDriveRoot + relativeInsideOneDrive;
+        return Paths.get(rebuilt);
+    }
+
+    private String getCurrentOneDriveRoot() {
+        String oneDrive = System.getenv("OneDrive");
+        if (oneDrive == null || oneDrive.isBlank()) {
+            oneDrive = System.getenv("OneDriveConsumer");
+        }
+        return oneDrive;
     }
 }

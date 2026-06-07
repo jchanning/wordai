@@ -113,7 +113,7 @@ Consider other relevant aspects like:
 
 1. Given [precondition], when [action], then [result]
 2. Given [precondition], when [action], then [result]
-3. [Edge case test] 
+3. [Edge case test]
 
 ## Dependencies
 

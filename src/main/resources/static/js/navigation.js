@@ -22,7 +22,7 @@ export function setView(view) {
     state.currentView = view;
 
     const viewIds = [
-        'play', 'challenge', 'session', 'bot-demo', 'bot-performance',
+        'play', 'assistant', 'challenge', 'session', 'bot-demo', 'bot-performance',
         'dictionary', 'admin', 'help', 'about',
         'privacy', 'terms', 'cookies', 'terms-sale',
     ];
@@ -54,6 +54,11 @@ export function setView(view) {
         switchDictTab('frequency');
     } else if (view === 'play' && state.availableDictionaries.length > 0) {
         const selector = document.getElementById('dictionarySelector');
+        if (selector?.options.length === 0) {
+            populateDictionarySelector();
+        }
+    } else if (view === 'assistant' && state.availableDictionaries.length > 0) {
+        const selector = document.getElementById('assistantDictionarySelector');
         if (selector?.options.length === 0) {
             populateDictionarySelector();
         }

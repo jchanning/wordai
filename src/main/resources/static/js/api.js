@@ -86,6 +86,42 @@ export async function apiSetStrategy(gameId, strategy) {
     });
 }
 
+// ---- Manual Assistant ----
+
+export async function apiCreateAssistantSession(body) {
+    return apiFetch(`${API_BASE}/assistant/sessions`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body || {}),
+    });
+}
+
+export async function apiDeleteAssistantSession(sessionId) {
+    return apiFetch(`${API_BASE}/assistant/sessions/${encodeURIComponent(sessionId)}`, {
+        method: 'DELETE',
+    });
+}
+
+export async function apiSubmitAssistantFeedback(sessionId, guessedWord, feedbackPattern) {
+    return apiFetch(`${API_BASE}/assistant/sessions/${encodeURIComponent(sessionId)}/feedback`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ guessedWord, feedbackPattern }),
+    });
+}
+
+export async function apiGetAssistantSuggestion(sessionId) {
+    return apiFetch(`${API_BASE}/assistant/sessions/${encodeURIComponent(sessionId)}/suggestion`);
+}
+
+export async function apiSetAssistantStrategy(sessionId, strategy) {
+    return apiFetch(`${API_BASE}/assistant/sessions/${encodeURIComponent(sessionId)}/strategy`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ strategy }),
+    });
+}
+
 // ---- Challenges ----
 
 export async function apiCreateChallenge(body) {

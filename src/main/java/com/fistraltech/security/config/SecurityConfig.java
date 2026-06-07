@@ -62,9 +62,9 @@ public class SecurityConfig {
                                "/css/**", "/js/**", "/h2-console/**", "/error", "/static/**").permitAll()
                 // Guest access - basic game functionality
                 .requestMatchers("/api/wordai/games/**", "/api/wordai/dictionaries/**",
-                               "/api/wordai/algorithms", "/api/wordai/challenges/**",
+                               "/api/wordai/algorithms", "/api/wordai/challenges/**", "/api/wordai/assistant/**",
                                "/api/v1/wordai/games/**", "/api/v1/wordai/dictionaries/**",
-                               "/api/v1/wordai/algorithms", "/api/v1/wordai/challenges/**").permitAll()
+                               "/api/v1/wordai/algorithms", "/api/v1/wordai/challenges/**", "/api/v1/wordai/assistant/**").permitAll()
                 // Removed placeholder routes should resolve as 404 rather than gated pseudo-features
                 .requestMatchers("/api/wordai/stats/**", "/api/wordai/analytics/**", "/api/wordai/export/**",
                                "/api/v1/wordai/stats/**", "/api/v1/wordai/analytics/**", "/api/v1/wordai/export/**").permitAll()

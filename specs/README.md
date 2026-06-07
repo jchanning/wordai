@@ -35,6 +35,10 @@ Use [TEMPLATE.md](./TEMPLATE.md) for every new backlog ticket so status, scope, 
 27. [ARCH-27 Normalize Test Conventions](ARCH-27-normalize-test-conventions.md) `completed`
 28. [ARCH-28 Tighten EntropyKey Encapsulation](ARCH-28-tighten-entropykey-encapsulation.md) `completed`
 29. [ARCH-29 Bellman Tie-Break: Prefer Potentially-Correct Candidates](ARCH-29-bellman-tiebreak-prefer-remaining-candidates.md) `completed`
+30. [ARCH-30 Add Manual Wordle Feedback Adapter](ARCH-30-add-manual-wordle-feedback-adapter.md) `completed`
+31. [ARCH-31 Introduce Manual Assistant Session API](ARCH-31-introduce-manual-assistant-session-api.md) `completed`
+32. [ARCH-32 Add Manual Assistant UI Workflow](ARCH-32-add-manual-assistant-ui-workflow.md) `completed`
+33. [ARCH-33 Add Manual Assistant Regression Coverage](ARCH-33-add-manual-assistant-regression-coverage.md) `completed`
 
 ## First Sprint Candidate
 
@@ -56,6 +60,13 @@ Use [TEMPLATE.md](./TEMPLATE.md) for every new backlog ticket so status, scope, 
 - ARCH-22 `completed`
 - ARCH-23 `completed`
 - ARCH-24 `completed`
+
+## Manual Assistant Phase 1
+
+- ARCH-30 `completed` - normalize external Wordle feedback into the existing response/filter model
+- ARCH-31 `completed` - add the assistant-session API and server-side recommendation flow
+- ARCH-32 `completed` - expose the manual Wordle assistant inputs in the current UI
+- ARCH-33 `completed` - add regression coverage across the new manual-assistant path
 
 ## Working Rules
 

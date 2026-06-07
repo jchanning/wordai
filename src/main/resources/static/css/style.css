@@ -2441,6 +2441,212 @@ select:focus {
     color: var(--text-primary);
 }
 
+.external-assist-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    max-width: 980px;
+}
+
+.external-assist-grid {
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.external-assist-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+}
+
+.external-feedback-helper {
+    margin-top: 0.4rem;
+    color: var(--text-secondary);
+    font-size: 0.82rem;
+}
+
+.external-feedback-builder-wrap {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+}
+
+.external-feedback-builder {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.feedback-cell {
+    width: 2.45rem;
+    height: 2.45rem;
+    border-radius: 0.5rem;
+    border: 1px solid var(--border-color);
+    color: #fff;
+    font-weight: 800;
+    cursor: pointer;
+}
+
+.feedback-cell.feedback-r { background: #787c7e; }
+.feedback-cell.feedback-a { background: #c9b458; }
+.feedback-cell.feedback-g { background: #6aaa64; }
+.feedback-cell.feedback-x { background: #4b5563; }
+
+.external-assist-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 0.75rem;
+}
+
+.external-assist-stat {
+    background: rgba(15, 23, 42, 0.4);
+    border: 1px solid var(--border-color);
+    border-radius: 0.7rem;
+    padding: 0.65rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+}
+
+.external-assist-stat-label {
+    color: var(--text-secondary);
+    font-size: 0.74rem;
+    text-transform: uppercase;
+    letter-spacing: var(--letter-spacing-wide);
+}
+
+.external-assist-history {
+    border-top: 1px solid var(--border-color);
+    padding-top: 1rem;
+}
+
+.external-assist-history-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    max-height: 220px;
+    overflow-y: auto;
+}
+
+.assistant-history-row {
+    display: grid;
+    grid-template-columns: auto auto 1fr auto;
+    gap: 0.75rem;
+    align-items: center;
+    padding: 0.55rem 0.65rem;
+    border-radius: 0.55rem;
+    background: rgba(15, 23, 42, 0.35);
+    border: 1px solid var(--border-color);
+}
+
+.assistant-history-word {
+    font-family: var(--font-mono);
+    font-weight: 800;
+}
+
+.assistant-history-feedback {
+    font-family: var(--font-mono);
+    letter-spacing: 0.08em;
+    display: inline-flex;
+    gap: 0.25rem;
+    align-items: center;
+}
+
+.assistant-feedback-chip {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.45rem;
+    height: 1.45rem;
+    min-width: 1.45rem;
+    min-height: 1.45rem;
+    border-radius: 0.35rem;
+    font-size: 0.72rem;
+    font-weight: 800;
+    line-height: 1;
+    border-width: 0;
+}
+
+.assistant-history-remaining {
+    text-align: right;
+    color: var(--text-secondary);
+    font-size: 0.84rem;
+}
+
+@media (max-width: 768px) {
+    .external-assist-panel {
+        gap: 0.75rem;
+    }
+
+    .external-assist-grid {
+        grid-template-columns: 1fr;
+        gap: 0.6rem;
+    }
+
+    .external-feedback-builder-wrap {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .external-feedback-builder {
+        width: 100%;
+        gap: 0.4rem;
+    }
+
+    .feedback-cell {
+        width: 2.2rem;
+        height: 2.2rem;
+    }
+
+    .external-assist-stats-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 0.55rem;
+    }
+
+    .external-assist-stat {
+        padding: 0.55rem;
+        gap: 0.2rem;
+    }
+
+    .external-assist-stat-label {
+        font-size: 0.68rem;
+    }
+
+    .manual-assistant-summary {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 0.35rem;
+    }
+
+    .external-assist-history {
+        padding-top: 0.75rem;
+    }
+
+    .external-assist-history-list {
+        max-height: 200px;
+    }
+
+    .assistant-history-row {
+        grid-template-columns: auto 1fr;
+        grid-template-areas:
+            'attempt word'
+            'feedback feedback'
+            'remaining remaining';
+        gap: 0.35rem 0.6rem;
+        padding: 0.5rem 0.55rem;
+    }
+
+    .assistant-history-row > :nth-child(1) { grid-area: attempt; }
+    .assistant-history-row > :nth-child(2) { grid-area: word; }
+    .assistant-history-row > :nth-child(3) { grid-area: feedback; }
+    .assistant-history-row > :nth-child(4) { grid-area: remaining; }
+
+    .assistant-history-remaining {
+        text-align: left;
+    }
+}
+
 .mobile-assistant-surface {
     display: none;
 }
