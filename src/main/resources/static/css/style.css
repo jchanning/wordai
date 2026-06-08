@@ -2458,6 +2458,36 @@ select:focus {
     gap: 0.75rem;
 }
 
+.manual-guess-inputs {
+    display: flex;
+    gap: 0.45rem;
+    flex-wrap: nowrap;
+}
+
+.manual-guess-letter {
+    width: 2.5rem;
+    height: 2.5rem;
+    min-width: 44px;
+    min-height: 44px;
+    background: var(--bg-primary);
+    border: 2px solid var(--border-color);
+    border-radius: 0.5rem;
+    color: var(--text-primary);
+    font-family: var(--font-mono);
+    font-size: 1.25rem;
+    font-weight: 700;
+    text-align: center;
+    text-transform: uppercase;
+    transition: all 0.15s ease;
+}
+
+.manual-guess-letter:focus {
+    border-color: var(--accent-primary);
+    outline: none;
+    transform: scale(1.06);
+    box-shadow: var(--shadow-focus);
+}
+
 .external-feedback-helper {
     margin-top: 0.4rem;
     color: var(--text-secondary);
@@ -2582,6 +2612,16 @@ select:focus {
     .external-assist-grid {
         grid-template-columns: 1fr;
         gap: 0.6rem;
+    }
+
+    .manual-guess-inputs {
+        gap: 0.35rem;
+    }
+
+    .manual-guess-letter {
+        width: 2.2rem;
+        height: 2.2rem;
+        font-size: 1.05rem;
     }
 
     .external-feedback-builder-wrap {

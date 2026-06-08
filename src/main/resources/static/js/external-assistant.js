@@ -22,6 +22,7 @@ const EMOJI_TO_CODE = {
 
 export function initExternalAssistantUI() {
     _bindExternalAssistantInputs();
+    _renderManualGuessInputs(state.manualAssistant.wordLength || 5);
     _renderFeedbackBuilder(state.manualAssistant.wordLength || 5);
     syncExternalAssistantUI();
 }
@@ -113,6 +114,7 @@ async function ensureExternalAssistantSession() {
     state.manualAssistant.reductionPercent = 0;
     state.manualAssistant.lastFeedback = null;
     state.manualAssistant.history = [];
+    _renderManualGuessInputs(state.manualAssistant.wordLength || 5);
     _renderFeedbackBuilder(state.manualAssistant.wordLength || 5);
     syncExternalAssistantUI();
     return data.sessionId;
@@ -137,7 +139,9 @@ export async function resetAssistantSession(showToast = true) {
     state.manualAssistant.lastFeedback = null;
     state.manualAssistant.totalWords = null;
     state.manualAssistant.history = [];
+    _setManualGuessWord('');
     _setManualFeedbackInput('');
+    _renderManualGuessInputs(state.manualAssistant.wordLength || 5);
     _renderFeedbackBuilder(state.manualAssistant.wordLength || 5);
     syncExternalAssistantUI();
 
@@ -169,8 +173,9 @@ export async function changeAssistantStrategy() {
     }
 }
 
-export async function applyManualFeedback() {
-    const guessedWord = document.getElementById('manualGuessInput')?.value?.trim()?.toLowerCase() || '';
+export async function applyManualFeedback(options = {}) {
+    const { showSuccessStatus = true } = options;
+    const guessedWord = _getManualGuessWord();
     const feedbackPattern = _getNormalizedFeedbackInput();
 
     if (!guessedWord || !feedbackPattern) {
@@ -224,16 +229,35 @@ export async function applyManualFeedback() {
 
         const feedbackInput = document.getElementById('manualFeedbackInput');
         if (feedbackInput) feedbackInput.value = '';
+        _renderManualGuessInputs(state.manualAssistant.wordLength || guessedWord.length || 5);
         _renderFeedbackBuilder(state.manualAssistant.wordLength || guessedWord.length || 5);
 
         syncExternalAssistantUI();
-        showStatus('Feedback applied. Request recommendation for next guess.', 'success');
+        if (showSuccessStatus) {
+            showStatus('Feedback applied. Request recommendation for next guess.', 'success');
+        }
     } catch (error) {
         showStatus('Error applying feedback: ' + error.message, 'error');
     }
 }
 
-export async function requestAssistantSuggestion() {
+export async function submitAssistantTurn() {
+    const guessedWord = _getManualGuessWord();
+    const feedbackPattern = _getNormalizedFeedbackInput();
+    const hasTurnInput = guessedWord.length > 0 || feedbackPattern.length > 0;
+
+    if (hasTurnInput) {
+        await applyManualFeedback({ showSuccessStatus: false });
+        if (_getNormalizedFeedbackInput()) {
+            return;
+        }
+    }
+
+    await requestAssistantSuggestion({ showSuccessStatus: true });
+}
+
+export async function requestAssistantSuggestion(options = {}) {
+    const { showSuccessStatus = true } = options;
     try {
         const sessionId = await ensureExternalAssistantSession();
         const response = await apiGetAssistantSuggestion(sessionId);
@@ -245,10 +269,8 @@ export async function requestAssistantSuggestion() {
             state.manualAssistant.remainingWords = data.remainingWords ?? data.remainingWordsCount ?? state.manualAssistant.remainingWords;
             state.manualAssistant.strategy = data.strategy || state.manualAssistant.strategy;
 
-            const guessInput = document.getElementById('manualGuessInput');
-            if (guessInput) {
-                guessInput.value = suggestion.toLowerCase();
-            }
+            _setManualGuessWord(suggestion.toLowerCase());
+            _renderManualGuessInputs(suggestion.length);
             _renderFeedbackBuilder(suggestion.length);
 
             if (state.manualAssistant.totalWords !== null && state.manualAssistant.totalWords !== undefined) {
@@ -259,7 +281,9 @@ export async function requestAssistantSuggestion() {
             }
 
             syncExternalAssistantUI();
-            showStatus('Recommendation ready: ' + suggestion, 'success');
+            if (showSuccessStatus) {
+                showStatus('Recommendation ready: ' + suggestion, 'success');
+            }
             return;
         }
 
@@ -279,17 +303,7 @@ export function clearAssistantFeedbackPattern() {
 }
 
 function _bindExternalAssistantInputs() {
-    const guessInput = document.getElementById('manualGuessInput');
     const feedbackInput = document.getElementById('manualFeedbackInput');
-
-    if (guessInput) {
-        guessInput.addEventListener('input', () => {
-            const guessLength = guessInput.value.trim().length;
-            const baseLength = state.manualAssistant.wordLength || 5;
-            const builderLength = guessLength > 0 ? guessLength : baseLength;
-            _renderFeedbackBuilder(builderLength);
-        });
-    }
 
     if (feedbackInput) {
         feedbackInput.addEventListener('input', () => {
@@ -299,6 +313,73 @@ function _bindExternalAssistantInputs() {
             }
             _renderFeedbackBuilder(undefined, normalized);
         });
+    }
+}
+
+function _renderManualGuessInputs(length) {
+    const guessHost = document.getElementById('manualGuessInputs');
+    if (!guessHost) return;
+
+    const expectedLength = length || state.manualAssistant.wordLength || 5;
+    const existing = _getManualGuessWord().slice(0, expectedLength);
+
+    guessHost.innerHTML = '';
+
+    for (let i = 0; i < expectedLength; i++) {
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.maxLength = 1;
+        input.autocomplete = 'off';
+        input.spellcheck = false;
+        input.className = 'manual-guess-letter';
+        input.setAttribute('data-index', String(i));
+        input.setAttribute('aria-label', `Guess letter ${i + 1}`);
+        input.value = existing[i] || '';
+
+        input.addEventListener('input', () => {
+            const cleaned = (input.value || '').replace(/[^a-zA-Z]/g, '').toUpperCase();
+            input.value = cleaned;
+            if (cleaned && i < expectedLength - 1) {
+                guessHost.children[i + 1]?.focus();
+            }
+        });
+
+        input.addEventListener('keydown', (event) => {
+            if (event.key === 'Backspace' && !input.value && i > 0) {
+                const previous = guessHost.children[i - 1];
+                previous?.focus();
+            }
+            if (event.key === 'ArrowLeft' && i > 0) {
+                event.preventDefault();
+                guessHost.children[i - 1]?.focus();
+            }
+            if (event.key === 'ArrowRight' && i < expectedLength - 1) {
+                event.preventDefault();
+                guessHost.children[i + 1]?.focus();
+            }
+        });
+
+        input.addEventListener('paste', (event) => {
+            event.preventDefault();
+            const pasted = (event.clipboardData?.getData('text') || '')
+                .replace(/[^a-zA-Z]/g, '')
+                .toUpperCase()
+                .slice(0, expectedLength);
+
+            if (!pasted) return;
+
+            for (let j = 0; j < expectedLength; j++) {
+                const target = guessHost.children[j];
+                if (target) {
+                    target.value = pasted[j] || '';
+                }
+            }
+
+            const finalIndex = Math.min(pasted.length, expectedLength - 1);
+            guessHost.children[finalIndex]?.focus();
+        });
+
+        guessHost.appendChild(input);
     }
 }
 
@@ -364,6 +445,29 @@ function _setManualFeedbackInput(value) {
     if (feedbackInput) {
         feedbackInput.value = value;
     }
+}
+
+function _getManualGuessWord() {
+    const inputs = Array.from(document.querySelectorAll('#manualGuessInputs .manual-guess-letter'));
+    return inputs.map(input => (input.value || '').trim()).join('').toLowerCase();
+}
+
+function _setManualGuessWord(value) {
+    const normalized = (value || '').replace(/[^a-zA-Z]/g, '').toUpperCase();
+    const inputs = Array.from(document.querySelectorAll('#manualGuessInputs .manual-guess-letter'));
+
+    if (inputs.length === 0) {
+        return;
+    }
+
+    if (inputs.length !== normalized.length && normalized.length > 0) {
+        _renderManualGuessInputs(normalized.length);
+    }
+
+    const updatedInputs = Array.from(document.querySelectorAll('#manualGuessInputs .manual-guess-letter'));
+    updatedInputs.forEach((input, index) => {
+        input.value = normalized[index] || '';
+    });
 }
 
 function _formatStrategyLabel(strategy) {

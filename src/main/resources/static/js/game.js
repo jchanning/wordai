@@ -31,7 +31,7 @@ import {
 import {
     initExternalAssistantUI,
     applyManualFeedback,
-    requestAssistantSuggestion,
+    submitAssistantTurn,
     changeAssistantStrategy,
     resetAssistantSession,
     onAssistantDictionaryChange,
@@ -95,7 +95,7 @@ window.makeGuess               = makeGuess;
 window.getSuggestion           = getSuggestion;
 window.changeStrategy          = changeStrategy;
 window.applyManualFeedback     = applyManualFeedback;
-window.getAssistantSuggestion  = requestAssistantSuggestion;
+window.getAssistantSuggestion  = submitAssistantTurn;
 window.changeAssistantStrategy = changeAssistantStrategy;
 window.resetAssistantSession   = resetAssistantSession;
 window.onAssistantDictionaryChange = onAssistantDictionaryChange;
