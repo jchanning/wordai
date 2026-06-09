@@ -2445,7 +2445,16 @@ select:focus {
     display: flex;
     flex-direction: column;
     gap: 1rem;
-    max-width: 980px;
+}
+
+.external-assist-controls {
+    display: grid;
+    gap: 1rem;
+}
+
+.external-assist-input-group {
+    display: grid;
+    gap: 0.55rem;
 }
 
 .external-assist-grid {
@@ -2456,6 +2465,7 @@ select:focus {
     display: flex;
     flex-wrap: wrap;
     gap: 0.75rem;
+    align-items: center;
 }
 
 .manual-guess-inputs {
@@ -2465,8 +2475,8 @@ select:focus {
 }
 
 .manual-guess-letter {
-    width: 2.5rem;
-    height: 2.5rem;
+    width: 2.75rem;
+    height: 2.75rem;
     min-width: 44px;
     min-height: 44px;
     background: var(--bg-primary);
@@ -2488,32 +2498,29 @@ select:focus {
     box-shadow: var(--shadow-focus);
 }
 
-.external-feedback-helper {
-    margin-top: 0.4rem;
-    color: var(--text-secondary);
-    font-size: 0.82rem;
-}
-
 .external-feedback-builder-wrap {
     display: flex;
     align-items: center;
-    justify-content: space-between;
     flex-wrap: wrap;
     gap: 0.75rem;
 }
 
 .external-feedback-builder {
     display: flex;
-    gap: 0.5rem;
-    flex-wrap: wrap;
+    gap: 0.45rem;
+    flex-wrap: nowrap;
 }
 
 .feedback-cell {
-    width: 2.45rem;
-    height: 2.45rem;
+    width: 2.75rem;
+    height: 2.75rem;
+    min-width: 44px;
+    min-height: 44px;
     border-radius: 0.5rem;
     border: 1px solid var(--border-color);
     color: #fff;
+    font-family: var(--font-mono);
+    font-size: 1rem;
     font-weight: 800;
     cursor: pointer;
 }
@@ -2522,6 +2529,10 @@ select:focus {
 .feedback-cell.feedback-a { background: #c9b458; }
 .feedback-cell.feedback-g { background: #6aaa64; }
 .feedback-cell.feedback-x { background: #4b5563; }
+
+.external-assist-analytics-grid {
+    align-items: stretch;
+}
 
 .external-assist-stats-grid {
     display: grid;
@@ -2604,8 +2615,31 @@ select:focus {
     font-size: 0.84rem;
 }
 
+.external-assist-history-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    margin-bottom: 0.75rem;
+}
+
+.external-assist-empty-state {
+    text-align: center;
+    color: #888;
+    padding: 20px;
+}
+
+.external-assist-empty-chart {
+    width: 100%;
+    align-self: center;
+}
+
 @media (max-width: 768px) {
     .external-assist-panel {
+        gap: 0.75rem;
+    }
+
+    .external-assist-controls {
         gap: 0.75rem;
     }
 
@@ -2619,19 +2653,23 @@ select:focus {
     }
 
     .manual-guess-letter {
-        width: 2.2rem;
-        height: 2.2rem;
+        width: 2.4rem;
+        height: 2.4rem;
         font-size: 1.05rem;
     }
 
     .external-feedback-builder-wrap {
         align-items: flex-start;
-        flex-direction: column;
     }
 
     .external-feedback-builder {
         width: 100%;
         gap: 0.4rem;
+    }
+
+    .feedback-cell {
+        width: 2.4rem;
+        height: 2.4rem;
     }
 
     .feedback-cell {

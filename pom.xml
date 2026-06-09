@@ -6,7 +6,7 @@
 
     <groupId>com.fistraltech</groupId>
     <artifactId>wordai</artifactId>
-    <version>1.15.12</version>
+    <version>1.16.0</version>
     <packaging>jar</packaging>
 
     <properties>

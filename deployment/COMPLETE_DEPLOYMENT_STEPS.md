@@ -39,43 +39,15 @@ exit
 
 ## Full Deployment Workflow
 
-Run these commands in order:
+Run this command:
 
-### Step 1: Prepare Instance
 ```powershell
-.\deployment\prepare-instance.ps1
+.\deployment\deploy.ps1
 ```
 
-### Step 2: Upload Files
-```powershell
-$IP = "132.145.64.140"
-$KEY = "C:\Users\johnm\.ssh\oracle-wordai.key"
+This single script builds the app, uploads the latest JAR and config, extracts dictionaries, and restarts the `wordai` service.
 
-# Upload JAR
-scp -i $KEY target\wordai-1.0-SNAPSHOT.jar opc@${IP}:~/wordai-app/
-
-# Upload systemd service
-scp -i $KEY deployment\wordai.service opc@${IP}:~/
-
-# Upload production config
-scp -i $KEY deployment\application-prod.properties opc@${IP}:~/wordai-app/
-
-# Upload deployment script
-scp -i $KEY deployment\deploy-to-arm.sh opc@${IP}:~/
-```
-
-### Step 3: Deploy Application
-```powershell
-ssh -i $KEY opc@$IP
-```
-
-Then on the server:
-```bash
-chmod +x deploy-to-arm.sh
-./deploy-to-arm.sh
-```
-
-### Step 4: Verify Deployment
+### Verify Deployment
 ```bash
 # Check service status
 sudo systemctl status wordai
@@ -111,23 +83,9 @@ chmod 755 ~/wordai-data
 
 ## Quick Commands Reference
 
-**Prepare instance:**
+**Deploy end-to-end:**
 ```powershell
-.\deployment\prepare-instance.ps1
-```
-
-**Upload all files at once:**
-```powershell
-$IP = "132.145.64.140"; $KEY = "C:\Users\johnm\.ssh\oracle-wordai.key"
-scp -i $KEY target\wordai-1.0-SNAPSHOT.jar opc@${IP}:~/wordai-app/
-scp -i $KEY deployment\wordai.service opc@${IP}:~/
-scp -i $KEY deployment\application-prod.properties opc@${IP}:~/wordai-app/
-scp -i $KEY deployment\deploy-to-arm.sh opc@${IP}:~/
-```
-
-**Deploy:**
-```powershell
-ssh -i $KEY opc@$IP "chmod +x deploy-to-arm.sh && ./deploy-to-arm.sh"
+.\deployment\deploy.ps1
 ```
 
 **Check status:**

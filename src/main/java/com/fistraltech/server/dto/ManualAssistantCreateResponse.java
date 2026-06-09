@@ -9,6 +9,7 @@ public class ManualAssistantCreateResponse {
     private int wordLength;
     private String strategy;
     private int remainingWords;
+    private GameResponse.DictionaryMetrics dictionaryMetrics;
 
     public ManualAssistantCreateResponse() {
     }
@@ -63,5 +64,13 @@ public class ManualAssistantCreateResponse {
 
     public void setRemainingWords(int remainingWords) {
         this.remainingWords = remainingWords;
+    }
+
+    public GameResponse.DictionaryMetrics getDictionaryMetrics() {
+        return dictionaryMetrics;
+    }
+
+    public void setDictionaryMetrics(GameResponse.DictionaryMetrics dictionaryMetrics) {
+        this.dictionaryMetrics = dictionaryMetrics;
     }
 }

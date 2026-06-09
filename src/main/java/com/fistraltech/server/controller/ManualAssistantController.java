@@ -16,9 +16,12 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.fistraltech.analysis.DictionaryAnalytics;
+import com.fistraltech.core.Dictionary;
 import com.fistraltech.core.InvalidWordException;
 import com.fistraltech.core.Response;
 import com.fistraltech.server.ManualAssistantService;
+import com.fistraltech.server.dto.GameResponse;
 import com.fistraltech.server.dto.ManualAssistantCreateRequest;
 import com.fistraltech.server.dto.ManualAssistantCreateResponse;
 import com.fistraltech.server.dto.ManualAssistantFeedbackRequest;
@@ -48,6 +51,7 @@ import jakarta.validation.Valid;
 public class ManualAssistantController {
 
     private static final Logger logger = Logger.getLogger(ManualAssistantController.class.getName());
+    private static final String INTERNAL_SERVER_ERROR_TITLE = "Internal server error";
 
     private final ManualAssistantService manualAssistantService;
 
@@ -68,6 +72,7 @@ public class ManualAssistantController {
                 session.getWordLength(),
                 session.getSelectedStrategy(),
                 session.getRemainingWordsCount());
+            response.setDictionaryMetrics(buildDictionaryMetrics(session.getFilteredDictionary()));
 
             return ResponseEntity.status(HttpStatus.CREATED).body(response);
         } catch (InvalidWordException e) {
@@ -77,7 +82,7 @@ public class ManualAssistantController {
         } catch (Exception e) {
             logger.log(Level.SEVERE, "Unexpected error creating manual assistant session", e);
             return ApiErrors.response(HttpStatus.INTERNAL_SERVER_ERROR,
-                "Internal server error", "Failed to create assistant session");
+                INTERNAL_SERVER_ERROR_TITLE, "Failed to create assistant session");
         }
     }
 
@@ -98,6 +103,7 @@ public class ManualAssistantController {
                 session.getAttemptCount(),
                 session.getRemainingWordsCount(),
                 response.getWinner());
+            feedbackResponse.setDictionaryMetrics(buildDictionaryMetrics(session.getFilteredDictionary()));
 
             return ResponseEntity.ok(feedbackResponse);
         } catch (InvalidWordException e) {
@@ -105,9 +111,9 @@ public class ManualAssistantController {
         } catch (ApiResourceNotFoundException e) {
             return ApiErrors.response(HttpStatus.NOT_FOUND, e.getError(), e.getMessage());
         } catch (Exception e) {
-            logger.log(Level.SEVERE, "Unexpected error applying manual feedback for session " + sessionId, e);
+            logger.log(Level.SEVERE, e, () -> "Unexpected error applying manual feedback for session " + sessionId);
             return ApiErrors.response(HttpStatus.INTERNAL_SERVER_ERROR,
-                "Internal server error", "Failed to apply feedback");
+                INTERNAL_SERVER_ERROR_TITLE, "Failed to apply feedback");
         }
     }
 
@@ -127,9 +133,9 @@ public class ManualAssistantController {
         } catch (ApiResourceNotFoundException e) {
             return ApiErrors.response(HttpStatus.NOT_FOUND, e.getError(), e.getMessage());
         } catch (Exception e) {
-            logger.log(Level.SEVERE, "Unexpected error getting assistant suggestion for session " + sessionId, e);
+            logger.log(Level.SEVERE, e, () -> "Unexpected error getting assistant suggestion for session " + sessionId);
             return ApiErrors.response(HttpStatus.INTERNAL_SERVER_ERROR,
-                "Internal server error", "Failed to get suggestion");
+                INTERNAL_SERVER_ERROR_TITLE, "Failed to get suggestion");
         }
     }
 
@@ -148,9 +154,9 @@ public class ManualAssistantController {
         } catch (IllegalArgumentException e) {
             return ApiErrors.response(HttpStatus.FORBIDDEN, "Algorithm disabled", e.getMessage());
         } catch (Exception e) {
-            logger.log(Level.SEVERE, "Unexpected error updating assistant strategy for session " + sessionId, e);
+            logger.log(Level.SEVERE, e, () -> "Unexpected error updating assistant strategy for session " + sessionId);
             return ApiErrors.response(HttpStatus.INTERNAL_SERVER_ERROR,
-                "Internal server error", "Failed to update strategy");
+                INTERNAL_SERVER_ERROR_TITLE, "Failed to update strategy");
         }
     }
 
@@ -166,9 +172,20 @@ public class ManualAssistantController {
         } catch (ApiResourceNotFoundException e) {
             return ApiErrors.response(HttpStatus.NOT_FOUND, e.getError(), e.getMessage());
         } catch (Exception e) {
-            logger.log(Level.SEVERE, "Unexpected error deleting assistant session " + sessionId, e);
+            logger.log(Level.SEVERE, e, () -> "Unexpected error deleting assistant session " + sessionId);
             return ApiErrors.response(HttpStatus.INTERNAL_SERVER_ERROR,
-                "Internal server error", "Failed to delete assistant session");
+                INTERNAL_SERVER_ERROR_TITLE, "Failed to delete assistant session");
         }
+    }
+
+    private GameResponse.DictionaryMetrics buildDictionaryMetrics(Dictionary dictionary) {
+        DictionaryAnalytics analyser = new DictionaryAnalytics(dictionary);
+        GameResponse.DictionaryMetrics metrics = new GameResponse.DictionaryMetrics(
+            dictionary.getLetterCount(),
+            dictionary.getUniqueCharacters().size(),
+            dictionary.getColumnLengths());
+        metrics.setOccurrenceCountByPosition(analyser.getOccurrenceCountByPosition());
+        metrics.setMostFrequentCharByPosition(analyser.getMostFrequentCharByPosition());
+        return metrics;
     }
 }

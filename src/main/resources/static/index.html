@@ -104,7 +104,7 @@
                         <div class="stat-value" id="stat-avg">-</div>
                     </div>
                 </div>
-                
+
                 <!-- Guess Distribution (merged into Session) -->
                 <h3 style="margin-top: 24px;">Guess Distribution</h3>
                 <div id="attemptsDistribution" class="surface-box surface-box-md">
@@ -123,7 +123,7 @@
                 </div>
             </div>
         </div>
-        
+
         <!-- Middle Column: Game Board -->
         <div class="game-container panel play-panel">
             <div class="panel-header-row">
@@ -136,22 +136,22 @@
                     <button class="btn btn-success btn-md" onclick="newGame()">New</button>
                 </div>
             </div>
-            
+
             <div class="guess-container">
                 <div class="letter-inputs" id="letterInputs">
                     <!-- Letter inputs will be dynamically generated based on selected dictionary -->
                 </div>
             </div>
-            
+
             <div class="guess-history" id="guessHistory"></div>
-            
+
             <div class="keyboard-container">
                 <div class="keyboard" id="gameKeyboard">
                     <!-- On-screen keyboard buttons will be generated dynamically -->
                 </div>
             </div>
         </div>
-        
+
         <!-- Right Column: Analytics -->
         <div class="info-panel panel play-panel">
             <div class="panel-header-row">
@@ -168,7 +168,7 @@
                     </button>
                 </div>
             </div>
-            
+
             <div class="analytics-grid">
                 <!-- Left Column: Key Statistics + Visual Analysis -->
                 <div class="analytics-left-col">
@@ -179,27 +179,27 @@
                                 <div class="info-label">Word Count:</div>
                                 <div class="info-value" id="totalWords">2315</div>
                             </div>
-                            
+
                             <div class="info-section">
                                 <div class="info-label">Remaining:</div>
                                 <div class="info-value" id="remainingWords">2315</div>
                             </div>
-                            
+
                             <div class="info-section">
                                 <div class="info-label">Eliminated:</div>
                                 <div class="info-value" id="eliminatedWords">0</div>
                             </div>
-                            
+
                             <div class="info-section">
                                 <div class="info-label">Reduction %:</div>
                                 <div class="info-value" id="reductionPercent">0%</div>
                             </div>
-                            
+
                             <div class="info-section">
                                 <div class="info-label">Unique Letters:</div>
                                 <div class="info-value" id="uniqueLetters">26</div>
                             </div>
-                            
+
                             <div class="info-section">
                                 <div class="info-label">Total Letter Count:</div>
                                 <div class="info-value" id="letterCount">-</div>
@@ -223,7 +223,7 @@
                             </section>
                         </div>
                     </div>
-                    
+
                     <!-- Panel 3: Visual Analysis -->
                     <div class="analytics-collapsible" data-mobile-panel="3">
                         <div class="analytics-content">
@@ -233,7 +233,7 @@
                                     <!-- Bar chart will be dynamically generated here -->
                                 </div>
                             </div>
-                            
+
                             <div class="analytics-section">
                                 <h4 class="analytics-section-title">Most Common Letters</h4>
                                 <div id="mostFrequentTable" class="analytics-box">
@@ -243,7 +243,7 @@
                         </div>
                     </div>
                 </div>
-                
+
                 <!-- Right Column: Letters by Position (Panel 4) -->
                 <div class="analytics-collapsible analytics-right-col" data-mobile-panel="4">
                     <div class="analytics-content">
@@ -261,76 +261,137 @@
 
         </section>
 
-        <!-- Screen: External Assist -->
+        <!-- Screen: Assistant -->
         <section id="screen-assistant" class="screen" hidden>
             <div class="screen-toolbar">
                 <div class="screen-toolbar-left">
-                    <h2 class="screen-title">External Assist</h2>
+                    <h2 class="screen-title">Assistant</h2>
                     <div class="screen-subtitle">Use WordAI recommendations while playing an external Wordle-style game.</div>
                 </div>
-                <div class="screen-toolbar-right">
-                    <button class="btn btn-secondary" onclick="resetAssistantSession()">Reset Session</button>
-                </div>
+                <div class="screen-toolbar-right"></div>
             </div>
 
-            <div class="panel external-assist-panel">
-                <div class="form-grid external-assist-grid">
-                    <div class="form-group">
-                        <label for="assistantDictionarySelector">Dictionary</label>
-                        <select id="assistantDictionarySelector" class="form-input" onchange="onAssistantDictionaryChange()">
+            <div class="info-panel panel play-panel external-assist-panel">
+                <div class="panel-header-row">
+                    <h3>Assistant</h3>
+                    <div class="panel-header-actions panel-header-actions-inline">
+                        <select id="assistantDictionarySelector" class="dictionary-selector" onchange="onAssistantDictionaryChange()">
                             <option value="">Loading dictionaries...</option>
                         </select>
-                    </div>
-                    <div class="form-group">
-                        <label for="externalStrategySelector">Strategy</label>
-                        <select id="externalStrategySelector" class="form-input" onchange="changeAssistantStrategy()">
+                        <select id="externalStrategySelector" class="form-input strategy-selector" onchange="changeAssistantStrategy()">
                             <option value="RANDOM">Basic — Random</option>
                             <option value="ENTROPY" selected>Smart — Maximum Entropy</option>
                             <option value="BELLMAN_FULL_DICTIONARY">Expert — Bellman Optimality</option>
                         </select>
+                        <button class="btn btn-success btn-md" onclick="resetAssistantSession()">New</button>
                     </div>
                 </div>
 
-                <div class="form-grid external-assist-grid">
-                    <div class="form-group">
+                <div class="external-assist-controls">
+                    <div class="form-group external-assist-input-group">
                         <label for="manualGuessInputs">Your Guess</label>
                         <div id="manualGuessInputs" class="manual-guess-inputs" aria-label="External game guessed word"></div>
                     </div>
-                    <div class="form-group">
-                        <label for="manualFeedbackInput">Feedback Pattern</label>
-                        <input id="manualFeedbackInput" class="form-input" type="text" maxlength="24" placeholder="e.g. 🟨⬛⬛🟩⬛ or GARRR" aria-label="External game feedback pattern">
-                        <div class="external-feedback-helper">Tip: click the tiles below to build feedback quickly. Order cycles R → A → G → X.</div>
+                    <div class="form-group external-assist-input-group">
+                        <label for="externalFeedbackBuilder">Feedback</label>
+                        <div class="external-feedback-builder-wrap">
+                            <div id="externalFeedbackBuilder" class="external-feedback-builder" aria-label="Interactive feedback builder"></div>
+                            <input id="manualFeedbackInput" type="hidden" value="">
+                        </div>
+                    </div>
+                    <div class="external-assist-actions">
+                        <button id="manualSuggestBtn" class="btn btn-info btn-md" onclick="getAssistantSuggestion()">Get Recommendation</button>
+                        <button class="btn btn-success btn-md" type="button" onclick="clearAssistantFeedbackPattern()">Clear Pattern</button>
                     </div>
                 </div>
 
-                <div class="external-feedback-builder-wrap">
-                    <div class="external-feedback-builder" id="externalFeedbackBuilder" aria-label="Interactive feedback builder"></div>
-                    <button class="btn btn-secondary btn-sm" type="button" onclick="clearAssistantFeedbackPattern()">Clear Pattern</button>
-                </div>
+                <div class="analytics-grid external-assist-analytics-grid">
+                    <div class="analytics-left-col">
+                        <div class="analytics-collapsible">
+                            <div class="analytics-content">
+                                <div class="info-section">
+                                    <div class="info-label">Word Count:</div>
+                                    <div class="info-value" id="manualTotalWords">-</div>
+                                </div>
 
-                <div class="external-assist-actions">
-                    <button id="manualSuggestBtn" class="btn btn-info btn-md" onclick="getAssistantSuggestion()">Get Recommendation</button>
-                </div>
+                                <div class="info-section">
+                                    <div class="info-label">Remaining:</div>
+                                    <div class="info-value" id="manualRemainingWords">-</div>
+                                </div>
 
-                <div class="external-assist-stats-grid">
-                    <div class="external-assist-stat"><span class="external-assist-stat-label">Word Count</span><strong id="manualTotalWords">-</strong></div>
-                    <div class="external-assist-stat"><span class="external-assist-stat-label">Remaining</span><strong id="manualRemainingWords">-</strong></div>
-                    <div class="external-assist-stat"><span class="external-assist-stat-label">Eliminated</span><strong id="manualEliminatedWords">-</strong></div>
-                    <div class="external-assist-stat"><span class="external-assist-stat-label">Reduction %</span><strong id="manualReductionPercent">-</strong></div>
-                    <div class="external-assist-stat"><span class="external-assist-stat-label">Attempts</span><strong id="manualAttemptCount">0</strong></div>
-                    <div class="external-assist-stat"><span class="external-assist-stat-label">Word Length</span><strong id="manualWordLength">-</strong></div>
-                </div>
+                                <div class="info-section">
+                                    <div class="info-label">Eliminated:</div>
+                                    <div class="info-value" id="manualEliminatedWords">-</div>
+                                </div>
 
-                <div class="manual-assistant-summary">
-                    <span>Strategy: <strong id="manualStrategyLabel">-</strong></span>
-                    <span>Suggestion: <strong id="manualSuggestionWord">-</strong></span>
-                    <span>Last Feedback: <strong id="manualLastFeedback">-</strong></span>
-                </div>
+                                <div class="info-section">
+                                    <div class="info-label">Reduction %:</div>
+                                    <div class="info-value" id="manualReductionPercent">-</div>
+                                </div>
 
-                <div class="external-assist-history">
-                    <h3>Turn History</h3>
-                    <div id="assistantTurnHistory" class="external-assist-history-list">
-                        <p class="muted-center muted-small">No feedback submitted yet.</p>
+                                <div class="info-section">
+                                    <div class="info-label">Unique Letters:</div>
+                                    <div class="info-value" id="manualUniqueLetters">-</div>
+                                </div>
+
+                                <div class="info-section">
+                                    <div class="info-label">Total Letter Count:</div>
+                                    <div class="info-value" id="manualLetterCount">-</div>
+                                </div>
+
+                                <div class="info-section">
+                                    <div class="info-label">Attempts:</div>
+                                    <div class="info-value" id="manualAttemptCount">0</div>
+                                </div>
+
+                                <div class="info-section">
+                                    <div class="info-label">Word Length:</div>
+                                    <div class="info-value" id="manualWordLength">-</div>
+                                </div>
+
+                                <div class="manual-assistant-summary">
+                                    <span>Strategy: <strong id="manualStrategyLabel">-</strong></span>
+                                    <span>Last Feedback: <strong id="manualLastFeedback">-</strong></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="analytics-collapsible">
+                            <div class="analytics-content">
+                                <div class="analytics-section">
+                                    <h4 class="analytics-section-title">Count</h4>
+                                    <div id="manualColumnLengthsChart" class="bar-chart-box">
+                                        <div class="external-assist-empty-state external-assist-empty-chart">No data yet</div>
+                                    </div>
+                                </div>
+
+                                <div class="analytics-section">
+                                    <div class="external-assist-history-heading">
+                                        <h4 id="assistantPanelTitle" class="analytics-section-title">Suggested Guess: -</h4>
+                                    </div>
+                                    <div id="assistantTurnHistory" class="external-assist-history-list">
+                                        <p class="muted-center muted-small">No feedback submitted yet.</p>
+                                    </div>
+                                </div>
+
+                                <div class="analytics-section">
+                                    <h4 class="analytics-section-title">Most Common Letters</h4>
+                                    <div id="manualMostFrequentTable" class="analytics-box">
+                                        <div class="external-assist-empty-state">No data yet</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="analytics-collapsible analytics-right-col">
+                        <div class="analytics-content">
+                            <div class="analytics-section">
+                                <div id="manualOccurrenceTable" class="analytics-box">
+                                    <div class="external-assist-empty-state">No data yet</div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -851,7 +912,7 @@
             <div class="about-content panel">
                 <div class="about-logo">
                     <h1 class="about-app-name">WordAI</h1>
-                    <p class="about-version">v1.15.12</p>
+                    <p class="about-version">v1.16.0</p>
                 </div>
                 <p class="about-description">A Wordle-style word game with AI-powered analysis and bot strategies.</p>
                 <div class="about-links">
@@ -1028,7 +1089,7 @@
     <footer class="app-footer">
         <div class="footer-content">
             <div class="footer-copyright">
-                © 2026 FistralTech Ltd | v1.15.12
+                © 2026 FistralTech Ltd | v1.16.0
             </div>
             <nav class="footer-links" aria-label="Footer navigation">
                 <a href="https://fistraltech.com" target="_blank" rel="noopener noreferrer" class="footer-link">fistraltech.com</a>

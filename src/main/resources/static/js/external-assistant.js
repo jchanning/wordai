@@ -28,58 +28,23 @@ export function initExternalAssistantUI() {
 }
 
 export function syncExternalAssistantUI() {
-    const attemptCount = document.getElementById('manualAttemptCount');
-    const remainingWords = document.getElementById('manualRemainingWords');
-    const totalWords = document.getElementById('manualTotalWords');
-    const eliminatedWords = document.getElementById('manualEliminatedWords');
-    const reductionPercent = document.getElementById('manualReductionPercent');
-    const wordLength = document.getElementById('manualWordLength');
-    const strategyLabel = document.getElementById('manualStrategyLabel');
-    const lastFeedback = document.getElementById('manualLastFeedback');
-    const suggestionWord = document.getElementById('manualSuggestionWord');
-
-    if (attemptCount) {
-        attemptCount.textContent = String(state.manualAssistant.attemptCount || 0);
-    }
-
-    if (remainingWords) {
-        const value = state.manualAssistant.remainingWords;
-        remainingWords.textContent = value === null || value === undefined ? '-' : String(value);
-    }
-
-    if (totalWords) {
-        const value = state.manualAssistant.totalWords;
-        totalWords.textContent = value === null || value === undefined ? '-' : String(value);
-    }
-
-    if (eliminatedWords) {
-        const value = state.manualAssistant.eliminatedWords;
-        eliminatedWords.textContent = value === null || value === undefined ? '-' : String(value);
-    }
-
-    if (reductionPercent) {
-        const value = state.manualAssistant.reductionPercent;
-        reductionPercent.textContent = value === null || value === undefined ? '-' : `${Number(value).toFixed(2)}%`;
-    }
-
-    if (wordLength) {
-        const value = state.manualAssistant.wordLength;
-        wordLength.textContent = value === null || value === undefined ? '-' : String(value);
-    }
-
-    if (strategyLabel) {
-        strategyLabel.textContent = _formatStrategyLabel(state.manualAssistant.strategy);
-    }
-
-    if (lastFeedback) {
-        lastFeedback.textContent = state.manualAssistant.lastFeedback || '-';
-    }
-
-    if (suggestionWord) {
-        suggestionWord.textContent = state.manualAssistant.lastSuggestion || '-';
-    }
+    _setTextContent('manualAttemptCount', state.manualAssistant.attemptCount || 0);
+    _setTextContent('manualRemainingWords', _formatDisplayValue(state.manualAssistant.remainingWords));
+    _setTextContent('manualTotalWords', _formatDisplayValue(state.manualAssistant.totalWords));
+    _setTextContent('manualEliminatedWords', _formatDisplayValue(state.manualAssistant.eliminatedWords));
+    _setTextContent('manualReductionPercent', _formatPercent(state.manualAssistant.reductionPercent));
+    _setTextContent('manualWordLength', _formatDisplayValue(state.manualAssistant.wordLength));
+    _setTextContent('manualUniqueLetters', _formatDisplayValue(state.manualAssistant.uniqueLetters));
+    _setTextContent('manualLetterCount', _formatDisplayValue(state.manualAssistant.letterCount));
+    _setTextContent('manualStrategyLabel', _formatStrategyLabel(state.manualAssistant.strategy));
+    _setTextContent('manualLastFeedback', state.manualAssistant.lastFeedback || '-');
+    _setTextContent(
+        'assistantPanelTitle',
+        state.manualAssistant.lastSuggestion ? `Suggested Guess: ${state.manualAssistant.lastSuggestion}` : 'Suggested Guess: -'
+    );
 
     _renderTurnHistory();
+    _renderManualAnalytics();
 }
 
 async function ensureExternalAssistantSession() {
@@ -114,6 +79,7 @@ async function ensureExternalAssistantSession() {
     state.manualAssistant.reductionPercent = 0;
     state.manualAssistant.lastFeedback = null;
     state.manualAssistant.history = [];
+    _applyDictionaryMetrics(data.dictionaryMetrics);
     _renderManualGuessInputs(state.manualAssistant.wordLength || 5);
     _renderFeedbackBuilder(state.manualAssistant.wordLength || 5);
     syncExternalAssistantUI();
@@ -138,6 +104,11 @@ export async function resetAssistantSession(showToast = true) {
     state.manualAssistant.lastSuggestion = null;
     state.manualAssistant.lastFeedback = null;
     state.manualAssistant.totalWords = null;
+    state.manualAssistant.letterCount = null;
+    state.manualAssistant.uniqueLetters = null;
+    state.manualAssistant.latestColumnLengths = null;
+    state.manualAssistant.latestOccurrenceData = null;
+    state.manualAssistant.mostFrequentChars = null;
     state.manualAssistant.history = [];
     _setManualGuessWord('');
     _setManualFeedbackInput('');
@@ -146,7 +117,7 @@ export async function resetAssistantSession(showToast = true) {
     syncExternalAssistantUI();
 
     if (showToast) {
-        showStatus('External assistant session reset', 'success');
+        showStatus('Assistant ready for a new game', 'success');
     }
 }
 
@@ -219,6 +190,7 @@ export async function applyManualFeedback(options = {}) {
         state.manualAssistant.reductionPercent = state.manualAssistant.totalWords > 0
             ? ((state.manualAssistant.eliminatedWords / state.manualAssistant.totalWords) * 100)
             : 0;
+        _applyDictionaryMetrics(data.dictionaryMetrics);
 
         state.manualAssistant.history.unshift({
             attempt: attemptNumber,
@@ -332,7 +304,7 @@ function _renderManualGuessInputs(length) {
         input.autocomplete = 'off';
         input.spellcheck = false;
         input.className = 'manual-guess-letter';
-        input.setAttribute('data-index', String(i));
+        input.dataset.index = String(i);
         input.setAttribute('aria-label', `Guess letter ${i + 1}`);
         input.value = existing[i] || '';
 
@@ -399,11 +371,11 @@ function _renderFeedbackBuilder(length, overridePattern) {
         cell.type = 'button';
         cell.className = `feedback-cell feedback-${code.toLowerCase()}`;
         cell.textContent = code;
-        cell.setAttribute('data-index', String(i));
-        cell.setAttribute('data-code', code);
+        cell.dataset.index = String(i);
+        cell.dataset.code = code;
         cell.setAttribute('aria-label', `Feedback position ${i + 1}: ${code}`);
         cell.addEventListener('click', () => {
-            const currentCode = cell.getAttribute('data-code') || 'R';
+            const currentCode = cell.dataset.code || 'R';
             const nextCode = FEEDBACK_ORDER[(FEEDBACK_ORDER.indexOf(currentCode) + 1) % FEEDBACK_ORDER.length];
             const feedbackInput = document.getElementById('manualFeedbackInput');
             const existing = _normalizeFeedbackString(feedbackInput?.value || '').padEnd(expectedLength, 'R').slice(0, expectedLength).split('');
@@ -480,6 +452,232 @@ function _formatStrategyLabel(strategy) {
     return map[strategy] || strategy;
 }
 
+function _applyDictionaryMetrics(metrics) {
+    if (!metrics) {
+        return;
+    }
+
+    state.manualAssistant.letterCount = metrics.letterCount ?? null;
+    state.manualAssistant.uniqueLetters = metrics.uniqueCharacters ?? null;
+    state.manualAssistant.latestColumnLengths = null;
+    if (Array.isArray(metrics.columnLengths)) {
+        state.manualAssistant.latestColumnLengths = metrics.columnLengths;
+    }
+    state.manualAssistant.latestOccurrenceData = metrics.occurrenceCountByPosition || null;
+    state.manualAssistant.mostFrequentChars = null;
+    if (Array.isArray(metrics.mostFrequentCharByPosition)) {
+        state.manualAssistant.mostFrequentChars = metrics.mostFrequentCharByPosition;
+    }
+}
+
+function _renderManualAnalytics() {
+    _renderManualColumnLengthsChart();
+    _renderManualMostFrequentTable();
+    _renderManualOccurrenceTable();
+}
+
+function _renderManualColumnLengthsChart() {
+    const chartContainer = document.getElementById('manualColumnLengthsChart');
+    if (!chartContainer) return;
+
+    const columnLengths = state.manualAssistant.latestColumnLengths;
+    chartContainer.innerHTML = '';
+
+    if (!Array.isArray(columnLengths) || columnLengths.length === 0) {
+        chartContainer.innerHTML = '<div class="external-assist-empty-state external-assist-empty-chart">No data yet</div>';
+        return;
+    }
+
+    const maxHeight = Math.max(...columnLengths, 1);
+    const chartHeight = 120;
+
+    columnLengths.forEach((count, index) => {
+        const barContainer = document.createElement('div');
+        barContainer.style.cssText = 'flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;';
+
+        const barWrapper = document.createElement('div');
+        barWrapper.style.cssText = `height:${chartHeight}px;display:flex;align-items:flex-end;justify-content:center;width:100%;`;
+
+        const bar = document.createElement('div');
+        const barHeight = Math.min(chartHeight, (count / maxHeight) * chartHeight);
+        bar.style.cssText = `
+            width:100%;
+            height:${barHeight}px;
+            background:linear-gradient(180deg,var(--accent-primary) 0%,#1e40af 100%);
+            border-radius:4px 4px 0 0;
+            transition:all 0.3s ease;
+            box-shadow:0 2px 8px rgba(59,130,246,0.3);
+        `;
+
+        barWrapper.appendChild(bar);
+        barContainer.appendChild(barWrapper);
+
+        const countLabel = document.createElement('div');
+        countLabel.className = 'count-label';
+        countLabel.textContent = String(count);
+        barContainer.appendChild(countLabel);
+
+        const positionLabel = document.createElement('div');
+        positionLabel.className = 'pos-label';
+        positionLabel.textContent = `P${index + 1}`;
+        barContainer.appendChild(positionLabel);
+
+        chartContainer.appendChild(barContainer);
+    });
+}
+
+function _renderManualMostFrequentTable() {
+    const tableContainer = document.getElementById('manualMostFrequentTable');
+    if (!tableContainer) return;
+
+    const mostFrequentData = state.manualAssistant.mostFrequentChars;
+    tableContainer.innerHTML = '';
+
+    if (!Array.isArray(mostFrequentData) || mostFrequentData.length === 0) {
+        tableContainer.innerHTML = '<div class="external-assist-empty-state">No data yet</div>';
+        return;
+    }
+
+    const table = document.createElement('table');
+    table.style.cssText = 'width:100%;border-collapse:collapse;font-size:0.9em;font-family:monospace;';
+
+    const row = document.createElement('tr');
+    mostFrequentData.forEach(letter => {
+        const cell = document.createElement('td');
+        cell.textContent = letter ? String(letter).toUpperCase() : '-';
+        cell.style.cssText = 'padding:12px 8px;text-align:center;font-weight:700;font-size:1em;color:var(--correct-color);border:1px solid rgba(255,255,255,0.1);background:rgba(106,170,100,0.15);';
+        row.appendChild(cell);
+    });
+    table.appendChild(row);
+
+    const labelRow = document.createElement('tr');
+    mostFrequentData.forEach((_, index) => {
+        const labelCell = document.createElement('td');
+        labelCell.textContent = `P${index + 1}`;
+        labelCell.className = 'pos-label';
+        labelCell.style.cssText = 'padding:6px 4px;text-align:center;border:1px solid rgba(255,255,255,0.1);';
+        labelRow.appendChild(labelCell);
+    });
+    table.appendChild(labelRow);
+    tableContainer.appendChild(table);
+}
+
+function _renderManualOccurrenceTable() {
+    const tableContainer = document.getElementById('manualOccurrenceTable');
+    if (!tableContainer) return;
+
+    const occurrenceData = state.manualAssistant.latestOccurrenceData;
+    tableContainer.innerHTML = '';
+
+    if (!occurrenceData || Object.keys(occurrenceData).length === 0) {
+        tableContainer.innerHTML = '<div class="external-assist-empty-state">No data yet</div>';
+        return;
+    }
+
+    const firstKey = Object.keys(occurrenceData)[0];
+    const numPositions = occurrenceData[firstKey]?.length || state.manualAssistant.wordLength || 5;
+
+    const table = document.createElement('table');
+    table.style.cssText = 'width:100%;border-collapse:collapse;font-size:0.85em;font-family:monospace;';
+
+    const thead = document.createElement('thead');
+    const headerRow = document.createElement('tr');
+
+    const letterHeader = document.createElement('th');
+    letterHeader.textContent = '';
+    letterHeader.style.cssText = 'padding:6px 8px;text-align:center;border-bottom:2px solid var(--text-secondary);position:sticky;top:0;background:var(--bg-primary);z-index:1;font-weight:600;width:30px;';
+    headerRow.appendChild(letterHeader);
+
+    for (let i = 0; i < numPositions; i++) {
+        const posHeader = document.createElement('th');
+        posHeader.textContent = `P${i + 1}`;
+        posHeader.className = 'pos-label';
+        posHeader.style.cssText = 'padding:6px 6px;text-align:center;border-bottom:2px solid var(--text-secondary);position:sticky;top:0;background:var(--bg-primary);z-index:1;min-width:44px;';
+        headerRow.appendChild(posHeader);
+    }
+
+    thead.appendChild(headerRow);
+    table.appendChild(thead);
+
+    const tbody = document.createElement('tbody');
+    const allLetters = 'abcdefghijklmnopqrstuvwxyz'.split('');
+    const positiveFeedbackMap = new Map();
+
+    (state.manualAssistant.history || []).forEach(entry => {
+        entry.feedback.split('').forEach((status, index) => {
+            if (status === 'G') {
+                positiveFeedbackMap.set(`${index}:${entry.guessedWord[index]}`, 'G');
+            } else if (status === 'A') {
+                positiveFeedbackMap.set(`${index}:${entry.guessedWord[index]}`, 'A');
+            }
+        });
+    });
+
+    allLetters.forEach((letter, idx) => {
+        const row = document.createElement('tr');
+        row.style.cssText = `border-bottom:1px solid rgba(255,255,255,0.1);${idx % 2 === 1 ? 'background:rgba(255,255,255,0.02);' : ''}`;
+
+        const counts = occurrenceData[letter] || new Array(numPositions).fill(0);
+        const isEliminated = counts.every(count => count === 0);
+
+        const letterCell = document.createElement('td');
+        letterCell.textContent = letter.toUpperCase();
+        letterCell.style.cssText = 'padding:6px 4px;font-weight:bold;text-align:center;';
+
+        if (isEliminated) {
+            letterCell.classList.add('letter-status-absent');
+            letterCell.style.opacity = '0.6';
+            letterCell.style.textDecoration = 'line-through';
+        } else if (Array.from(positiveFeedbackMap.keys()).some(key => key.endsWith(`:${letter.toUpperCase()}`))) {
+            const hasCorrect = Array.from(positiveFeedbackMap.entries()).some(([key, status]) => key.endsWith(`:${letter.toUpperCase()}`) && status === 'G');
+            letterCell.classList.add(hasCorrect ? 'letter-status-correct' : 'letter-status-present');
+        } else {
+            letterCell.classList.add('letter-status-unused');
+        }
+        row.appendChild(letterCell);
+
+        const maxCount = Math.max(...counts);
+        for (let i = 0; i < numPositions; i++) {
+            const countCell = document.createElement('td');
+            const count = counts[i] || 0;
+            countCell.textContent = String(count);
+
+            let bgColor = '';
+            let textStyle = '';
+            if (count === 0) {
+                textStyle = 'color:var(--text-secondary);opacity:0.3;text-decoration:line-through;';
+            } else if (maxCount > 0) {
+                const intensity = count / maxCount;
+                bgColor = `background:rgba(106,170,100,${intensity * 0.3});`;
+                textStyle = 'color:var(--text-primary);font-weight:500;';
+            }
+
+            countCell.style.cssText = `padding:6px 6px;text-align:center;white-space:nowrap;${textStyle}${bgColor}`;
+            row.appendChild(countCell);
+        }
+
+        tbody.appendChild(row);
+    });
+
+    table.appendChild(tbody);
+    tableContainer.appendChild(table);
+}
+
+function _setTextContent(elementId, value) {
+    const element = document.getElementById(elementId);
+    if (element) {
+        element.textContent = String(value);
+    }
+}
+
+function _formatDisplayValue(value) {
+    return value === null || value === undefined ? '-' : value;
+}
+
+function _formatPercent(value) {
+    return value === null || value === undefined ? '-' : `${Number(value).toFixed(2)}%`;
+}
+
 function _renderTurnHistory() {
     const historyEl = document.getElementById('assistantTurnHistory');
     if (!historyEl) return;
@@ -505,11 +703,12 @@ function _feedbackToChipMarkup(feedback) {
     if (!feedback) return '-';
     return feedback.split('').map(code => {
         const normalized = FEEDBACK_ORDER.includes(code) ? code : 'R';
-        const stateClass = normalized === 'G'
-            ? 'letter-correct'
-            : normalized === 'A'
-                ? 'letter-present'
-                : 'letter-absent';
+        let stateClass = 'letter-absent';
+        if (normalized === 'G') {
+            stateClass = 'letter-correct';
+        } else if (normalized === 'A') {
+            stateClass = 'letter-present';
+        }
         return `<span class="assistant-feedback-chip letter-box ${stateClass}">${normalized}</span>`;
     }).join('');
 }

@@ -32,6 +32,11 @@ export const state = {
         reductionPercent: 0,
         lastSuggestion: null,
         lastFeedback: null,
+        letterCount: null,
+        uniqueLetters: null,
+        latestColumnLengths: null,
+        latestOccurrenceData: null,
+        mostFrequentChars: null,
         history: [],
     },
 

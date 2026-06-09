@@ -10,6 +10,7 @@ public class ManualAssistantFeedbackResponse {
     private int attemptNumber;
     private int remainingWords;
     private boolean winnerPattern;
+    private GameResponse.DictionaryMetrics dictionaryMetrics;
 
     public ManualAssistantFeedbackResponse() {
     }
@@ -74,5 +75,13 @@ public class ManualAssistantFeedbackResponse {
 
     public void setWinnerPattern(boolean winnerPattern) {
         this.winnerPattern = winnerPattern;
+    }
+
+    public GameResponse.DictionaryMetrics getDictionaryMetrics() {
+        return dictionaryMetrics;
+    }
+
+    public void setDictionaryMetrics(GameResponse.DictionaryMetrics dictionaryMetrics) {
+        this.dictionaryMetrics = dictionaryMetrics;
     }
 }

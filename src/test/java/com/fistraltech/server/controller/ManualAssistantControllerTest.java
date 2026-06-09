@@ -49,6 +49,9 @@ class ManualAssistantControllerTest {
         when(session.getWordLength()).thenReturn(5);
         when(session.getSelectedStrategy()).thenReturn("RANDOM");
         when(session.getRemainingWordsCount()).thenReturn(2315);
+        when(session.getFilteredDictionary()).thenReturn(new TestDictionaryBuilder()
+            .withWords("stare", "slate", "trace")
+            .build());
         when(manualAssistantService.createSession("default", "RANDOM")).thenReturn(session);
 
         mockMvc.perform(post("/api/v1/wordai/assistant/sessions")
@@ -70,6 +73,9 @@ class ManualAssistantControllerTest {
             when(session.getWordLength()).thenReturn(5);
             when(session.getSelectedStrategy()).thenReturn("RANDOM");
             when(session.getRemainingWordsCount()).thenReturn(42);
+            when(session.getFilteredDictionary()).thenReturn(new TestDictionaryBuilder()
+                .withWords("stare", "slate", "trace")
+                .build());
             when(manualAssistantService.createSession("default", "RANDOM")).thenReturn(session);
 
             mockMvc.perform(post("/api/wordai/assistant/sessions")
@@ -95,6 +101,9 @@ class ManualAssistantControllerTest {
         ManualAssistantSession session = org.mockito.Mockito.mock(ManualAssistantSession.class);
         when(session.getAttemptCount()).thenReturn(1);
         when(session.getRemainingWordsCount()).thenReturn(120);
+        when(session.getFilteredDictionary()).thenReturn(new TestDictionaryBuilder()
+            .withWords("stare", "slate", "trace")
+            .build());
 
         when(manualAssistantService.submitFeedback("assistant-1", "crane", "⬛🟨⬛⬛🟩")).thenReturn(response);
         when(manualAssistantService.getSession("assistant-1")).thenReturn(session);
@@ -106,7 +115,9 @@ class ManualAssistantControllerTest {
                     """))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.normalizedFeedback").value("RARRG"))
-            .andExpect(jsonPath("$.attemptNumber").value(1));
+                .andExpect(jsonPath("$.attemptNumber").value(1))
+                .andExpect(jsonPath("$.dictionaryMetrics.columnLengths[0]").value(2))
+            .andExpect(jsonPath("$.dictionaryMetrics.mostFrequentCharByPosition[0]").value("s"));
     }
 
     @Test
@@ -177,5 +188,18 @@ class ManualAssistantControllerTest {
         mockMvc.perform(delete("/api/v1/wordai/assistant/sessions/assistant-1"))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.sessionId").value("assistant-1"));
+    }
+
+    private static final class TestDictionaryBuilder {
+        private final com.fistraltech.core.Dictionary dictionary = new com.fistraltech.core.Dictionary(5);
+
+        private TestDictionaryBuilder withWords(String... words) {
+            dictionary.addWords(java.util.Set.of(words));
+            return this;
+        }
+
+        private com.fistraltech.core.Dictionary build() {
+            return dictionary;
+        }
     }
 }

@@ -30,7 +30,7 @@ $KEY = "C:\Users\johnm\.ssh\arm-wordai.key"  # Path to SSH key
 
 Run the automated deployment script:
 ```powershell
-.\deployment\deploy-cloud.ps1
+.\deployment\deploy.ps1
 ```
 
 This will:
@@ -197,7 +197,7 @@ export GOOGLE_CLIENT_SECRET=your_secret
 
 ### Quick Update
 ```powershell
-.\deployment\deploy-cloud.ps1
+.\deployment\deploy.ps1
 ```
 
 ### Update Only JAR
