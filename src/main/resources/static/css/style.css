@@ -2635,6 +2635,41 @@ select:focus {
 }
 
 @media (max-width: 768px) {
+    #screen-assistant .panel-header-row {
+        align-items: stretch;
+    }
+
+    #screen-assistant .panel-header-actions-inline {
+        width: 100%;
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+    }
+
+    #screen-assistant .panel-header-actions-inline .dictionary-selector,
+    #screen-assistant .panel-header-actions-inline .strategy-selector,
+    #screen-assistant .panel-header-actions-inline .btn {
+        width: 100%;
+        max-width: 100%;
+    }
+
+    #screen-assistant .external-assist-actions {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 0.5rem;
+    }
+
+    #screen-assistant .external-assist-actions .btn {
+        width: 100%;
+    }
+
+    #screen-assistant .manual-guess-inputs,
+    #screen-assistant .external-feedback-builder {
+        width: 100%;
+        overflow-x: auto;
+    }
+
     .external-assist-panel {
         gap: 0.75rem;
     }
@@ -2648,16 +2683,6 @@ select:focus {
         gap: 0.6rem;
     }
 
-    .manual-guess-inputs {
-        gap: 0.35rem;
-    }
-
-    .manual-guess-letter {
-        width: 2.4rem;
-        height: 2.4rem;
-        font-size: 1.05rem;
-    }
-
     .external-feedback-builder-wrap {
         align-items: flex-start;
     }
@@ -2665,11 +2690,6 @@ select:focus {
     .external-feedback-builder {
         width: 100%;
         gap: 0.4rem;
-    }
-
-    .feedback-cell {
-        width: 2.4rem;
-        height: 2.4rem;
     }
 
     .feedback-cell {
@@ -4451,7 +4471,7 @@ select:focus {
     #screen-play .screen-toolbar {
         display: none !important; /* removes "Interactive Play" */
     }
-    .game-container .panel-header-row h3 {
+    #screen-play .game-container .panel-header-row h3 {
         display: none !important; /* removes "Game" label; keeps selector + New btn */
     }
 
@@ -4465,9 +4485,9 @@ select:focus {
     }
 
     /* Hide ALL panels initially on mobile */
-    .history-panel,
-    .game-container,
-    .info-panel {
+    #screen-play .history-panel,
+    #screen-play .game-container,
+    #screen-play .info-panel {
         display: none !important;
         width: 100% !important;
         margin: 0 !important;
@@ -4478,9 +4498,9 @@ select:focus {
     }
 
     /* --- ACTIVE PANEL STYLES --- */
-    .history-panel.mobile-active,
-    .game-container.mobile-active,
-    .info-panel.mobile-active {
+    #screen-play .history-panel.mobile-active,
+    #screen-play .game-container.mobile-active,
+    #screen-play .info-panel.mobile-active {
         display: flex !important;
         flex-direction: column !important;
         /* Calculate height: 100vh - header (~60px) - bottom nav (60px) - padding */
